@@ -1,0 +1,8 @@
+*.idea
+*.tox
+*.ruff_cache
+*.mypy_cache
+*.pytest_cache
+*__pycache__
+*.coverage
+tests/project/testdb

@@ -1,0 +1,57 @@
+name: Feature request
+description: Make a feature request.
+labels:
+  - enhancement
+body:
+  - type: markdown
+    id: thank-you
+    attributes:
+      value: |
+        Thank you for your interest in the library!
+  - type: checkboxes
+    id: docs-read
+    attributes:
+      label: I have read the docs thoroughly before making this feature request.
+      description: >-
+        Docs can be found [here](https://mrthearman.github.io/graphene-django-query-optimizer/).
+      options:
+        - label: "Yes"
+          required: true
+  - type: checkboxes
+    id: other-issues
+    attributes:
+      label: I have read through other open issues, and my issue is not a duplicate.
+      description: >-
+        Open issues can be found [here](https://github.com/MrThearMan/graphene-django-query-optimizer/issues).
+      options:
+        - label: "Yes"
+          required: true
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Description
+      description: >-
+        Please describe the feature and how you want it to work.
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: >-
+        What are you trying to do?
+        How would this feature help you?
+    validations:
+      required: true
+  - type: dropdown
+    id: contributor
+    attributes:
+      label: Would you like to solve this issue yourself with a pull request?
+      description: >-
+        If yes, please read the contributing instructions
+        [here](https://github.com/MrThearMan/graphene-django-query-optimizer/blob/main/CONTRIBUTING.md).
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true

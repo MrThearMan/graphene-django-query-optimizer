@@ -1,0 +1,12 @@
+name: Release
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  release:
+    uses: MrThearMan/CI/.github/workflows/release.yml@v0.3.4
+    secrets:
+      pypi-token: ${{ secrets.PYPI_API_TOKEN }}
