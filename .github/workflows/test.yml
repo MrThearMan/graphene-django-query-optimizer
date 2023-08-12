@@ -1,0 +1,21 @@
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - "**.py"
+      - "pyproject.toml"
+      - "poetry.lock"
+      - ".github/workflows/test.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: MrThearMan/CI/.github/workflows/test.yml@v0.3.4
+    with:
+      python-version: '["3.9", "3.10", "3.11"]'

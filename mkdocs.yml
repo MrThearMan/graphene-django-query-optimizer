@@ -1,0 +1,31 @@
+site_name: Graphene Django Query Optimizer
+
+nav:
+  - Home: index.md
+
+theme:
+  name: readthedocs
+  highlightjs: true
+  hljs_languages:  # https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
+    - python
+    - console
+    - json
+
+markdown_extensions:
+  pymdownx.highlight:
+    anchor_linenums: true
+  pymdownx.inlinehilite:
+  pymdownx.snippets:
+  pymdownx.superfences:
+    custom_fences:
+      - name: mermaid
+        class: mermaid
+        format: !!python/name:mermaid2.fence_mermaid
+
+plugins:
+  - search:
+  - mermaid2:
+      version: 10.3.1
+
+extra_css:
+  - css/docs.css
