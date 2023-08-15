@@ -69,7 +69,6 @@ class QueryOptimizer:
         store = QueryOptimizerStore()
 
         for selection in selections:
-
             if isinstance(selection, FieldNode):
                 self.optimize_field_node(field_type, selection, store)
 

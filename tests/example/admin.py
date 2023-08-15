@@ -30,7 +30,6 @@ class PermMixin:
 
 
 class SalesAdminForm(forms.ModelForm):
-
     apartment = forms.ModelChoiceField(queryset=Apartment.objects.all())
     purchase_date = forms.DateField()
     purchase_price = forms.DateField()
@@ -42,7 +41,6 @@ class SalesAdminForm(forms.ModelForm):
 
 
 class OwnershipAdminForm(forms.ModelForm):
-
     owner = forms.ModelChoiceField(queryset=Owner.objects.all())
     sale = forms.ModelChoiceField(queryset=Sale.objects.all())
     percentage = forms.DecimalField(max_digits=3, decimal_places=0)

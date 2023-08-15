@@ -165,7 +165,6 @@ class Owner(models.Model):
 
 
 class Ownership(models.Model):
-
     owner = models.ForeignKey(
         Owner,
         on_delete=models.PROTECT,

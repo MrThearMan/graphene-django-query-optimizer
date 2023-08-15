@@ -21,7 +21,6 @@ from .utils import count_queries
 
 
 class Query(graphene.ObjectType):
-
     # List
     all_postal_codes = graphene.List(PostalCodeType)
     all_developers = graphene.List(DeveloperType)
