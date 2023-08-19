@@ -2,6 +2,9 @@ site_name: Graphene Django Query Optimizer
 
 nav:
   - Home: index.md
+  - Quickstart: quickstart.md
+  - Relay: relay.md
+  - Technical Details: technical.md
 
 theme:
   name: readthedocs
