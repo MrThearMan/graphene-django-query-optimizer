@@ -365,3 +365,52 @@ def test_optimizer_relay_connection_filtering_empty(client_query):
     assert "edges" in content["data"]["pagedApartments"], content["data"]["pagedApartments"]
     apartments = content["data"]["pagedApartments"]["edges"]
     assert apartments == [], apartments
+
+
+def test_optimizer_custom_fields(client_query):
+    query = """
+        query {
+          allDevelopers {
+            housingCompanies {
+              greeting
+              manager
+            }
+          }
+        }
+    """
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    queries = len(results.queries)
+    assert queries == 2, results.message
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "allDevelopers" in content["data"], content["data"]
+    developers = content["data"]["allDevelopers"]
+    assert len(developers) != 0, developers
+
+
+def test_optimizer_custom_fields_one_to_many(client_query):
+    query = """
+        query {
+          allHousingCompanies {
+            primary
+          }
+        }
+    """
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    queries = len(results.queries)
+    assert queries == 2, results.message
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "allHousingCompanies" in content["data"], content["data"]
+    developers = content["data"]["allHousingCompanies"]
+    assert len(developers) != 0, developers

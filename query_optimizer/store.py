@@ -1,7 +1,10 @@
+from dataclasses import dataclass
+
 from django.db.models import Model, Prefetch, QuerySet
 from django.db.models.constants import LOOKUP_SEP
 
 from .typing import PK, TypeVar
+from .utils import unique
 
 TModel = TypeVar("TModel", bound=Model)
 
@@ -11,65 +14,72 @@ __all__ = [
 ]
 
 
+@dataclass
+class CompilationResults:
+    only_fields: list[str]
+    select_related: list[str]
+    prefetch_related: list[Prefetch]
+
+
 class QueryOptimizerStore:
     def __init__(self) -> None:
         self.only_fields: list[str] = []
         self.select_stores: dict[str, "QueryOptimizerStore"] = {}
         self.prefetch_stores: dict[str, tuple["QueryOptimizerStore", QuerySet[Model]]] = {}
 
-    def only(self, field: str) -> None:
-        self.only_fields.append(field)
-
-    def select_related(self, name: str, store: "QueryOptimizerStore") -> None:
-        self.select_stores[name] = store
-
-    def prefetch_related(self, name: str, store: "QueryOptimizerStore", queryset: QuerySet[Model]) -> None:
-        self.prefetch_stores[name] = (store, queryset)
-
-    def compile(self, *, in_prefetch: bool = False) -> tuple[list[str], list[str], list[Prefetch]]:  # noqa: A003
-        only_fields: list[str] = self.only_fields.copy()
-        select_related: list[str] = []
-        prefetch_related: list[Prefetch] = []
+    def compile(self, *, in_prefetch: bool = False) -> CompilationResults:  # noqa: A003
+        results = CompilationResults(
+            only_fields=self.only_fields.copy(),
+            select_related=[],
+            prefetch_related=[],
+        )
 
         for name, store in self.select_stores.items():
             if not in_prefetch:
-                select_related.append(name)
-            self._compile_nested(store, name, only_fields, select_related, prefetch_related, in_prefetch=in_prefetch)
+                results.select_related.append(name)
+            self._compile_nested(name, store, results, in_prefetch=in_prefetch)
 
         for name, (store, queryset) in self.prefetch_stores.items():
             optimized_queryset = store.optimize_queryset(queryset)
-            prefetch_related.append(Prefetch(name, optimized_queryset))
-            self._compile_nested(store, name, only_fields, select_related, prefetch_related, in_prefetch=True)
+            results.prefetch_related.append(Prefetch(name, optimized_queryset))
+            self._compile_nested(name, store, results, in_prefetch=True)
 
-        return only_fields, select_related, prefetch_related
+        results.only_fields = unique(results.only_fields)
+        results.select_related = unique(results.select_related)
+        results.prefetch_related = unique(results.prefetch_related)
+        return results
 
     @staticmethod
     def _compile_nested(
-        store: "QueryOptimizerStore",
         name: str,
-        only_fields: list[str],
-        select_related: list[str],
-        prefetch_related: list[Prefetch],
+        store: "QueryOptimizerStore",
+        results: CompilationResults,
         *,
         in_prefetch: bool,
     ) -> None:
-        store_only_list, store_select_related, store_prefetch_related = store.compile(in_prefetch=in_prefetch)
+        nested_results = store.compile(in_prefetch=in_prefetch)
         if not in_prefetch:
-            only_fields.extend(name + LOOKUP_SEP + only for only in store_only_list)
-        select_related.extend(name + LOOKUP_SEP + select for select in store_select_related)
-        for prefetch in store_prefetch_related:
+            results.only_fields.extend(f"{name}{LOOKUP_SEP}{only}" for only in nested_results.only_fields)
+
+        results.select_related.extend(f"{name}{LOOKUP_SEP}{select}" for select in nested_results.select_related)
+        for prefetch in nested_results.prefetch_related:
             prefetch.add_prefix(name)
-            prefetch_related.append(prefetch)
+            results.prefetch_related.append(prefetch)
 
-    def optimize_queryset(self, queryset: QuerySet[TModel], *, pk: PK = None) -> QuerySet[TModel]:
-        only_fields, select_related, prefetch_related = self.compile()
+    def optimize_queryset(
+        self,
+        queryset: QuerySet[TModel],
+        *,
+        pk: PK = None,
+    ) -> QuerySet[TModel]:
+        results = self.compile()
 
-        if only_fields:
-            queryset = queryset.only(*only_fields)
-        if select_related:
-            queryset = queryset.select_related(*select_related)
-        if prefetch_related:
-            queryset = queryset.prefetch_related(*prefetch_related)
+        if results.prefetch_related:
+            queryset = queryset.prefetch_related(*results.prefetch_related)
+        if results.select_related:
+            queryset = queryset.select_related(*results.select_related)
+        if results.only_fields:
+            queryset = queryset.only(*results.only_fields)
         if pk is not None:
             queryset = queryset.filter(pk=pk)
 
@@ -82,8 +92,8 @@ class QueryOptimizerStore:
         return self
 
     def __str__(self) -> str:
-        only_fields, select_related, prefetch_related = self.compile()
-        only = ",".join(only_fields)
-        select = ",".join(select_related)
-        prefetch = ",".join(item.prefetch_to for item in prefetch_related)
+        results = self.compile()
+        only = ",".join(results.only_fields)
+        select = ",".join(results.select_related)
+        prefetch = ",".join(item.prefetch_to for item in results.prefetch_related)
         return f"{only=}|{select=}|{prefetch=}"

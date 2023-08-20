@@ -1,6 +1,7 @@
+import graphene
 from graphene import relay
 
-from query_optimizer import DjangoObjectType
+from query_optimizer import DjangoObjectType, required_fields
 from query_optimizer.typing import GQLInfo
 from tests.example.models import (
     Apartment,
@@ -54,6 +55,22 @@ class HousingCompanyType(DjangoObjectType):
 
     def resolve_name(model: HousingCompany, info: GQLInfo) -> str:
         return model.name
+
+    greeting = graphene.String()
+    manager = graphene.String()
+    primary = graphene.String()
+
+    @required_fields("name")
+    def resolve_greeting(model: HousingCompany, info: GQLInfo) -> str:
+        return f"Hello {model.name}!"
+
+    @required_fields("property_manager__name")
+    def resolve_manager(model: HousingCompany, info: GQLInfo) -> str:
+        return model.property_manager.name
+
+    @required_fields("real_estates__name")
+    def resolve_primary(model: HousingCompany, info: GQLInfo) -> str:
+        return model.real_estates.first().name
 
 
 class RealEstateType(DjangoObjectType):

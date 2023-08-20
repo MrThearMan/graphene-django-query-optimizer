@@ -6,7 +6,7 @@ from graphql_relay.connection.connection import ConnectionType
 
 from .cache import store_in_query_cache
 from .optimizer import QueryOptimizer
-from .typing import Any, Callable, GQLInfo, TypeVar, Union
+from .typing import Any, Callable, GQLInfo, Optional, TypeVar
 from .utils import get_field_type, get_selections
 
 TModel = TypeVar("TModel", bound=Model)
@@ -21,13 +21,13 @@ class ConnectionFieldCachingMixin:
     @classmethod
     def connection_resolver(  # noqa: PLR0913
         cls,
-        resolver: Callable[..., Union[Manager[TModel], None]],
+        resolver: Callable[..., Optional[Manager[TModel]]],
         connection: Connection,
         default_manager: Manager[TModel],
         queryset_resolver: Callable[..., QuerySet[TModel]],
         max_limit: int,
         enforce_first_or_last: bool,  # noqa: FBT001
-        root: Union[Model, None],
+        root: Optional[Model],
         info: GQLInfo,
         **args: Any,
     ) -> ConnectionType:

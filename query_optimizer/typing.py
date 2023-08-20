@@ -1,4 +1,7 @@
-from typing import Any, Callable, Hashable, Iterable, TypeVar, Union
+from typing import Any, Callable, Collection, Hashable, Iterable, NamedTuple, Optional, TypeVar, Union
+
+from graphene.relay.connection import ConnectionOptions
+from graphene_django.types import DjangoObjectTypeOptions
 
 # New in version 3.10
 try:
@@ -24,13 +27,20 @@ from django.db.models import (
 
 __all__ = [
     "Callable",
+    "Collection",
     "GQLInfo",
     "Hashable",
     "Iterable",
     "ModelField",
+    "NamedTuple",
+    "Optional",
     "PK_CACHE_KEY",
     "QueryCache",
+    "TableName",
+    "ToManyField",
+    "ToOneField",
     "TypeGuard",
+    "TypeOptions",
     "TypeVar",
     "Union",
 ]
@@ -48,5 +58,6 @@ QueryCache: TypeAlias = dict[TableName, dict[StoreStr, dict[PK, TModel]]]
 ModelField: TypeAlias = Union[Field, ForeignObjectRel, GenericForeignKey]
 ToManyField: TypeAlias = Union[GenericRelation, ManyToManyField, ManyToOneRel, ManyToManyRel]
 ToOneField: TypeAlias = Union[GenericRelation, ForeignObject, ForeignKey, OneToOneField]
+TypeOptions: TypeAlias = Union[DjangoObjectTypeOptions, ConnectionOptions]
 
 PK_CACHE_KEY = "_query_optimizer_model_pk"

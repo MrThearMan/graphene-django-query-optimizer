@@ -5,7 +5,7 @@ from graphene.types.definitions import GrapheneObjectType
 from graphql.type.definition import GraphQLNonNull
 
 from .optimizer import optimize
-from .typing import PK, PK_CACHE_KEY, GQLInfo, TypeVar, Union
+from .typing import PK, PK_CACHE_KEY, GQLInfo, Optional, TypeVar
 
 TModel = TypeVar("TModel", bound=Model)
 
@@ -36,7 +36,7 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         return queryset
 
     @classmethod
-    def get_node(cls, info: GQLInfo, id: PK) -> Union[TModel, None]:  # noqa: A002
+    def get_node(cls, info: GQLInfo, id: PK) -> Optional[TModel]:  # noqa: A002
         queryset: QuerySet[TModel] = cls._meta.model.objects.all()
         setattr(queryset, PK_CACHE_KEY, id)
         queryset = cls.get_queryset(queryset, info)

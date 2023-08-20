@@ -1,11 +1,11 @@
 from collections import defaultdict
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
 from django.db.models import Model, QuerySet
 from graphql import GraphQLSchema
 
-from .typing import PK, Hashable, Iterable, QueryCache, TableName, TypeVar
+from .typing import PK, Hashable, Iterable, Optional, QueryCache, TableName, TypeVar
 
 if TYPE_CHECKING:
     from .store import QueryOptimizerStore
@@ -32,7 +32,7 @@ def get_from_query_cache(
     model: type[TModel],
     pk: PK,
     store: "QueryOptimizerStore",
-) -> Union[TModel, None]:
+) -> Optional[TModel]:
     """
     Get model instance from query cache for the given 'field_type'.
     Key should be any hashable value that is present only for the duration of
@@ -67,9 +67,10 @@ def _get_annotations(item: Model) -> list[str]:
     # as cleanly from the model if some other iterable is given.
     # (these results contain foreign key ids as well)
     model_builtins = {"_prefetched_objects_cache", "_state"}
-    fields: set[str] = {field.name for field in item._meta.get_fields() if field.name not in model_builtins}
+    fields: set[str] = {field.name for field in item._meta.get_fields()}
     attributes: set[str] = set(item.__dict__)
-    return list(attributes.difference(fields))
+    diff = attributes.difference(fields)
+    return list(diff.difference(model_builtins))
 
 
 def _add_item(query_cache: QueryCache, instance: Model, annotations: list[str], store: "QueryOptimizerStore") -> None:

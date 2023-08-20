@@ -3,7 +3,7 @@ from graphene.types.definitions import GrapheneObjectType
 from graphql import GraphQLOutputType, SelectionNode
 from graphql.execution.execute import get_field_def
 
-from .typing import GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard
+from .typing import Collection, GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard, TypeVar
 
 __all__ = [
     "get_field_type",
@@ -12,7 +12,11 @@ __all__ = [
     "is_foreign_key_id",
     "is_to_many",
     "is_to_one",
+    "unique",
 ]
+
+
+T = TypeVar("T")
 
 
 def is_foreign_key_id(model_field: ModelField, name: str) -> bool:
@@ -43,3 +47,7 @@ def get_selections(info: GQLInfo) -> tuple[SelectionNode, ...]:
     field_node = info.field_nodes[0]
     selection_set = field_node.selection_set
     return () if selection_set is None else selection_set.selections
+
+
+def unique(items: Collection[T]) -> list[T]:
+    return list(dict.fromkeys(items))
