@@ -103,7 +103,7 @@ That's it!
 With the following configuration, the same query will result in
 just _**3**_ database queries, regardless of the number of database records.
 
-- 1 query for all apartment
+- 1 query for all apartments
 - 1 query for all sales in all apartments
 - 1 query for all ownerships with their owners for each sale in each apartment
 
