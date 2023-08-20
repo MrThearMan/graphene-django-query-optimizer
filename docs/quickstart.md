@@ -48,7 +48,7 @@ query {
 
 As is, this query will result in:
 
-- 1 query for all apartment
+- 1 query for all apartments
 - 1 query or _**each**_ sale
 - 1 query for _**each**_ ownership in _**each**_ sale
 - 1 query for _**each**_ owner in _**each**_ ownership in _**each**_ sale
@@ -116,4 +116,4 @@ See [technical details] on how this works.
 [schema]: https://github.com/MrThearMan/graphene-django-query-optimizer/blob/main/tests/example/models.py
 [prev]: https://github.com/tfoxy/graphene-django-optimizer
 [only]: https://docs.djangoproject.com/en/dev/ref/models/querysets/#only
-[technical details]: /technical/
+[technical details]: https://mrthearman.github.io/graphene-django-query-optimizer/technical/
