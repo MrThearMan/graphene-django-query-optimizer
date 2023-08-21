@@ -99,8 +99,9 @@ If we want filtering, we can use:
 import graphene
 from graphene import relay
 from query_optimizer import DjangoObjectType  # replaced import
-from query_optimizer.filters import DjangoFilterConnectionField  # replaced import
+from query_optimizer.filter import DjangoFilterConnectionField  # replaced import
 from tests.example.models import Apartment
+
 
 class ApartmentNode(DjangoObjectType):
     class Meta:
@@ -111,8 +112,10 @@ class ApartmentNode(DjangoObjectType):
         }
         interfaces = (relay.Node,)
 
+
 class Query(graphene.ObjectType):
     paged_apartments = DjangoFilterConnectionField(ApartmentNode)
+
 
 schema = graphene.Schema(query=Query)
 ```

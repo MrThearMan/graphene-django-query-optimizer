@@ -1,5 +1,5 @@
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import ManyToOneRel, Model, QuerySet
+from django.db.models import ForeignKey, ManyToOneRel, Model, QuerySet
 from graphene.relay.connection import ConnectionOptions
 from graphene.types.definitions import GrapheneObjectType
 from graphene.utils.str_converters import to_snake_case
@@ -8,6 +8,7 @@ from graphql import (
     FieldNode,
     FragmentSpreadNode,
     GraphQLField,
+    GraphQLOutputType,
     InlineFragmentNode,
     SelectionNode,
 )
@@ -23,6 +24,7 @@ from .typing import (
     ModelField,
     Optional,
     ToManyField,
+    ToOneField,
     TypeOptions,
     TypeVar,
 )
@@ -140,12 +142,11 @@ class QueryOptimizer:
         if not model_field.is_relation or is_foreign_key_id(model_field, model_field_name):
             store.only_fields.append(model_field_name)
 
-        elif is_to_one(model_field):
-            self.handle_to_one(model_field_name, selection, selection_graphql_field, store)
+        elif is_to_one(model_field):  # noinspection PyTypeChecker
+            self.handle_to_one(model_field_name, selection, selection_graphql_field.type, model_field, store)
 
-        elif is_to_many(model_field):
-            # noinspection PyTypeChecker
-            self.handle_to_many(model_field_name, selection, selection_graphql_field, model_field, store)
+        elif is_to_many(model_field):  # noinspection PyTypeChecker
+            self.handle_to_many(model_field_name, selection, selection_graphql_field.type, model_field, store)
 
         else:  # pragma: no cover
             msg = f"Unhandled selection: '{selection.name.value}'"
@@ -234,17 +235,21 @@ class QueryOptimizer:
         self,
         model_field_name: str,
         selection: FieldNode,
-        selection_graphql_field: GraphQLField,
+        selection_field_type: GraphQLOutputType,
+        model_field: ToOneField,
         store: QueryOptimizerStore,
     ) -> None:
         if selection.selection_set is None:  # pragma: no cover
             return
 
-        selection_field_type = get_underlying_type(selection_graphql_field.type)
+        selection_field_type = get_underlying_type(selection_field_type)
         nested_store = self.optimize_selections(
             selection_field_type,
             selection.selection_set.selections,
         )
+
+        if isinstance(model_field, ForeignKey):  # Add connecting entity
+            store.only_fields.append(model_field_name)
 
         store.select_stores[model_field_name] = nested_store
 
@@ -252,14 +257,14 @@ class QueryOptimizer:
         self,
         model_field_name: str,
         selection: FieldNode,
-        selection_graphql_field: GraphQLField,
+        selection_field_type: GraphQLOutputType,
         model_field: ToManyField,
         store: QueryOptimizerStore,
     ) -> None:
         if selection.selection_set is None:  # pragma: no cover
             return
 
-        selection_field_type = get_underlying_type(selection_graphql_field.type)
+        selection_field_type = get_underlying_type(selection_field_type)
         nested_store = self.optimize_selections(
             selection_field_type,
             selection.selection_set.selections,

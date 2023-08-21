@@ -6,7 +6,7 @@ from graphene import relay
 from graphene_django.debug import DjangoDebug
 
 from query_optimizer import optimize
-from query_optimizer.filters import DjangoFilterConnectionField
+from query_optimizer.filter import DjangoFilterConnectionField
 from query_optimizer.typing import GQLInfo
 
 from .models import (

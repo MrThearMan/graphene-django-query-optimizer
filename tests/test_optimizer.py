@@ -283,9 +283,6 @@ def test_optimizer_relay_connection_filtering(client_query):
     with count_queries() as results:
         response = client_query(query)
 
-    queries = len(results.queries)
-    assert queries == 2, results.message
-
     content = json.loads(response.content)
     assert "errors" not in content, content["errors"]
     assert "data" in content, content
@@ -293,6 +290,9 @@ def test_optimizer_relay_connection_filtering(client_query):
     assert "edges" in content["data"]["pagedApartments"], content["data"]["pagedApartments"]
     apartments = content["data"]["pagedApartments"]["edges"]
     assert len(apartments) != 0, apartments
+
+    queries = len(results.queries)
+    assert queries == 2, results.message
 
 
 def test_optimizer_relay_connection_filtering_nested(client_query):
@@ -321,9 +321,6 @@ def test_optimizer_relay_connection_filtering_nested(client_query):
     with count_queries() as results:
         response = client_query(query)
 
-    queries = len(results.queries)
-    assert queries == 2, results.message
-
     content = json.loads(response.content)
     assert "errors" not in content, content["errors"]
     assert "data" in content, content
@@ -331,6 +328,9 @@ def test_optimizer_relay_connection_filtering_nested(client_query):
     assert "edges" in content["data"]["pagedApartments"], content["data"]["pagedApartments"]
     apartments = content["data"]["pagedApartments"]["edges"]
     assert len(apartments) != 0, apartments
+
+    queries = len(results.queries)
+    assert queries == 2, results.message
 
 
 def test_optimizer_relay_connection_filtering_empty(client_query):
@@ -355,9 +355,6 @@ def test_optimizer_relay_connection_filtering_empty(client_query):
     with count_queries() as results:
         response = client_query(query)
 
-    queries = len(results.queries)
-    assert queries == 1, results.message
-
     content = json.loads(response.content)
     assert "errors" not in content, content["errors"]
     assert "data" in content, content
@@ -365,6 +362,9 @@ def test_optimizer_relay_connection_filtering_empty(client_query):
     assert "edges" in content["data"]["pagedApartments"], content["data"]["pagedApartments"]
     apartments = content["data"]["pagedApartments"]["edges"]
     assert apartments == [], apartments
+
+    queries = len(results.queries)
+    assert queries == 1, results.message
 
 
 def test_optimizer_custom_fields(client_query):
@@ -382,15 +382,15 @@ def test_optimizer_custom_fields(client_query):
     with count_queries() as results:
         response = client_query(query)
 
-    queries = len(results.queries)
-    assert queries == 2, results.message
-
     content = json.loads(response.content)
     assert "errors" not in content, content["errors"]
     assert "data" in content, content
     assert "allDevelopers" in content["data"], content["data"]
     developers = content["data"]["allDevelopers"]
     assert len(developers) != 0, developers
+
+    queries = len(results.queries)
+    assert queries == 2, results.message
 
 
 def test_optimizer_custom_fields_one_to_many(client_query):
@@ -405,12 +405,38 @@ def test_optimizer_custom_fields_one_to_many(client_query):
     with count_queries() as results:
         response = client_query(query)
 
-    queries = len(results.queries)
-    assert queries == 2, results.message
-
     content = json.loads(response.content)
     assert "errors" not in content, content["errors"]
     assert "data" in content, content
     assert "allHousingCompanies" in content["data"], content["data"]
     developers = content["data"]["allHousingCompanies"]
     assert len(developers) != 0, developers
+
+    queries = len(results.queries)
+    assert queries == 2, results.message
+
+
+def test_optimizer_custom_fields_backtracking(client_query):
+    query = """
+        query {
+          allRealEstates {
+            name
+            housingCompany {
+              primary
+            }
+          }
+        }
+    """
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "allRealEstates" in content["data"], content["data"]
+    developers = content["data"]["allRealEstates"]
+    assert len(developers) != 0, developers
+
+    queries = len(results.queries)
+    assert queries == 2, results.message

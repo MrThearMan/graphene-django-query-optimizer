@@ -48,6 +48,3 @@ class HousingCompanyType(DjangoObjectType):
     def resolve_primary_real_estate(model: HousingCompany, info: GQLInfo) -> str:
         return model.real_estates.first().name
 ```
-
-> TODO: There are still some issues with pre-fetching required fields,
-> but most cases should work.
