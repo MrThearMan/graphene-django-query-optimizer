@@ -13,8 +13,6 @@ Different records are sorted based on their database table name, selected
 fields & joined tables, and primary keys. Subsequent resolvers will then
 attempt to retrieve the cached data stored by the parent query.
 
-> [Inline fragments] are not supported, mainly because I don't have a use for them :P
-
 [only]: https://docs.djangoproject.com/en/dev/ref/models/querysets/#only
 [select]: https://docs.djangoproject.com/en/dev/ref/models/querysets/#select-related
 [prefetch]: https://docs.djangoproject.com/en/dev/ref/models/querysets/#prefetch-related

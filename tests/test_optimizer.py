@@ -39,15 +39,15 @@ def test_optimizer_deep_query(client_query):
     with count_queries() as results:
         response = client_query(query)
 
-    queries = len(results.queries)
-    assert queries == 1, results.message
-
     content = json.loads(response.content)
     assert "errors" not in content, content["errors"]
     assert "data" in content, content
     assert "allApartments" in content["data"], content["data"]
     apartments = content["data"]["allApartments"]
     assert len(apartments) != 0, apartments
+
+    queries = len(results.queries)
+    assert queries == 1, results.message
 
 
 def test_optimizer_many_to_one_relations(client_query):
@@ -440,3 +440,187 @@ def test_optimizer_custom_fields_backtracking(client_query):
 
     queries = len(results.queries)
     assert queries == 2, results.message
+
+
+def test_optimizer_multiple_queries(client_query):
+    query = """
+        query {
+          allApartments {
+            completionDate
+            building {
+              name
+              realEstate {
+                surfaceArea
+              }
+            }
+          }
+          allRealEstates {
+            name
+            housingCompany {
+              streetAddress
+            }
+          }
+        }
+    """
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "allApartments" in content["data"], content["data"]
+    apartments = content["data"]["allApartments"]
+    assert len(apartments) != 0, apartments
+    assert "allRealEstates" in content["data"], content["data"]
+    real_estates = content["data"]["allRealEstates"]
+    assert len(real_estates) != 0, real_estates
+
+    queries = len(results.queries)
+    assert queries == 2, results.message
+
+
+def test_optimizer_fragment_spread(client_query):
+    query = """
+        query {
+          allApartments {
+            ...Shares
+          }
+        }
+
+        fragment Shares on ApartmentType {
+          sharesStart
+          sharesEnd
+        }
+    """
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "allApartments" in content["data"], content["data"]
+    apartments = content["data"]["allApartments"]
+    assert len(apartments) != 0, apartments
+
+    queries = len(results.queries)
+    assert queries == 1, results.message
+
+
+def test_optimizer_fragment_spread_deep(client_query):
+    query = """
+        query {
+          allApartments {
+            ...Address
+          }
+        }
+
+        fragment Address on ApartmentType {
+          streetAddress
+          floor
+          apartmentNumber
+          building {
+            realEstate {
+              housingCompany {
+                postalCode {
+                  code
+                }
+                city
+              }
+            }
+          }
+        }
+    """
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "allApartments" in content["data"], content["data"]
+    apartments = content["data"]["allApartments"]
+    assert len(apartments) != 0, apartments
+
+    queries = len(results.queries)
+    assert queries == 1, results.message
+
+
+def test_optimizer_fragment_spread_many_to_one_relations(client_query):
+    query = """
+        query {
+          allApartments {
+            ...Sales
+          }
+        }
+
+        fragment Sales on ApartmentType {
+          sales {
+            purchaseDate
+            purchasePrice
+            ownerships {
+              percentage
+              owner {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "allApartments" in content["data"], content["data"]
+    apartments = content["data"]["allApartments"]
+    assert len(apartments) != 0, apartments
+
+    queries = len(results.queries)
+    assert queries == 3, results.message
+
+
+def test_optimizer_inline_fragment(client_query):
+    query = """
+        query {
+          allPeople {
+            ... on DeveloperType {
+              name
+              housingCompanies {
+                name
+              }
+              __typename
+            }
+            ... on PropertyManagerType {
+              name
+              housingCompanies {
+                name
+              }
+              __typename
+            }
+            ... on OwnerType {
+              name
+              ownerships {
+                percentage
+              }
+              __typename
+            }
+          }
+        }
+    """
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "allPeople" in content["data"], content["data"]
+    people = content["data"]["allPeople"]
+    assert len(people) != 0, people
+
+    queries = len(results.queries)
+    assert queries == 6, results.message

@@ -1,7 +1,7 @@
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import ForeignKey, ManyToOneRel, Model, QuerySet
 from graphene.relay.connection import ConnectionOptions
-from graphene.types.definitions import GrapheneObjectType
+from graphene.types.definitions import GrapheneObjectType, GrapheneUnionType
 from graphene.utils.str_converters import to_snake_case
 from graphene_django.types import DjangoObjectTypeOptions
 from graphql import (
@@ -27,6 +27,7 @@ from .typing import (
     ToOneField,
     TypeOptions,
     TypeVar,
+    Union,
 )
 from .utils import get_field_type, get_selections, get_underlying_type, is_foreign_key_id, is_to_many, is_to_one
 
@@ -48,7 +49,7 @@ def optimize(queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
         return queryset
 
     optimizer = QueryOptimizer(info)
-    store = optimizer.optimize_selections(field_type, selections)
+    store = optimizer.optimize_selections(field_type, selections, queryset.model)
 
     # Pk stored in 'query_optimizer.types.DjangoObjectType.get_node'
     pk: PK = getattr(queryset, PK_CACHE_KEY, None)
@@ -81,20 +82,21 @@ class QueryOptimizer:
 
     def optimize_selections(
         self,
-        field_type: GrapheneObjectType,
+        field_type: Union[GrapheneObjectType, GrapheneUnionType],
         selections: tuple[SelectionNode, ...],
+        model: type[Model],
     ) -> QueryOptimizerStore:
-        store = QueryOptimizerStore()
+        store = QueryOptimizerStore(model=model)
 
         for selection in selections:
             if isinstance(selection, FieldNode):
                 self.optimize_field_node(field_type, selection, store)
 
-            elif isinstance(selection, FragmentSpreadNode):  # pragma: no cover
-                self.optimize_fragment_spread(field_type, selection, store)
+            elif isinstance(selection, FragmentSpreadNode):
+                self.optimize_fragment_spread(field_type, selection, model, store)
 
-            elif isinstance(selection, InlineFragmentNode):  # pragma: no cover
-                self.optimize_inline_fragment(selection)
+            elif isinstance(selection, InlineFragmentNode):
+                self.optimize_inline_fragment(field_type, selection, model, store)
 
             else:  # pragma: no cover
                 msg = f"Unhandled selection node: '{selection}'"
@@ -111,7 +113,7 @@ class QueryOptimizer:
         options: TypeOptions = field_type.graphene_type._meta
 
         if isinstance(options, ConnectionOptions):
-            return self.handle_relay_node(field_type, selection, store)
+            return self.handle_connection_node(field_type, selection, store)
 
         elif isinstance(options, DjangoObjectTypeOptions):
             return self.handle_regular_node(field_type, selection, store)
@@ -159,7 +161,7 @@ class QueryOptimizer:
 
         model_fields: list[ModelField] = model._meta.get_fields()
         for field_name in hints:
-            hint_store = QueryOptimizerStore()
+            hint_store = QueryOptimizerStore(model=model)
             self.find_field_from_model(field_name, model_fields, hint_store)
             store += hint_store
 
@@ -185,7 +187,7 @@ class QueryOptimizer:
                     msg = f"No related model, but hint seems like has one: {field_name!r}"
                     raise TypeError(msg)
 
-                nested_store = QueryOptimizerStore()
+                nested_store = QueryOptimizerStore(model=related_model)
                 if is_to_many(model_field):
                     store.prefetch_stores[model_field.name] = (nested_store, related_model.objects.all())
                 else:  # 'many_to_one' or 'one_to_one'
@@ -206,7 +208,7 @@ class QueryOptimizer:
         msg = f"Field {field_name!r} not found in fields: {model_fields}."  # pragma: no cover
         raise ValueError(msg)  # pragma: no cover
 
-    def handle_relay_node(
+    def handle_connection_node(
         self,
         field_type: GrapheneObjectType,
         selection: FieldNode,
@@ -227,8 +229,9 @@ class QueryOptimizer:
         edge_type = get_underlying_type(edges_field.type)
         node_field = edge_type.fields[node.name.value]
         node_type = get_underlying_type(node_field.type)
+        node_model: type[Model] = node_type.graphene_type._meta.model
 
-        nested_store = self.optimize_selections(node_type, node.selection_set.selections)
+        nested_store = self.optimize_selections(node_type, node.selection_set.selections, node_model)
         store += nested_store
 
     def handle_to_one(
@@ -246,6 +249,7 @@ class QueryOptimizer:
         nested_store = self.optimize_selections(
             selection_field_type,
             selection.selection_set.selections,
+            model_field.model,
         )
 
         if isinstance(model_field, ForeignKey):  # Add connecting entity
@@ -268,6 +272,7 @@ class QueryOptimizer:
         nested_store = self.optimize_selections(
             selection_field_type,
             selection.selection_set.selections,
+            model_field.model,
         )
 
         if isinstance(model_field, ManyToOneRel):  # Add connecting entity
@@ -280,17 +285,32 @@ class QueryOptimizer:
         self,
         field_type: GrapheneObjectType,
         selection: FragmentSpreadNode,
+        model: type[Model],
         store: QueryOptimizerStore,
-    ) -> None:  # pragma: no cover
+    ) -> None:
         graphql_name = selection.name.value
         field_node = self.info.fragments[graphql_name]
         selections = field_node.selection_set.selections
-        fragment_store = self.optimize_selections(field_type, selections)
-        store.only_fields += fragment_store.only_fields
-        store.select_stores.update(fragment_store.select_stores)
-        store.prefetch_stores.update(fragment_store.prefetch_stores)
+        nested_store = self.optimize_selections(field_type, selections, model)
+        store += nested_store
 
-    def optimize_inline_fragment(self, selection: InlineFragmentNode) -> None:  # pragma: no cover
+    def optimize_inline_fragment(
+        self,
+        field_type: GrapheneUnionType,
+        selection: InlineFragmentNode,
+        model: type[Model],
+        store: QueryOptimizerStore,
+    ) -> None:
         fragment_type_name = selection.type_condition.name.value
-        msg = f"TODO: {fragment_type_name}"
-        raise NotImplementedError(msg)
+        selection_graphql_field: Optional[GrapheneObjectType]
+        selection_graphql_field = next((t for t in field_type.types if t.name == fragment_type_name), None)
+        if selection_graphql_field is None:  # pragma: no cover
+            return
+
+        fragment_model: type[Model] = selection_graphql_field.graphene_type._meta.model
+        if fragment_model != model:  # pragma: no cover
+            return
+
+        selections = selection.selection_set.selections
+        nested_store = self.optimize_selections(selection_graphql_field, selections, fragment_model)
+        store += nested_store

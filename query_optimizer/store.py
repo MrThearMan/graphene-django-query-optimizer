@@ -22,7 +22,8 @@ class CompilationResults:
 
 
 class QueryOptimizerStore:
-    def __init__(self) -> None:
+    def __init__(self, model: type[Model]) -> None:
+        self.model = model
         self.only_fields: list[str] = []
         self.select_stores: dict[str, "QueryOptimizerStore"] = {}
         self.prefetch_stores: dict[str, tuple["QueryOptimizerStore", QuerySet[Model]]] = {}

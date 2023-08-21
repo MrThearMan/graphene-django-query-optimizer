@@ -49,7 +49,7 @@ class ConnectionFieldCachingMixin:
         field_type = get_field_type(info)
         selections = get_selections(info)
         optimizer = QueryOptimizer(info)
-        store = optimizer.optimize_selections(field_type, selections)
+        store = optimizer.optimize_selections(field_type, selections, default_manager.model)
         store_in_query_cache(
             key=info.operation,
             items=(edge.node for edge in connection_type.edges),

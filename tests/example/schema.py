@@ -1,3 +1,6 @@
+import itertools
+from typing import Iterable, Union
+
 import graphene
 from django.db import models
 from django.db.models import F, QuerySet
@@ -29,6 +32,7 @@ from .types import (
     HousingCompanyType,
     OwnershipType,
     OwnerType,
+    People,
     PostalCodeType,
     PropertyManagerType,
     RealEstateType,
@@ -37,7 +41,6 @@ from .types import (
 
 
 class Query(graphene.ObjectType):
-    # List
     all_postal_codes = graphene.List(PostalCodeType)
     all_developers = graphene.List(DeveloperType)
     all_property_managers = graphene.List(PropertyManagerType)
@@ -89,16 +92,21 @@ class Query(graphene.ObjectType):
     def resolve_all_ownerships(parent: None, info: GQLInfo) -> QuerySet[Ownership]:
         return optimize(Ownership.objects.all(), info)
 
-    # Single
     housing_company_by_name = graphene.List(HousingCompanyType, name=graphene.String(required=True))
 
     def resolve_housing_company_by_name(parent: None, info: GQLInfo, name: str) -> QuerySet[HousingCompany]:
         return optimize(HousingCompany.objects.filter(name=name), info)
 
-    # Relay fields
-
     apartment = relay.Node.Field(ApartmentNode)
     paged_apartments = DjangoFilterConnectionField(ApartmentNode)
+
+    all_people = graphene.List(People)
+
+    def resolve_all_people(parent: None, info: GQLInfo) -> Iterable[Union[Developer, PropertyManager, Owner]]:
+        developers = optimize(Developer.objects.all(), info)
+        property_managers = optimize(PropertyManager.objects.all(), info)
+        owners = optimize(Owner.objects.all(), info)
+        return itertools.chain(developers, property_managers, owners)
 
     debug = graphene.Field(DjangoDebug, name="_debug")
 

@@ -1,4 +1,5 @@
 import graphene
+from django.db.models import Model
 from graphene import relay
 
 from query_optimizer import DjangoObjectType, required_fields
@@ -17,6 +18,7 @@ from tests.example.models import (
 )
 
 __all__ = [
+    "People",
     "ApartmentNode",
     "ApartmentType",
     "BuildingType",
@@ -114,3 +116,26 @@ class ApartmentNode(DjangoObjectType):
             "building__name": ["exact"],
         }
         interfaces = (relay.Node,)
+
+
+# Union
+
+
+class People(graphene.Union):
+    class Meta:
+        types = (
+            DeveloperType,
+            PropertyManagerType,
+            OwnerType,
+        )
+
+    @classmethod
+    def resolve_type(cls, instance: Model, info: GQLInfo) -> type[DjangoObjectType]:
+        if isinstance(instance, Developer):
+            return DeveloperType
+        if isinstance(instance, PropertyManager):
+            return PropertyManagerType
+        if isinstance(instance, Owner):
+            return OwnerType
+        msg = f"Unknown type: {instance}"
+        raise TypeError(msg)

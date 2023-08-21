@@ -4,6 +4,7 @@ nav:
   - Home: index.md
   - Quickstart: quickstart.md
   - Relay: relay.md
+  - Fragments: fragments.md
   - Custom Fields: custom.md
   - Technical Details: technical.md
 
