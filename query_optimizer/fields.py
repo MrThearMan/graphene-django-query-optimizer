@@ -2,6 +2,7 @@ import graphene_django.filter
 from django.db.models import Model, QuerySet
 from django.db.models.manager import Manager
 from graphene.relay.connection import Connection
+from graphql_relay import EdgeType
 from graphql_relay.connection.connection import ConnectionType
 
 from .cache import store_in_query_cache
@@ -43,20 +44,7 @@ class ConnectionFieldCachingMixin:
             info,
             **args,
         )
-        if not connection_type.edges:
-            return connection_type
-
-        field_type = get_field_type(info)
-        selections = get_selections(info)
-        optimizer = QueryOptimizer(info)
-        store = optimizer.optimize_selections(field_type, selections, default_manager.model)
-        store_in_query_cache(
-            key=info.operation,
-            items=(edge.node for edge in connection_type.edges),
-            schema=info.schema,
-            store=store,
-        )
-
+        cache_edges(connection_type.edges, default_manager.model, info)
         return connection_type
 
 
@@ -65,3 +53,19 @@ class DjangoConnectionField(
     graphene_django.fields.DjangoConnectionField,
 ):
     pass
+
+
+def cache_edges(edges: list[EdgeType], model: type[Model], info: GQLInfo) -> None:
+    if not edges:
+        return
+
+    field_type = get_field_type(info)
+    selections = get_selections(info)
+    optimizer = QueryOptimizer(info)
+    store = optimizer.optimize_selections(field_type, selections, model)
+    store_in_query_cache(
+        key=info.operation,
+        items=(edge.node for edge in edges),
+        schema=info.schema,
+        store=store,
+    )
