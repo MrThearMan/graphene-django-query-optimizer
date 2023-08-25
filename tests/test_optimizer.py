@@ -1,10 +1,11 @@
 import json
 
+import graphene_django
 import pytest
 from django.db.models import Count
 from graphql_relay import to_global_id
 
-from tests.example.models import Apartment, Building
+from tests.example.models import Apartment, Building, HousingCompany
 from tests.example.types import ApartmentNode
 from tests.example.utils import count_queries
 
@@ -141,6 +142,10 @@ def test_optimizer_relay_node(client_query):
     assert queries == 1, results.message
 
 
+@pytest.mark.skipif(
+    condition=graphene_django.__version__.startswith("3.0."),
+    reason="Issues in 'graphene_django' <3.1 with two GraphQLObjectTypes for one Model",
+)
 def test_optimizer_relay_node_deep(client_query):
     apartment_id: int = Apartment.objects.values_list("id", flat=True).first()
     global_id = to_global_id(str(ApartmentNode), apartment_id)
@@ -215,6 +220,10 @@ def test_optimizer_relay_connection(client_query):
     assert queries == 2, results.message
 
 
+@pytest.mark.skipif(
+    condition=graphene_django.__version__.startswith("3.0."),
+    reason="Issues in 'graphene_django' <3.1 with two GraphQLObjectTypes for one Model",
+)
 def test_optimizer_relay_connection_deep(client_query):
     query = """
         query {
@@ -624,3 +633,118 @@ def test_optimizer_inline_fragment(client_query):
 
     queries = len(results.queries)
     assert queries == 6, results.message
+
+
+@pytest.mark.skipif(
+    condition=graphene_django.__version__.startswith("3.0."),
+    reason="Issues in 'graphene_django' <3.1 with two GraphQLObjectTypes for one Model",
+)
+def test_optimizer_filter(client_query):
+    postal_code = HousingCompany.objects.values_list("postal_code__code", flat=True).first()
+
+    query = """
+        query {
+          pagedHousingCompanies(
+            postalCode_Code_Iexact: "%s"
+          ) {
+            edges {
+              node {
+                name
+                streetAddress
+                postalCode {
+                  code
+                }
+                city
+                developers {
+                  name
+                  description
+                }
+              }
+            }
+          }
+        }
+    """ % (
+        postal_code,
+    )
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "pagedHousingCompanies" in content["data"], content["data"]
+    assert "edges" in content["data"]["pagedHousingCompanies"], content["data"]["pagedHousingCompanies"]
+    housing_companies = content["data"]["pagedHousingCompanies"]["edges"]
+    assert len(housing_companies) != 0, housing_companies
+
+    queries = len(results.queries)
+    assert queries == 3, results.message
+
+
+def test_optimizer_filter_to_many_relations(client_query):
+    developer_name = HousingCompany.objects.values_list("developers__name", flat=True).first()
+
+    query = """
+        query {
+          pagedHousingCompanies(
+            developers_Name_Iexact: "%s"
+          ) {
+            edges {
+              node {
+                name
+                streetAddress
+                city
+              }
+            }
+          }
+        }
+    """ % (
+        developer_name,
+    )
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "pagedHousingCompanies" in content["data"], content["data"]
+    assert "edges" in content["data"]["pagedHousingCompanies"], content["data"]["pagedHousingCompanies"]
+    housing_companies = content["data"]["pagedHousingCompanies"]["edges"]
+    assert len(housing_companies) != 0, housing_companies
+
+    queries = len(results.queries)
+    assert queries == 2, results.message
+
+
+def test_optimizer_filter_order_by(client_query):
+    query = """
+        query {
+          pagedHousingCompanies(
+            orderBy: "name"
+          ) {
+            edges {
+              node {
+                name
+                streetAddress
+                city
+              }
+            }
+          }
+        }
+    """
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "pagedHousingCompanies" in content["data"], content["data"]
+    assert "edges" in content["data"]["pagedHousingCompanies"], content["data"]["pagedHousingCompanies"]
+    housing_companies = content["data"]["pagedHousingCompanies"]["edges"]
+    assert len(housing_companies) != 0, housing_companies
+
+    queries = len(results.queries)
+    assert queries == 2, results.message

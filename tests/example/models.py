@@ -3,9 +3,11 @@ from django.db.models import DecimalField
 
 __all__ = [
     "Apartment",
+    "ApartmentProxy",
     "Building",
     "Developer",
     "HousingCompany",
+    "HousingCompanyProxy",
     "Owner",
     "Ownership",
     "PostalCode",
@@ -213,3 +215,16 @@ class Ownership(models.Model):
 
     def __str__(self) -> str:
         return f"Sale of {self.sale.apartment.address!r} to {self.owner.name!r}"
+
+
+# Proxies
+
+
+class ApartmentProxy(Apartment):
+    class Meta:
+        proxy = True
+
+
+class HousingCompanyProxy(HousingCompany):
+    class Meta:
+        proxy = True

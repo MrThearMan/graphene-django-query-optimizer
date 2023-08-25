@@ -1,14 +1,18 @@
 import graphene
-from django.db.models import Model
+from django.db.models import F, Model, QuerySet, Value
+from django.db.models.functions import Concat
+from django_filters import CharFilter, FilterSet, OrderingFilter
 from graphene import relay
 
 from query_optimizer import DjangoObjectType, required_fields
 from query_optimizer.typing import GQLInfo
 from tests.example.models import (
     Apartment,
+    ApartmentProxy,
     Building,
     Developer,
     HousingCompany,
+    HousingCompanyProxy,
     Owner,
     Ownership,
     PostalCode,
@@ -18,14 +22,15 @@ from tests.example.models import (
 )
 
 __all__ = [
-    "People",
     "ApartmentNode",
     "ApartmentType",
     "BuildingType",
     "DeveloperType",
+    "HousingCompanyNode",
     "HousingCompanyType",
     "OwnershipType",
     "OwnerType",
+    "People",
     "PostalCodeType",
     "PropertyManagerType",
     "RealEstateType",
@@ -110,12 +115,57 @@ class OwnershipType(DjangoObjectType):
 
 class ApartmentNode(DjangoObjectType):
     class Meta:
-        model = Apartment
+        model = ApartmentProxy
         filter_fields = {
             "street_address": ["exact"],
             "building__name": ["exact"],
         }
         interfaces = (relay.Node,)
+
+
+# Django-filters
+
+
+class HousingCompanyFilterSet(FilterSet):
+    order_by = OrderingFilter(
+        fields=[
+            "name",
+            "street_address",
+            "postal_code__code",
+            "city",
+            "developers__name",
+        ],
+    )
+
+    address = CharFilter(method="")
+
+    class Meta:
+        model = HousingCompany
+        fields = {
+            "name": ["iexact", "icontains"],
+            "street_address": ["iexact", "icontains"],
+            "postal_code__code": ["iexact"],
+            "city": ["iexact", "icontains"],
+            "developers__name": ["iexact", "icontains"],
+        }
+
+    def filter_address(self, qs: QuerySet[HousingCompany], name: str, value: str) -> QuerySet[HousingCompany]:
+        return qs.alias(
+            _address=Concat(
+                F("street_address"),
+                Value(", "),
+                F("postal_code__code"),
+                Value(" "),
+                F("city"),
+            ),
+        ).filter(_address__icontains=value)
+
+
+class HousingCompanyNode(DjangoObjectType):
+    class Meta:
+        model = HousingCompanyProxy
+        interfaces = (relay.Node,)
+        filterset_class = HousingCompanyFilterSet
 
 
 # Union

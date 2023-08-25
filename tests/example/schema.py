@@ -29,6 +29,7 @@ from .types import (
     ApartmentType,
     BuildingType,
     DeveloperType,
+    HousingCompanyNode,
     HousingCompanyType,
     OwnershipType,
     OwnerType,
@@ -99,6 +100,7 @@ class Query(graphene.ObjectType):
 
     apartment = relay.Node.Field(ApartmentNode)
     paged_apartments = DjangoFilterConnectionField(ApartmentNode)
+    paged_housing_companies = DjangoFilterConnectionField(HousingCompanyNode)
 
     all_people = graphene.List(People)
 

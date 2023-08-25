@@ -34,7 +34,7 @@ def get_from_query_cache(
     store: "QueryOptimizerStore",
 ) -> Optional[TModel]:
     """
-    Get model instance from query cache for the given 'field_type'.
+    Get model instance from query cache.
     Key should be any hashable value that is present only for the duration of
     a single request, e.g., 'info.operation'.
     """
@@ -50,8 +50,7 @@ def store_in_query_cache(
     store: "QueryOptimizerStore",
 ) -> None:
     """
-    Set all models in list (as well as any select related models)
-    to the query cache for the given 'field_type'.
+    Set all models in list (as well as any select related models) to the query cache.
     Key should be any hashable value that is present only for the duration of
     a single request, e.g., 'info.operation'.
     """

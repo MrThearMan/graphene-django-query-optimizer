@@ -51,7 +51,7 @@ def optimize(queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
     optimizer = QueryOptimizer(info)
     store = optimizer.optimize_selections(field_type, selections, queryset.model)
 
-    # Pk stored in 'query_optimizer.types.DjangoObjectType.get_node'
+    # PK stored in 'query_optimizer.types.DjangoObjectType.get_node'
     pk: PK = getattr(queryset, PK_CACHE_KEY, None)
 
     if pk is not None:
@@ -171,7 +171,7 @@ class QueryOptimizer:
         model_fields: Iterable[ModelField],
         store: QueryOptimizerStore,
         prefix: str = "",
-    ) -> bool:
+    ) -> None:
         for model_field in model_fields:
             model_field_name = model_field.name
             if prefix:
@@ -179,7 +179,7 @@ class QueryOptimizer:
 
             if field_name == model_field_name:
                 store.only_fields.append(model_field.name)
-                return True
+                return
 
             if field_name.startswith(model_field_name):
                 related_model: Optional[type[Model]] = model_field.related_model

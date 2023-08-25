@@ -7,7 +7,7 @@ from graphql_relay.connection.connection import ConnectionType
 
 from .cache import store_in_query_cache
 from .optimizer import QueryOptimizer
-from .typing import Any, Callable, GQLInfo, Optional, TypeVar
+from .typing import Any, Callable, GQLInfo, Optional, TypeAlias, TypeVar
 from .utils import get_field_type, get_selections
 
 TModel = TypeVar("TModel", bound=Model)
@@ -17,34 +17,25 @@ __all__ = [
     "DjangoConnectionField",
 ]
 
+Args: TypeAlias = tuple[
+    Callable[..., Optional[Manager[TModel]]],  # resolver
+    Connection,  # connection
+    Manager[TModel],  # default_manager
+    Callable[..., QuerySet[TModel]],  # queryset_resolver
+    int,  # max_limit
+    bool,  # enforce_first_or_last
+    Optional[Model],  # enforce_first_or_last
+    GQLInfo,  # info
+]
+
 
 class ConnectionFieldCachingMixin:
     @classmethod
-    def connection_resolver(  # noqa: PLR0913
-        cls,
-        resolver: Callable[..., Optional[Manager[TModel]]],
-        connection: Connection,
-        default_manager: Manager[TModel],
-        queryset_resolver: Callable[..., QuerySet[TModel]],
-        max_limit: int,
-        enforce_first_or_last: bool,  # noqa: FBT001
-        root: Optional[Model],
-        info: GQLInfo,
-        **args: Any,
-    ) -> ConnectionType:
+    def connection_resolver(cls, *args: Any, **kwargs: Any) -> ConnectionType:
+        args: Args  # type: ignore[no-redef]
         connection_field: graphene_django.fields.DjangoConnectionField = super()  # type: ignore[override]
-        connection_type: ConnectionType = connection_field.connection_resolver(
-            resolver,
-            connection,
-            default_manager,
-            queryset_resolver,
-            max_limit,
-            enforce_first_or_last,
-            root,
-            info,
-            **args,
-        )
-        cache_edges(connection_type.edges, default_manager.model, info)
+        connection_type: ConnectionType = connection_field.connection_resolver(*args, **kwargs)
+        cache_edges(connection_type.edges, args[2].model, args[7])
         return connection_type
 
 
