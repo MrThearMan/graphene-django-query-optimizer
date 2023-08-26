@@ -1,20 +1,19 @@
-.PHONY: help
+.PHONY: create-user
 .PHONY: dev
 .PHONY: docs
-.PHONY: generate
 .PHONY: flush
-.PHONY: migrations
-.PHONY: migrate
-.PHONY: create-user
-.PHONY: setup
-.PHONY: tests
-.PHONY: test
-.PHONY: tox
+.PHONY: generate
+.PHONY: help
 .PHONY: hook
-.PHONY: pre-commit
-.PHONY: pre-commit-update
-.PHONY: mypy
+.PHONY: lint
 .PHONY: Makefile
+.PHONY: migrate
+.PHONY: migrations
+.PHONY: mypy
+.PHONY: setup
+.PHONY: test
+.PHONY: tests
+.PHONY: tox
 
 # Trick to allow passing commands to make
 # Use quotes (" ") if command contains flags (-h / --help)
@@ -28,21 +27,20 @@ define helptext
 
   Commands:
 
+  create-user          Create a superuser called "x" with password of "x"
   dev                  Serve manual testing server
   docs                 Serve mkdocs for development.
-  generate             Generate test data.
   flush                Flush database.
-  migrations           Make migrations.
-  migrate              Migrate database.
-  create-user          Create a superuser called "x" with password of "x"
-  setup                Make migrations, apply them, and add a superuser
-  tests                Run all tests with coverage.
-  test <name>          Run all tests maching the given <name>
-  tox                  Run all tests with tox.
+  generate             Generate test data.
   hook                 Install pre-commit hook.
-  pre-commit           Run pre-commit hooks on all files.
-  pre-commit-update    Update all pre-commit hooks to latest versions.
+  lint                 Run pre-commit hooks on all files.
+  migrate              Migrate database.
+  migrations           Make migrations.
   mypy                 Run mypy on all files.
+  setup                Make migrations, apply them, and add a superuser
+  test <name>          Run all tests maching the given <name>
+  tests                Run all tests with coverage.
+  tox                  Run all tests with tox.
 
   Use quotes (" ") if command contains flags (-h / --help)
 endef
@@ -52,46 +50,43 @@ export helptext
 help:
 	@echo "$$helptext"
 
-dev:
-	@poetry run python manage.py runserver localhost:8000
-
-generate:
-	@poetry run python manage.py create_test_data
-
-flush:
-	@poetry run python manage.py flush --no-input
-
-migrations:
-	@poetry run python manage.py makemigrations
-
-migrate:
-	@poetry run python manage.py migrate
-
 create-user:
 	@DJANGO_SUPERUSER_PASSWORD=x poetry run python manage.py createsuperuser --username x --email user@user.com --no-input
 
-setup: migrations migrate create-user
+dev:
+	@poetry run python manage.py runserver localhost:8000
 
 docs:
 	@poetry run mkdocs serve -a localhost:8080
 
-tests:
-	@poetry run coverage run -m pytest
+flush:
+	@poetry run python manage.py flush --no-input
 
-test:
-	@poetry run pytest -k $(call args, "")
-
-tox:
-	@poetry run tox
+generate:
+	@poetry run python manage.py create_test_data
 
 hook:
 	@poetry run pre-commit install
 
-pre-commit:
+lint:
 	@poetry run pre-commit run --all-files
 
-pre-commit-update:
-	@poetry run pre-commit autoupdate
+migrate:
+	@poetry run python manage.py migrate
+
+migrations:
+	@poetry run python manage.py makemigrations
 
 mypy:
 	@poetry run mypy query_optimizer/
+
+setup: migrations migrate create-user
+
+test:
+	@poetry run pytest -k $(call args, "")
+
+tests:
+	@poetry run coverage run -m pytest
+
+tox:
+	@poetry run tox
