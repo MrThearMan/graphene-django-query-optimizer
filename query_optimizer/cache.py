@@ -22,6 +22,20 @@ __all__ = [
 
 
 def get_query_cache(key: Hashable, schema: GraphQLSchema) -> QueryCache:
+    """Get or create a cache for storing model instances.
+    Cache is implemented as a WeakKeyDictionary on the given key,
+    stored in the given schema object.
+
+    Items in the cache are stored first by their database table, then by
+    their selected fields (as determined by QueryOptimizerStore), and lastly
+    by their primary key. The first two levels of the hierarchy are implemented
+    as defaultdicts.
+
+    :param key: Any hashable value that is present only for the duration of
+                a single request, e.g., 'info.operation'.
+    :param schema: The GraphQLSchema object where the cache will exist.
+    :return: The cache.
+    """
     cache = schema.extensions.setdefault("_query_cache", WeakKeyDictionary())
     return cache.setdefault(key, defaultdict(lambda: defaultdict(dict)))  # type: ignore[no-any-return]
 
@@ -33,10 +47,16 @@ def get_from_query_cache(
     pk: PK,
     store: "QueryOptimizerStore",
 ) -> Optional[TModel]:
-    """
-    Get model instance from query cache.
-    Key should be any hashable value that is present only for the duration of
-    a single request, e.g., 'info.operation'.
+    """Get the given model instance from query cache.
+
+    :param key: Any hashable value that is present only for the duration of
+                a single request, e.g., 'info.operation'.
+    :param schema: The GraphQLSchema object where the cache exists.
+    :param model: The model type to look for.
+    :param pk: The primary key of the model instance to look for.
+    :param store: The QueryOptimizerStore describing the fields that
+                  should have been fetched on the model instance.
+    :return: The Model instance if it exists in the cache, None if not.
     """
     store_str = str(store)
     query_cache = get_query_cache(key, schema)
@@ -49,13 +69,18 @@ def store_in_query_cache(
     schema: GraphQLSchema,
     store: "QueryOptimizerStore",
 ) -> None:
-    """
-    Set all models in list (as well as any select related models) to the query cache.
-    Key should be any hashable value that is present only for the duration of
-    a single request, e.g., 'info.operation'.
+    """Set all given models, as well as any related models joined to them
+    as described by the given QueryOptimizerStore, to the query cache.
+
+    :param key: Any hashable value that is present only for the duration of
+                a single request, e.g., 'info.operation'.
+    :param items: Model instances that should be stored in the query cache.
+    :param schema: The GraphQLSchema object where the cache exists.
+    :param store: The QueryOptimizerStore describing the fields that
+                  are fetched on the model instances.
     """
     query_cache = get_query_cache(key, schema)
-    items = list(items)
+    items = list(items)  # For QuerySets, the database query will occur here
     annotations = _get_annotations(items[0])
     for item in items:
         _add_item(query_cache, item, annotations, store)

@@ -30,12 +30,14 @@ Args: TypeAlias = tuple[
 
 
 class ConnectionFieldCachingMixin:
+    """Mixin to add query caching to connection fields."""
+
     @classmethod
     def connection_resolver(cls, *args: Any, **kwargs: Any) -> ConnectionType:
         args: Args  # type: ignore[no-redef]
         connection_field: graphene_django.fields.DjangoConnectionField = super()  # type: ignore[override]
         connection_type: ConnectionType = connection_field.connection_resolver(*args, **kwargs)
-        cache_edges(connection_type.edges, args[2].model, args[7])
+        cache_edges(edges=connection_type.edges, info=args[7])
         return connection_type
 
 
@@ -46,14 +48,19 @@ class DjangoConnectionField(
     pass
 
 
-def cache_edges(edges: list[EdgeType], model: type[Model], info: GQLInfo) -> None:
+def cache_edges(edges: list[EdgeType], info: GQLInfo) -> None:
+    """Cache edges received from a connection in the query cache.
+
+    :param edges: Edges containing the fetched models.
+    :param info: The GraphQLResolveInfo object used in the optimization process.
+    """
     if not edges:
         return
 
     field_type = get_field_type(info)
     selections = get_selections(info)
     optimizer = QueryOptimizer(info)
-    store = optimizer.optimize_selections(field_type, selections, model)
+    store = optimizer.optimize_selections(field_type, selections, model=type(edges[0].node))
     store_in_query_cache(
         key=info.operation,
         items=(edge.node for edge in edges),

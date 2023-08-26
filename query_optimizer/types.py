@@ -16,6 +16,8 @@ __all__ = [
 
 
 class DjangoObjectType(graphene_django.types.DjangoObjectType):
+    """DjangoObjectType that automatically optimizes its queryset."""
+
     class Meta:
         abstract = True
 

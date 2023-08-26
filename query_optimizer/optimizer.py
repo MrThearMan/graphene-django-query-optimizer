@@ -43,6 +43,13 @@ __all__ = [
 
 
 def optimize(queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
+    """Optimize the given queryset according to the field selections
+    received in the GraphQLResolveInfo.
+
+    :param queryset: Base queryset to optimize from.
+    :param info: The GraphQLResolveInfo object used in the optimization process.
+    :return: The optimized queryset.
+    """
     field_type = get_field_type(info)
     selections = get_selections(info)
     if not selections:  # pragma: no cover
@@ -68,6 +75,14 @@ def optimize(queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
 
 
 def required_fields(*fields: str) -> Callable[[TCallable], TCallable]:
+    """Annotate custom field resolver to require given fields
+    in relation to its DjangoObjectType model.
+
+    :param fields: Fields that the decorated resolver needs.
+                   Related entity fields can also be used with
+                   the field lookup syntax (e.g., 'related__field')
+    """
+
     def decorator(resolver: TCallable) -> TCallable:
         resolver.hints = fields  # type: ignore[attr-defined]
         return resolver
@@ -76,6 +91,8 @@ def required_fields(*fields: str) -> Callable[[TCallable], TCallable]:
 
 
 class QueryOptimizer:
+    """Query optimizer for Django QuerySets."""
+
     def __init__(self, info: GQLInfo) -> None:
         self.info = info
         self.cache_results = True
@@ -152,10 +169,10 @@ class QueryOptimizer:
 
         else:  # pragma: no cover
             msg = f"Unhandled selection: '{selection.name.value}'"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
     def add_hinted_fields(self, field: GraphQLField, model: type[Model], store: QueryOptimizerStore) -> None:
-        hints: Optional[tuple[str, ...]] = getattr(field.resolve, "hints", None)  # Use hinted fields
+        hints: Optional[tuple[str, ...]] = getattr(field.resolve, "hints", None)
         if hints is None:  # pragma: no cover
             return
 
@@ -185,13 +202,16 @@ class QueryOptimizer:
                 related_model: Optional[type[Model]] = model_field.related_model
                 if related_model is None:  # pragma: no cover
                     msg = f"No related model, but hint seems like has one: {field_name!r}"
-                    raise TypeError(msg)
+                    raise ValueError(msg)
 
                 nested_store = QueryOptimizerStore(model=related_model)
                 if is_to_many(model_field):
                     store.prefetch_stores[model_field.name] = (nested_store, related_model.objects.all())
-                else:  # 'many_to_one' or 'one_to_one'
+                elif is_to_one(model_field):
                     store.select_stores[model_field.name] = nested_store
+                else:  # pragma: no cover
+                    msg = f"Field {model_field} is not a related field."
+                    raise TypeError(msg)
 
                 if isinstance(model_field, ManyToOneRel):  # Add connecting entity
                     nested_store.only_fields.append(model_field.field.name)
