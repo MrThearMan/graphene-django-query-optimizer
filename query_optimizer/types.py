@@ -5,7 +5,8 @@ from graphene.types.definitions import GrapheneObjectType
 from graphql.type.definition import GraphQLNonNull
 
 from .optimizer import optimize
-from .typing import PK, PK_CACHE_KEY, GQLInfo, Optional, TypeVar
+from .settings import optimizer_settings
+from .typing import PK, GQLInfo, Optional, TypeVar
 
 TModel = TypeVar("TModel", bound=Model)
 
@@ -22,6 +23,10 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         abstract = True
 
     @classmethod
+    def max_complexity(cls) -> int:
+        return optimizer_settings.MAX_COMPLEXITY  # type: ignore[no-any-return]
+
+    @classmethod
     def can_optimize_resolver(cls, info: GQLInfo) -> bool:
         return_type = info.return_type
         if isinstance(return_type, GraphQLNonNull):
@@ -34,12 +39,12 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
     @classmethod
     def get_queryset(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
         if cls.can_optimize_resolver(info):
-            queryset = optimize(queryset, info)
+            queryset = optimize(queryset, info, cls.max_complexity())
         return queryset
 
     @classmethod
     def get_node(cls, info: GQLInfo, id: PK) -> Optional[TModel]:  # noqa: A002
         queryset: QuerySet[TModel] = cls._meta.model.objects.all()
-        setattr(queryset, PK_CACHE_KEY, id)
+        setattr(queryset, optimizer_settings.PK_CACHE_KEY, id)
         queryset = cls.get_queryset(queryset, info)
         return queryset.first()

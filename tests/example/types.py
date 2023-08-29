@@ -91,6 +91,10 @@ class BuildingType(DjangoObjectType):
 
 
 class ApartmentType(DjangoObjectType):
+    @classmethod
+    def max_complexity(cls) -> int:
+        return 10
+
     class Meta:
         model = Apartment
 
@@ -114,6 +118,10 @@ class OwnershipType(DjangoObjectType):
 
 
 class ApartmentNode(DjangoObjectType):
+    @classmethod
+    def max_complexity(cls) -> int:
+        return 10
+
     class Meta:
         model = ApartmentProxy
         filter_fields = {

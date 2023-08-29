@@ -54,6 +54,7 @@ Django = ">=4.0"
 graphene-django = ">=3.0.0"
 django-filter = { version = ">=21.1", optional = true }
 typing-extensions = {version = ">=4.7.1", python = "<3.10"}
+django-settings-holder = ">=0.1.0"
 
 [tool.poetry.extras]
 filter = ["django-filter"]
@@ -210,6 +211,7 @@ deps =
     pytest-django
     faker
     sqlparse
+    django-settings-holder
 commands =
     coverage run -m pytest -vv -s --log-cli-level=INFO
 """

@@ -748,3 +748,54 @@ def test_optimizer_filter_order_by(client_query):
 
     queries = len(results.queries)
     assert queries == 2, results.message
+
+
+def test_optimizer_max_complexity_reached(client_query):
+    query = """
+        query {
+          allApartments {
+            building {
+              apartments {
+                building {
+                  apartments {
+                    building {
+                      apartments {
+                        building {
+                          apartments {
+                            building {
+                              apartments {
+                                 building {
+                                  name
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with count_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" in content, content["errors"]
+    errors = content["errors"]
+    assert len(errors) == 1, errors
+    assert "message" in content["errors"][0], errors
+    message = content["errors"][0]["message"]
+    assert message == "Query complexity of 11 exceeds the maximum allowed of 10"
+
+    assert "data" in content, content
+    assert "allApartments" in content["data"], content["data"]
+    apartments = content["data"]["allApartments"]
+    assert apartments is None
+
+    queries = len(results.queries)
+    assert queries == 0, results.message

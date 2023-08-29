@@ -5,6 +5,7 @@ from weakref import WeakKeyDictionary
 from django.db.models import Model, QuerySet
 from graphql import GraphQLSchema
 
+from .settings import optimizer_settings
 from .typing import PK, Hashable, Iterable, Optional, QueryCache, TableName, TypeVar
 
 if TYPE_CHECKING:
@@ -36,7 +37,7 @@ def get_query_cache(key: Hashable, schema: GraphQLSchema) -> QueryCache:
     :param schema: The GraphQLSchema object where the cache will exist.
     :return: The cache.
     """
-    cache = schema.extensions.setdefault("_query_cache", WeakKeyDictionary())
+    cache = schema.extensions.setdefault(optimizer_settings.QUERY_CACHE_KEY, WeakKeyDictionary())
     return cache.setdefault(key, defaultdict(lambda: defaultdict(dict)))  # type: ignore[no-any-return]
 
 

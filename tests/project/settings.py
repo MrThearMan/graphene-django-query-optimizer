@@ -123,3 +123,8 @@ with suppress(ImportError):
 
     INSTALLED_APPS += [graphiql_debug_toolbar.__name__]
     MIDDLEWARE.insert(0, "graphiql_debug_toolbar.middleware.DebugToolbarMiddleware")
+
+
+GRAPHQL_QUERY_OPTIMIZER = {
+    "MAX_COMPLEXITY": 10,
+}

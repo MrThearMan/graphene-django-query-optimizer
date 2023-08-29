@@ -14,10 +14,10 @@ from graphql import (
 )
 
 from .cache import get_from_query_cache, store_in_query_cache
+from .settings import optimizer_settings
 from .store import QueryOptimizerStore
 from .typing import (
     PK,
-    PK_CACHE_KEY,
     Callable,
     GQLInfo,
     Iterable,
@@ -42,12 +42,14 @@ __all__ = [
 ]
 
 
-def optimize(queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
+def optimize(queryset: QuerySet[TModel], info: GQLInfo, max_complexity: Optional[int] = None) -> QuerySet[TModel]:
     """Optimize the given queryset according to the field selections
     received in the GraphQLResolveInfo.
 
     :param queryset: Base queryset to optimize from.
     :param info: The GraphQLResolveInfo object used in the optimization process.
+    :param max_complexity: How many 'select_related' and 'prefetch_related' table joins are allowed.
+                           Used to protect from malicious queries.
     :return: The optimized queryset.
     """
     field_type = get_field_type(info)
@@ -58,8 +60,14 @@ def optimize(queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
     optimizer = QueryOptimizer(info)
     store = optimizer.optimize_selections(field_type, selections, queryset.model)
 
+    max_complexity = max_complexity if max_complexity is not None else optimizer_settings.MAX_COMPLEXITY
+    complexity = store.complexity
+    if complexity > max_complexity:
+        msg = f"Query complexity of {complexity} exceeds the maximum allowed of {max_complexity}"
+        raise RuntimeError(msg)
+
     # PK stored in 'query_optimizer.types.DjangoObjectType.get_node'
-    pk: PK = getattr(queryset, PK_CACHE_KEY, None)
+    pk: PK = getattr(queryset, optimizer_settings.PK_CACHE_KEY, None)
 
     if pk is not None:
         cached_item = get_from_query_cache(info.operation, info.schema, queryset.model, pk, store)

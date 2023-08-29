@@ -22,6 +22,8 @@ class CompilationResults:
 
 
 class QueryOptimizerStore:
+    """Store for holding optimization data."""
+
     def __init__(self, model: type[Model]) -> None:
         self.model = model
         self.only_fields: list[str] = []
@@ -85,6 +87,15 @@ class QueryOptimizerStore:
             queryset = queryset.filter(pk=pk)
 
         return queryset
+
+    @property
+    def complexity(self) -> int:
+        value: int = 0
+        for store in self.select_stores.values():
+            value += store.complexity
+        for store, _ in self.prefetch_stores.values():
+            value += store.complexity
+        return value + len(self.select_stores) + len(self.prefetch_stores)
 
     def __add__(self, other: "QueryOptimizerStore") -> "QueryOptimizerStore":
         self.only_fields += other.only_fields

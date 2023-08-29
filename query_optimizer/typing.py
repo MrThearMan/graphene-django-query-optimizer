@@ -36,7 +36,6 @@ __all__ = [
     "NamedTuple",
     "Optional",
     "PK",
-    "PK_CACHE_KEY",
     "QueryCache",
     "StoreStr",
     "TableName",
@@ -62,5 +61,3 @@ ModelField: TypeAlias = Union[Field, ForeignObjectRel, GenericForeignKey]
 ToManyField: TypeAlias = Union[GenericRelation, ManyToManyField, ManyToOneRel, ManyToManyRel]
 ToOneField: TypeAlias = Union[GenericRelation, ForeignObject, ForeignKey, OneToOneField]
 TypeOptions: TypeAlias = Union[DjangoObjectTypeOptions, ConnectionOptions]
-
-PK_CACHE_KEY = "_query_optimizer_model_pk"
