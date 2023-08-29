@@ -67,6 +67,7 @@ In total, that's...
 
 It's important to notice, that the amount of queries is proportional to the
 amount of records in our database, so the number of queries is only going to increase.
+This is called an [N+1 problem].
 
 We are also over-fetching all fields on each model, and not taking advantage of
 GraphQLs schema at all.
@@ -114,6 +115,7 @@ See [technical details] on how this works.
 
 
 [schema]: https://github.com/MrThearMan/graphene-django-query-optimizer/blob/main/tests/example/models.py
+[N+1 problem]: https://stackoverflow.com/a/97253
 [prev]: https://github.com/tfoxy/graphene-django-optimizer
 [only]: https://docs.djangoproject.com/en/dev/ref/models/querysets/#only
 [technical details]: https://mrthearman.github.io/graphene-django-query-optimizer/technical/
