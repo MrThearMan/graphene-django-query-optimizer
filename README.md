@@ -26,8 +26,8 @@ pip install graphene-django-query-optimizer
 Solve the GraphQL [N+1 problem] in [graphene-django] applications with _**a single function**_
 <small>(plus a few classes that call it)</small> that adds the appropriate
 [`only`](https://docs.djangoproject.com/en/dev/ref/models/querysets/#only),
-[`select_related`](https://docs.djangoproject.com/en/dev/ref/models/querysets/#prefetch-related),
-and [`prefetch_related`](https://docs.djangoproject.com/en/dev/ref/models/querysets/#select-related)
+[`select_related`](https://docs.djangoproject.com/en/dev/ref/models/querysets/#select-related),
+and [`prefetch_related`](https://docs.djangoproject.com/en/dev/ref/models/querysets/#prefetch-related)
 method calls to your QuerySets to fetch _only_ what you need.
 
 ```python
