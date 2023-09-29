@@ -12,13 +12,12 @@ SETTING_NAME: str = "GRAPHQL_QUERY_OPTIMIZER"
 
 class DefaultSettings(NamedTuple):
     QUERY_CACHE_KEY: str = "_query_cache"
-    PK_CACHE_KEY: str = "_query_optimizer_model_pk"
     MAX_COMPLEXITY: int = 10
 
 
 DEFAULTS: dict[str, Any] = DefaultSettings()._asdict()
 IMPORT_STRINGS: set[Union[bytes, str]] = set()
-REMOVED_SETTINGS: set[str] = set()
+REMOVED_SETTINGS: set[str] = {"PK_CACHE_KEY"}
 
 optimizer_settings = SettingsHolder(
     setting_name=SETTING_NAME,

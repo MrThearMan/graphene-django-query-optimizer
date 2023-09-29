@@ -29,7 +29,14 @@ from .typing import (
     TypeVar,
     Union,
 )
-from .utils import get_field_type, get_selections, get_underlying_type, is_foreign_key_id, is_to_many, is_to_one
+from .utils import (
+    get_field_type,
+    get_selections,
+    get_underlying_type,
+    is_foreign_key_id,
+    is_to_many,
+    is_to_one,
+)
 
 TModel = TypeVar("TModel", bound=Model)
 TCallable = TypeVar("TCallable", bound=Callable)
@@ -42,7 +49,12 @@ __all__ = [
 ]
 
 
-def optimize(queryset: QuerySet[TModel], info: GQLInfo, max_complexity: Optional[int] = None) -> QuerySet[TModel]:
+def optimize(
+    queryset: QuerySet[TModel],
+    info: GQLInfo,
+    max_complexity: Optional[int] = None,
+    pk: PK = None,
+) -> QuerySet[TModel]:
     """Optimize the given queryset according to the field selections
     received in the GraphQLResolveInfo.
 
@@ -50,6 +62,8 @@ def optimize(queryset: QuerySet[TModel], info: GQLInfo, max_complexity: Optional
     :param info: The GraphQLResolveInfo object used in the optimization process.
     :param max_complexity: How many 'select_related' and 'prefetch_related' table joins are allowed.
                            Used to protect from malicious queries.
+    :param pk: Primary key for an item in the queryset model. If set, optimizer will check
+               the query cache for that primary key before making query.
     :return: The optimized queryset.
     """
     field_type = get_field_type(info)
@@ -65,9 +79,6 @@ def optimize(queryset: QuerySet[TModel], info: GQLInfo, max_complexity: Optional
     if complexity > max_complexity:
         msg = f"Query complexity of {complexity} exceeds the maximum allowed of {max_complexity}"
         raise RuntimeError(msg)
-
-    # PK stored in 'query_optimizer.types.DjangoObjectType.get_node'
-    pk: PK = getattr(queryset, optimizer_settings.PK_CACHE_KEY, None)
 
     if pk is not None:
         cached_item = get_from_query_cache(info.operation, info.schema, queryset.model, pk, store)
