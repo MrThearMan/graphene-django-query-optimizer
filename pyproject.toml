@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "graphene-django-query-optimizer"
-version = "0.0.5"
+version = "0.0.6"
 description = "Automatically optimize SQL queries in Graphene-Django schemas."
 authors = [
     "Matti Lamppu <lamppu.matti.akseli@gmail.com>",
