@@ -23,7 +23,8 @@ __all__ = [
 
 
 def get_query_cache(key: Hashable, schema: GraphQLSchema) -> QueryCache:
-    """Get or create a cache for storing model instances.
+    """
+    Get or create a cache for storing model instances.
     Cache is implemented as a WeakKeyDictionary on the given key,
     stored in the given schema object.
 
@@ -48,7 +49,8 @@ def get_from_query_cache(
     pk: PK,
     store: "QueryOptimizerStore",
 ) -> Optional[TModel]:
-    """Get the given model instance from query cache.
+    """
+    Get the given model instance from query cache.
 
     :param key: Any hashable value that is present only for the duration of
                 a single request, e.g., 'info.operation'.
@@ -70,7 +72,8 @@ def store_in_query_cache(
     schema: GraphQLSchema,
     store: "QueryOptimizerStore",
 ) -> None:
-    """Set all given models, as well as any related models joined to them
+    """
+    Set all given models, as well as any related models joined to them
     as described by the given QueryOptimizerStore, to the query cache.
 
     :param key: Any hashable value that is present only for the duration of

@@ -49,7 +49,8 @@ class DjangoConnectionField(
 
 
 def cache_edges(edges: list[EdgeType], info: GQLInfo) -> None:
-    """Cache edges received from a connection in the query cache.
+    """
+    Cache edges received from a connection in the query cache.
 
     :param edges: Edges containing the fetched models.
     :param info: The GraphQLResolveInfo object used in the optimization process.

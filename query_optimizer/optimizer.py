@@ -55,7 +55,8 @@ def optimize(
     max_complexity: Optional[int] = None,
     pk: PK = None,
 ) -> QuerySet[TModel]:
-    """Optimize the given queryset according to the field selections
+    """
+    Optimize the given queryset according to the field selections
     received in the GraphQLResolveInfo.
 
     :param queryset: Base queryset to optimize from.
@@ -94,7 +95,8 @@ def optimize(
 
 
 def required_fields(*fields: str) -> Callable[[TCallable], TCallable]:
-    """Annotate custom field resolver to require given fields
+    """
+    Annotate custom field resolver to require given fields
     in relation to its DjangoObjectType model.
 
     :param fields: Fields that the decorated resolver needs.
@@ -151,12 +153,11 @@ class QueryOptimizer:
         if isinstance(options, ConnectionOptions):
             return self.handle_connection_node(field_type, selection, store)
 
-        elif isinstance(options, DjangoObjectTypeOptions):
+        if isinstance(options, DjangoObjectTypeOptions):
             return self.handle_regular_node(field_type, selection, store)
 
-        else:  # pragma: no cover
-            msg = f"Unhandled field options type: {options}"
-            raise TypeError(msg)
+        msg = f"Unhandled field options type: {options}"  # pragma: no cover
+        raise TypeError(msg)  # pragma: no cover
 
     def handle_regular_node(
         self,
@@ -215,7 +216,7 @@ class QueryOptimizer:
 
             if field_name == model_field_name:
                 store.only_fields.append(model_field.name)
-                return
+                return None
 
             if field_name.startswith(model_field_name):
                 related_model: Optional[type[Model]] = model_field.related_model
