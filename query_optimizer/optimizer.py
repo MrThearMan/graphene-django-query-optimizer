@@ -68,7 +68,7 @@ def optimize(
     :return: The optimized queryset.
     """
     # Check if prior optimization has been done already
-    if queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False):
+    if queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False):  # type: ignore[attr-defined]
         return queryset
 
     field_type = get_field_type(info)

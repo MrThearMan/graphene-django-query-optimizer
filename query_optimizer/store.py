@@ -88,7 +88,7 @@ class QueryOptimizerStore:
             queryset = queryset.filter(pk=pk)
 
         # Mark queryset as optimized so that later optimizers know to skip optimization
-        queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True
+        queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True  # type: ignore[attr-defined]
 
         return queryset
 
