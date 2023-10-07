@@ -23,8 +23,8 @@ pip install graphene-django-query-optimizer
 
 ---
 
-Solve the GraphQL [N+1 problem] in [graphene-django] applications with _**a single function**_
-<small>(plus a few classes that call it)</small> that adds the appropriate
+Solve the GraphQL [N+1 problem] in [graphene-django] applications
+just by changing a few imports, automatically adding the appropriate
 [`only`](https://docs.djangoproject.com/en/dev/ref/models/querysets/#only),
 [`select_related`](https://docs.djangoproject.com/en/dev/ref/models/querysets/#select-related),
 and [`prefetch_related`](https://docs.djangoproject.com/en/dev/ref/models/querysets/#prefetch-related)
@@ -32,19 +32,18 @@ method calls to your QuerySets to fetch _only_ what you need.
 
 ```python
 import graphene
-# from graphene_django import DjangoObjectType  # old imports
-from query_optimizer import DjangoObjectType, optimize  # new imports
+from graphene_django import DjangoListField
 from example import ExampleModel
+
+# from graphene_django import DjangoObjectType  # old import
+from query_optimizer import DjangoObjectType  # new import
 
 class ExampleType(DjangoObjectType):
     class Meta:
         model = ExampleModel
 
 class Query(graphene.ObjectType):
-    all_examples = graphene.List(ExampleType)
-
-    def resolve_examples(root, info):
-        return optimize(ExampleModel.objects.all(), info)  # Optimized!
+    all_examples = DjangoListField(ExampleType)
 
 schema = graphene.Schema(query=Query)
 ```

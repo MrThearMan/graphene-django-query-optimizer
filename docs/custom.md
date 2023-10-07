@@ -1,6 +1,6 @@
 # Custom fields
 
-Custom fields can be added to GraphQL types.
+GraphQL types can have non-model fields using custom resolvers.
 
 ```python
 import graphene
@@ -18,7 +18,7 @@ class HousingCompanyType(DjangoObjectType):
         return f"Hello World!"
 ```
 
-If the custom type requires fields from it's related models to resolve,
+If the custom type requires fields from its related models to resolve,
 you can use the included `required_fields` decorator to make sure they
 are fetched from the database.
 

@@ -67,6 +67,10 @@ def optimize(
                the query cache for that primary key before making query.
     :return: The optimized queryset.
     """
+    # Check if prior optimization has been done already
+    if queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False):
+        return queryset
+
     field_type = get_field_type(info)
     selections = get_selections(info)
     if not selections:  # pragma: no cover

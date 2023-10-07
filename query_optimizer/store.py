@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from django.db.models import Model, Prefetch, QuerySet
 from django.db.models.constants import LOOKUP_SEP
 
+from .settings import optimizer_settings
 from .typing import PK, TypeVar
 from .utils import unique
 
@@ -85,6 +86,9 @@ class QueryOptimizerStore:
             queryset = queryset.only(*results.only_fields)
         if pk is not None:
             queryset = queryset.filter(pk=pk)
+
+        # Mark queryset as optimized so that later optimizers know to skip optimization
+        queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True
 
         return queryset
 

@@ -12,7 +12,11 @@ SETTING_NAME: str = "GRAPHQL_QUERY_OPTIMIZER"
 
 class DefaultSettings(NamedTuple):
     QUERY_CACHE_KEY: str = "_query_cache"
+    """Key to store fetched model instances under in the GraphQL schema extensions."""
+    OPTIMIZER_MARK: str = "_optimized"
+    """Key used mark if a queryset has been optimized by the query optimizer."""
     MAX_COMPLEXITY: int = 10
+    """Default max number of 'select_related' and 'prefetch related' joins optimizer is allowed to optimize."""
 
 
 DEFAULTS: dict[str, Any] = DefaultSettings()._asdict()

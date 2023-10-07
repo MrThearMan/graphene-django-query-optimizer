@@ -2,7 +2,7 @@ from django.db.models import ForeignKey
 from graphene import Connection
 from graphene.types.definitions import GrapheneObjectType
 from graphene_django import DjangoObjectType
-from graphql import GraphQLNonNull, GraphQLOutputType, SelectionNode
+from graphql import GraphQLOutputType, SelectionNode
 from graphql.execution.execute import get_field_def
 
 from .typing import Collection, GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard, TypeVar
@@ -56,9 +56,7 @@ def unique(items: Collection[T]) -> list[T]:
 
 
 def can_optimize(info: GQLInfo) -> bool:
-    return_type = info.return_type
-    if isinstance(return_type, GraphQLNonNull):
-        return_type = return_type.of_type
+    return_type = get_underlying_type(info.return_type)
 
     return isinstance(return_type, GrapheneObjectType) and (
         issubclass(return_type.graphene_type, (DjangoObjectType, Connection))

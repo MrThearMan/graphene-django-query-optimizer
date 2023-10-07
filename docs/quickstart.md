@@ -6,7 +6,7 @@ Let's say we have defined a graphql schema like this:
 
 ```python
 import graphene
-from graphene_django import DjangoObjectType
+from graphene_django import DjangoObjectType, DjangoListField
 from tests.example.models import Apartment
 
 class ApartmentType(DjangoObjectType):
@@ -16,11 +16,7 @@ class ApartmentType(DjangoObjectType):
 class Query(graphene.ObjectType):
     # Imagine the rest of the types are also here,
     # and we omit it for brevity.
-
-    all_apartments = graphene.List(ApartmentType)
-
-    def resolve_all_apartments(root, info):
-        return Apartment.objects.all()
+    all_apartments = DjangoListField(ApartmentType)
 
 schema = graphene.Schema(query=Query)
 ```
@@ -78,12 +74,30 @@ This is the issue this library hopes to solve.
 > The library seem to no longer work in modern versions of Django.
 > Hopefully this library can replace it, while offering a cleaner API.
 
-We can optimize this query by simply using `DjangoObjectType` from `query_optimizer`,
-and wrapping our queryset in the `optimize` function, like this:
+We can optimize this query by simply using `DjangoObjectType` from `query_optimizer`
+instead of `graphene_django`
 
 ```python
 import graphene
-from query_optimizer import DjangoObjectType, optimize  # replaced imports
+from graphene_django import DjangoListField
+from query_optimizer import DjangoObjectType  # new import
+from tests.example.models import Apartment
+
+class ApartmentType(DjangoObjectType):
+    class Meta:
+        model = Apartment
+
+class Query(graphene.ObjectType):
+    all_apartments = DjangoListField(ApartmentType)
+
+schema = graphene.Schema(query=Query)
+```
+
+We could also use the `optimize` function to wrap a custom resolver queryset:
+
+```python
+import graphene
+from query_optimizer import DjangoObjectType, optimize  # new import
 from tests.example.models import Apartment
 
 class ApartmentType(DjangoObjectType):

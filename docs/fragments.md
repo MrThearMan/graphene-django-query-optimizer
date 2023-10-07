@@ -17,25 +17,7 @@ fragment Shares on ApartmentType {
 }
 ```
 
-Fragments spreads like these are also optimized.
-
-```python
-import graphene
-from query_optimizer import DjangoObjectType, optimize
-from tests.example.models import Apartment
-
-class ApartmentType(DjangoObjectType):
-    class Meta:
-        model = Apartment
-
-class Query(graphene.ObjectType):
-    all_apartments = graphene.List(ApartmentType)
-
-    def resolve_all_apartments(root, info):
-        return optimize(Apartment.objects.all(), info)
-
-schema = graphene.Schema(query=Query)
-```
+Fragments spreads like these are optimized without any additional setup.
 
 ## Inline fragments
 
@@ -70,6 +52,7 @@ query {
 ```
 
 Inline fragments like these can also be optimized.
+Here is how you would construct a resolver like this:
 
 ```python
 import itertools

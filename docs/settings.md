@@ -1,0 +1,17 @@
+# Settings
+
+Here are the available settings.
+
+| Setting           | Type | Default        | Description                                                                                           |
+|-------------------|------|----------------|-------------------------------------------------------------------------------------------------------|
+| `QUERY_CACHE_KEY` | str  | "_query_cache" | Key to store fetched model instances under in the GraphQL schema extensions.                          |
+| `OPTIMIZER_MARK`  | str  | "_optimized"   | Key used mark if a queryset has been optimized by the query optimizer.                                |
+| `MAX_COMPLEXITY`  | int  | 10             | Default max number of `select_related` and `prefetch_related` joins optimizer is allowed to optimize. |
+
+Set them under the `GRAPHQL_QUERY_OPTIMIZER` key in your projects `settings.py` like this:
+
+```python
+GRAPHQL_QUERY_OPTIMIZER = {
+    "MAX_COMPLEXITY": 10,
+}
+```
