@@ -1,3 +1,5 @@
+export DJANGO_SETTINGS_MODULE = tests.project.settings
+
 .PHONY: create-user
 .PHONY: dev
 .PHONY: docs
