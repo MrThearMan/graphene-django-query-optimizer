@@ -82,7 +82,7 @@ class QueryOptimizerStore:
             queryset = queryset.prefetch_related(*results.prefetch_related)
         if results.select_related:
             queryset = queryset.select_related(*results.select_related)
-        if results.only_fields:
+        if results.only_fields and not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION:
             queryset = queryset.only(*results.only_fields)
         if pk is not None:
             queryset = queryset.filter(pk=pk)
