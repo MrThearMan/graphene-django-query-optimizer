@@ -5,13 +5,12 @@ import pytest
 from django.http import HttpResponse
 from django.test.client import Client
 from graphene_django.utils.testing import graphql_query
-from pytest_django.plugin import _DatabaseBlocker
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tests.project.settings")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_database(django_db_blocker: _DatabaseBlocker) -> None:
+def setup_database(django_db_blocker) -> None:
     """Setup database."""
     from django.core.management import call_command
 
