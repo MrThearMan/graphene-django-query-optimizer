@@ -432,13 +432,13 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "faker"
-version = "19.12.1"
+version = "20.0.3"
 description = "Faker is a Python package that generates fake data for you."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Faker-19.12.1-py3-none-any.whl", hash = "sha256:02ae846940cc1a4d65dbda510fbc63a0d7b7de980f746d581d0a763b300eab24"},
-    {file = "Faker-19.12.1.tar.gz", hash = "sha256:ea511a6d8e56ae9705b1e583a500baa2ed2dc4c5a31e36e5ef0aa84eb76659e4"},
+    {file = "Faker-20.0.3-py3-none-any.whl", hash = "sha256:88316cfa7c8be892433bb10b2f1c2a7ce97246e18712680547e2fb1c4bd03912"},
+    {file = "Faker-20.0.3.tar.gz", hash = "sha256:f9af61c9223e1a3fd01ee2a48265352432f40a4fb21feb274d9d1d97b4943d75"},
 ]
 
 [package.dependencies]
@@ -1386,4 +1386,4 @@ filter = ["django-filter"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "1b675ced86d5bfd887a266e8c6f58a4ae2e9b05f290f6e0655ac0ca0357156d9"
+content-hash = "f9aefa86c4d648565e6fcb3bd20a2b9c5ec4a9f0383dd68ddf1485ff623c9d6c"
