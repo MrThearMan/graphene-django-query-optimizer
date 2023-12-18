@@ -1,10 +1,11 @@
-from django.db.models import ForeignKey
+from django.db.models import ForeignKey, QuerySet
 from graphene import Connection
 from graphene.types.definitions import GrapheneObjectType
 from graphene_django import DjangoObjectType
 from graphql import GraphQLOutputType, SelectionNode
 from graphql.execution.execute import get_field_def
 
+from .settings import optimizer_settings
 from .typing import Collection, GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard, TypeVar
 
 __all__ = [
@@ -12,8 +13,11 @@ __all__ = [
     "get_selections",
     "get_underlying_type",
     "is_foreign_key_id",
+    "is_optimized",
     "is_to_many",
     "is_to_one",
+    "mark_optimized",
+    "mark_unoptimized",
     "unique",
 ]
 
@@ -61,3 +65,18 @@ def can_optimize(info: GQLInfo) -> bool:
     return isinstance(return_type, GrapheneObjectType) and (
         issubclass(return_type.graphene_type, (DjangoObjectType, Connection))
     )
+
+
+def mark_optimized(queryset: QuerySet) -> None:
+    """Mark queryset as optimized so that later optimizers know to skip optimization"""
+    queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True  # type: ignore[attr-defined]
+
+
+def mark_unoptimized(queryset: QuerySet) -> None:
+    """Mark queryset as unoptimized so that later optimizers will run optimization"""
+    queryset._hints.pop(optimizer_settings.OPTIMIZER_MARK, None)  # type: ignore[attr-defined]
+
+
+def is_optimized(queryset: QuerySet) -> bool:
+    """Has the queryset be optimized?"""
+    return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)  # type: ignore[attr-defined]

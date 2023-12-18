@@ -5,7 +5,7 @@ from django.db.models.constants import LOOKUP_SEP
 
 from .settings import optimizer_settings
 from .typing import PK, TypeVar
-from .utils import unique
+from .utils import mark_optimized, unique
 
 TModel = TypeVar("TModel", bound=Model)
 
@@ -18,6 +18,7 @@ __all__ = [
 @dataclass
 class CompilationResults:
     only_fields: list[str]
+    related_fields: list[str]
     select_related: list[str]
     prefetch_related: list[Prefetch]
 
@@ -28,12 +29,14 @@ class QueryOptimizerStore:
     def __init__(self, model: type[Model]) -> None:
         self.model = model
         self.only_fields: list[str] = []
+        self.related_fields: list[str] = []
         self.select_stores: dict[str, "QueryOptimizerStore"] = {}
         self.prefetch_stores: dict[str, tuple["QueryOptimizerStore", QuerySet[Model]]] = {}
 
     def compile(self, *, in_prefetch: bool = False) -> CompilationResults:  # noqa: A003
         results = CompilationResults(
             only_fields=self.only_fields.copy(),
+            related_fields=self.related_fields.copy(),
             select_related=[],
             prefetch_related=[],
         )
@@ -82,14 +85,12 @@ class QueryOptimizerStore:
             queryset = queryset.prefetch_related(*results.prefetch_related)
         if results.select_related:
             queryset = queryset.select_related(*results.select_related)
-        if results.only_fields and not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION:
-            queryset = queryset.only(*results.only_fields)
+        if not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (results.only_fields or results.related_fields):
+            queryset = queryset.only(*results.only_fields, *results.related_fields)
         if pk is not None:
             queryset = queryset.filter(pk=pk)
 
-        # Mark queryset as optimized so that later optimizers know to skip optimization
-        queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True  # type: ignore[attr-defined]
-
+        mark_optimized(queryset)
         return queryset
 
     @property
@@ -103,6 +104,7 @@ class QueryOptimizerStore:
 
     def __add__(self, other: "QueryOptimizerStore") -> "QueryOptimizerStore":
         self.only_fields += other.only_fields
+        self.related_fields += other.related_fields
         self.select_stores.update(other.select_stores)
         self.prefetch_stores.update(other.prefetch_stores)
         return self

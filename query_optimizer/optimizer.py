@@ -34,6 +34,7 @@ from .utils import (
     get_selections,
     get_underlying_type,
     is_foreign_key_id,
+    is_optimized,
     is_to_many,
     is_to_one,
 )
@@ -52,8 +53,10 @@ __all__ = [
 def optimize(
     queryset: QuerySet[TModel],
     info: GQLInfo,
-    max_complexity: Optional[int] = None,
+    *,
     pk: PK = None,
+    max_complexity: Optional[int] = None,
+    repopulate: bool = False,
 ) -> QuerySet[TModel]:
     """
     Optimize the given queryset according to the field selections
@@ -61,14 +64,17 @@ def optimize(
 
     :param queryset: Base queryset to optimize from.
     :param info: The GraphQLResolveInfo object used in the optimization process.
-    :param max_complexity: How many 'select_related' and 'prefetch_related' table joins are allowed.
-                           Used to protect from malicious queries.
     :param pk: Primary key for an item in the queryset model. If set, optimizer will check
                the query cache for that primary key before making query.
+    :param max_complexity: How many 'select_related' and 'prefetch_related' table joins are allowed.
+                           Used to protect from malicious queries.
+    :param repopulate: If True, repopulates the QuerySet._result_cache from the optimizer cache.
+                       This should be used when additional filters are applied to the queryset
+                       after optimization.
     :return: The optimized queryset.
     """
     # Check if prior optimization has been done already
-    if queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False):  # type: ignore[attr-defined]
+    if not repopulate and is_optimized(queryset):
         return queryset
 
     field_type = get_field_type(info)
@@ -90,6 +96,20 @@ def optimize(
         if cached_item is not None:
             queryset._result_cache = [cached_item]
             return queryset
+
+    if repopulate:
+        queryset._result_cache: list[TModel] = []
+        for pk in queryset.values_list("pk", flat=True):
+            cached_item = get_from_query_cache(info.operation, info.schema, queryset.model, pk, store)
+            if cached_item is None:
+                msg = (
+                    f"Could not find '{queryset.model.__class__.__name__}' object with primary key "
+                    f"'{pk}' from the optimizer cache. Check that the queryset results are narrowed "
+                    f"and not expanded when repopulating."
+                )
+                raise ValueError(msg)
+            queryset._result_cache.append(cached_item)
+        return queryset
 
     queryset = store.optimize_queryset(queryset, pk=pk)
     if optimizer.cache_results:
@@ -296,8 +316,8 @@ class QueryOptimizer:
             model_field.model,
         )
 
-        if isinstance(model_field, ForeignKey):  # Add connecting entity
-            store.only_fields.append(model_field_name)
+        if isinstance(model_field, ForeignKey):
+            store.related_fields.append(model_field_name)
 
         store.select_stores[model_field_name] = nested_store
 
@@ -319,8 +339,8 @@ class QueryOptimizer:
             model_field.model,
         )
 
-        if isinstance(model_field, ManyToOneRel):  # Add connecting entity
-            nested_store.only_fields.append(model_field.field.name)
+        if isinstance(model_field, ManyToOneRel):
+            nested_store.related_fields.append(model_field.field.name)
 
         related_queryset: QuerySet[Model] = model_field.related_model.objects.all()
         store.prefetch_stores[model_field_name] = nested_store, related_queryset

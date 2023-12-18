@@ -27,12 +27,12 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
     @classmethod
     def get_queryset(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
         if can_optimize(info):
-            queryset = optimize(queryset, info, cls.max_complexity())
+            queryset = optimize(queryset, info, max_complexity=cls.max_complexity())
         return queryset
 
     @classmethod
     def get_node(cls, info: GQLInfo, id: PK) -> Optional[TModel]:  # noqa: A002
         queryset: QuerySet[TModel] = cls._meta.model.objects.filter(pk=id)
         if can_optimize(info):
-            queryset = optimize(queryset, info, cls.max_complexity(), pk=id)
+            queryset = optimize(queryset, info, max_complexity=cls.max_complexity(), pk=id)
         return queryset.first()
