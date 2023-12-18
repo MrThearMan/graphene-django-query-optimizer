@@ -4,9 +4,8 @@ from django.db.models.functions import Concat
 from django_filters import CharFilter, FilterSet, OrderingFilter
 from graphene import relay
 
-from query_optimizer import DjangoObjectType, optimize, required_fields
+from query_optimizer import DjangoObjectType, required_fields
 from query_optimizer.typing import GQLInfo
-from query_optimizer.utils import can_optimize
 from tests.example.models import (
     Apartment,
     ApartmentProxy,
@@ -96,6 +95,10 @@ class ApartmentType(DjangoObjectType):
     def max_complexity(cls) -> int:
         return 10
 
+    @classmethod
+    def filter_queryset(cls, queryset: QuerySet, info: GQLInfo) -> QuerySet:
+        return queryset.filter(rooms__isnull=False)
+
     class Meta:
         model = Apartment
 
@@ -106,14 +109,7 @@ class SaleType(DjangoObjectType):
 
     @classmethod
     def filter_queryset(cls, queryset: QuerySet, info: GQLInfo) -> QuerySet:
-        if can_optimize(info):
-            queryset = optimize(
-                queryset.filter(purchase_price__gte=1),
-                info,
-                max_complexity=cls.max_complexity(),
-                repopulate=True,
-            )
-        return queryset
+        return queryset.filter(purchase_price__gte=1)
 
 
 class OwnerType(DjangoObjectType):

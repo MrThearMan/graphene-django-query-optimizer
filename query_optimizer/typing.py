@@ -1,4 +1,6 @@
-from typing import Any, Callable, Collection, Hashable, Iterable, NamedTuple, Optional, TypeVar, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Callable, Collection, Hashable, Iterable, NamedTuple, Optional, TypeVar, Union
 
 from graphene.relay.connection import ConnectionOptions
 from graphene_django.types import DjangoObjectTypeOptions
@@ -10,7 +12,6 @@ except ImportError:
     from typing_extensions import TypeAlias, TypeGuard
 
 
-import graphql
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import (
@@ -24,6 +25,10 @@ from django.db.models import (
     Model,
     OneToOneField,
 )
+from graphql import GraphQLResolveInfo
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AnonymousUser, User
 
 __all__ = [
     "Any",
@@ -48,10 +53,6 @@ __all__ = [
 ]
 
 
-class GQLInfo(graphql.GraphQLResolveInfo):
-    context: WSGIRequest
-
-
 TModel = TypeVar("TModel", bound=Model)
 TableName: TypeAlias = str
 StoreStr: TypeAlias = str
@@ -61,3 +62,12 @@ ModelField: TypeAlias = Union[Field, ForeignObjectRel, GenericForeignKey]
 ToManyField: TypeAlias = Union[GenericRelation, ManyToManyField, ManyToOneRel, ManyToManyRel]
 ToOneField: TypeAlias = Union[GenericRelation, ForeignObject, ForeignKey, OneToOneField]
 TypeOptions: TypeAlias = Union[DjangoObjectTypeOptions, ConnectionOptions]
+AnyUser: TypeAlias = Union["User", "AnonymousUser"]
+
+
+class UserHintedWSGIRequest(WSGIRequest):
+    user: AnyUser
+
+
+class GQLInfo(GraphQLResolveInfo):
+    context: UserHintedWSGIRequest
