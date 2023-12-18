@@ -62,7 +62,7 @@ filter = ["django-filter"]
 
 [tool.poetry.group.test.dependencies]
 pytest = "7.4.3"
-coverage = "7.3.2"
+coverage = "7.3.3"
 pytest-django = "4.7.0"
 pre-commit = "3.6.0"
 tox = "4.11.4"
