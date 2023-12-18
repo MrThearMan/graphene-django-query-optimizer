@@ -6,7 +6,7 @@ from django.db.models import Count
 from graphql_relay import to_global_id
 
 from tests.example.models import Apartment, Building, HousingCompany
-from tests.example.types import ApartmentNode, SaleType
+from tests.example.types import ApartmentNode
 from tests.example.utils import count_queries
 
 pytestmark = pytest.mark.django_db
@@ -785,43 +785,3 @@ def test_optimizer_max_complexity_reached(client_query):
 
     queries = len(results.queries)
     assert queries == 0, results.message
-
-
-def test_optimizer_many_to_one_relations__additional_filtering(client_query):
-    query = """
-        query {
-          allApartments {
-            streetAddress
-            stair
-            apartmentNumber
-            sales {
-              purchaseDate
-              ownerships {
-                percentage
-                owner {
-                  name
-                }
-              }
-            }
-          }
-        }
-    """
-
-    original_get_queryset = SaleType.get_queryset
-    try:
-        SaleType.get_queryset = SaleType.filter_queryset
-        with count_queries() as results:
-            response = client_query(query)
-    finally:
-        SaleType.get_queryset = original_get_queryset
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-    assert "data" in content, content
-    assert "allApartments" in content["data"], content["data"]
-    apartments = content["data"]["allApartments"]
-    assert len(apartments) != 0, apartments
-
-    queries = len(results.queries)
-    # Normal 3 queries, and an additional 40+ to filter the results in Sales.get_queryset
-    assert queries > 40, results.message

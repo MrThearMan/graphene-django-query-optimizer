@@ -72,7 +72,7 @@ def mark_optimized(queryset: QuerySet) -> None:
     queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True  # type: ignore[attr-defined]
 
 
-def mark_unoptimized(queryset: QuerySet) -> None:
+def mark_unoptimized(queryset: QuerySet) -> None:  # pragma: no cover
     """Mark queryset as unoptimized so that later optimizers will run optimization"""
     queryset._hints.pop(optimizer_settings.OPTIMIZER_MARK, None)  # type: ignore[attr-defined]
 

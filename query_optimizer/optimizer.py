@@ -1,8 +1,11 @@
+from typing import TYPE_CHECKING
+
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import ForeignKey, ManyToOneRel, Model, QuerySet
 from graphene.relay.connection import ConnectionOptions
 from graphene.types.definitions import GrapheneObjectType, GrapheneUnionType
 from graphene.utils.str_converters import to_snake_case
+from graphene_django.registry import get_global_registry
 from graphene_django.types import DjangoObjectTypeOptions
 from graphql import (
     FieldNode,
@@ -39,6 +42,10 @@ from .utils import (
     is_to_one,
 )
 
+if TYPE_CHECKING:
+    from graphene import ObjectType
+
+
 TModel = TypeVar("TModel", bound=Model)
 TCallable = TypeVar("TCallable", bound=Callable)
 
@@ -56,7 +63,6 @@ def optimize(
     *,
     pk: PK = None,
     max_complexity: Optional[int] = None,
-    repopulate: bool = False,
 ) -> QuerySet[TModel]:
     """
     Optimize the given queryset according to the field selections
@@ -68,13 +74,10 @@ def optimize(
                the query cache for that primary key before making query.
     :param max_complexity: How many 'select_related' and 'prefetch_related' table joins are allowed.
                            Used to protect from malicious queries.
-    :param repopulate: If True, repopulates the QuerySet._result_cache from the optimizer cache.
-                       This should be used when additional filters are applied to the queryset
-                       after optimization.
     :return: The optimized queryset.
     """
     # Check if prior optimization has been done already
-    if not repopulate and is_optimized(queryset):
+    if is_optimized(queryset):
         return queryset
 
     field_type = get_field_type(info)
@@ -97,21 +100,13 @@ def optimize(
             queryset._result_cache = [cached_item]
             return queryset
 
-    if repopulate:
-        queryset._result_cache: list[TModel] = []
-        for pk in queryset.values_list("pk", flat=True):
-            cached_item = get_from_query_cache(info.operation, info.schema, queryset.model, pk, store)
-            if cached_item is None:
-                msg = (
-                    f"Could not find '{queryset.model.__class__.__name__}' object with primary key "
-                    f"'{pk}' from the optimizer cache. Check that the queryset results are narrowed "
-                    f"and not expanded when repopulating."
-                )
-                raise ValueError(msg)
-            queryset._result_cache.append(cached_item)
-        return queryset
-
     queryset = store.optimize_queryset(queryset, pk=pk)
+
+    # Apply custom filtering based on the ObjectType
+    object_type: ObjectType | None = get_global_registry().get_type_for_model(queryset.model)
+    if hasattr(object_type, "filter_queryset") and callable(object_type.filter_queryset):
+        queryset = object_type.filter_queryset(queryset, info)
+
     if optimizer.cache_results:
         store_in_query_cache(info.operation, queryset, info.schema, store)
 
@@ -250,7 +245,8 @@ class QueryOptimizer:
 
                 nested_store = QueryOptimizerStore(model=related_model)
                 if is_to_many(model_field):
-                    store.prefetch_stores[model_field.name] = (nested_store, related_model.objects.all())
+                    queryset = self.get_filtered_queryset(related_model)
+                    store.prefetch_stores[model_field.name] = (nested_store, queryset)
                 elif is_to_one(model_field):
                     store.select_stores[model_field.name] = nested_store
                 else:  # pragma: no cover
@@ -342,8 +338,19 @@ class QueryOptimizer:
         if isinstance(model_field, ManyToOneRel):
             nested_store.related_fields.append(model_field.field.name)
 
-        related_queryset: QuerySet[Model] = model_field.related_model.objects.all()
+        related_model: type[Model] = model_field.related_model  # type: ignore[assignment]
+        if related_model == "self":  # pragma: no cover
+            related_model = model_field.model
+
+        related_queryset = self.get_filtered_queryset(related_model)
         store.prefetch_stores[model_field_name] = nested_store, related_queryset
+
+    def get_filtered_queryset(self, model: type[TModel]) -> QuerySet[TModel]:
+        qs: QuerySet = model.objects.all()
+        object_type: ObjectType | None = get_global_registry().get_type_for_model(model)
+        if hasattr(object_type, "filter_queryset") and callable(object_type.filter_queryset):
+            qs = object_type.filter_queryset(qs, self.info)
+        return qs
 
     def optimize_fragment_spread(
         self,
