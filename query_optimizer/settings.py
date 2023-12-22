@@ -1,11 +1,20 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.test.signals import setting_changed  # type: ignore[attr-defined]
 from settings_holder import SettingsHolder, reload_settings
 
-from .typing import Any, NamedTuple, Union
+from .typing import NamedTuple
+
+if TYPE_CHECKING:
+    from .typing import Any, Union
+
 
 __all__ = [
     "optimizer_settings",
 ]
+
 
 SETTING_NAME: str = "GRAPHQL_QUERY_OPTIMIZER"
 

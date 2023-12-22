@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import ForeignKey, ManyToOneRel, Model, QuerySet
+from django.db.models.constants import LOOKUP_SEP
 from graphene.relay.connection import ConnectionOptions
-from graphene.types.definitions import GrapheneObjectType, GrapheneUnionType
 from graphene.utils.str_converters import to_snake_case
 from graphene_django.registry import get_global_registry
 from graphene_django.types import DjangoObjectTypeOptions
@@ -19,19 +21,6 @@ from graphql import (
 from .cache import get_from_query_cache, store_in_query_cache
 from .settings import optimizer_settings
 from .store import QueryOptimizerStore
-from .typing import (
-    PK,
-    Callable,
-    GQLInfo,
-    Iterable,
-    ModelField,
-    Optional,
-    ToManyField,
-    ToOneField,
-    TypeOptions,
-    TypeVar,
-    Union,
-)
 from .utils import (
     get_field_type,
     get_selections,
@@ -43,11 +32,25 @@ from .utils import (
 )
 
 if TYPE_CHECKING:
-    from graphene import ObjectType
+    from graphene.types.definitions import GrapheneObjectType, GrapheneUnionType
 
+    from .types import DjangoObjectType
+    from .typing import (
+        PK,
+        Callable,
+        GQLInfo,
+        Iterable,
+        ModelField,
+        Optional,
+        ToManyField,
+        ToOneField,
+        TypeOptions,
+        TypeVar,
+        Union,
+    )
 
-TModel = TypeVar("TModel", bound=Model)
-TCallable = TypeVar("TCallable", bound=Callable)
+    TModel = TypeVar("TModel", bound=Model)
+    TCallable = TypeVar("TCallable", bound=Callable)
 
 
 __all__ = [
@@ -227,39 +230,43 @@ class QueryOptimizer:
         for model_field in model_fields:
             model_field_name = model_field.name
             if prefix:
-                model_field_name = f"{prefix}__{model_field_name}"
+                model_field_name = f"{prefix}{LOOKUP_SEP}{model_field_name}"
 
             if field_name == model_field_name:
                 store.only_fields.append(model_field.name)
                 return None
 
-            if field_name.startswith(model_field_name):
-                related_model: Optional[type[Model]] = model_field.related_model
-                if related_model is None:  # pragma: no cover
-                    msg = f"No related model, but hint seems like has one: {field_name!r}"
-                    raise ValueError(msg)
+            if not field_name.startswith(model_field_name):
+                continue
 
-                nested_store = QueryOptimizerStore(model=related_model)
-                if is_to_many(model_field):
-                    queryset = get_filtered_queryset(related_model.objects.all(), self.info)
-                    store.prefetch_stores[model_field.name] = (nested_store, queryset)
-                elif is_to_one(model_field):
-                    store.select_stores[model_field.name] = nested_store
-                else:  # pragma: no cover
-                    msg = f"Field {model_field} is not a related field."
-                    raise TypeError(msg)
+            related_model: type[Model] = model_field.related_model  # type: ignore[assignment]
+            if related_model is None:  # pragma: no cover
+                msg = f"No related model, but hint seems like has one: {field_name!r}"
+                raise ValueError(msg)
+            if related_model == "self":  # pragma: no cover
+                related_model = model_field.model
 
-                if isinstance(model_field, ManyToOneRel):  # Add connecting entity
-                    nested_store.only_fields.append(model_field.field.name)
+            nested_store = QueryOptimizerStore(model=related_model)
+            if is_to_many(model_field):
+                queryset = get_filtered_queryset(related_model._default_manager.all(), self.info)
+                store.prefetch_stores[model_field.name] = (nested_store, queryset)
+            elif is_to_one(model_field):
+                store.select_stores[model_field.name] = nested_store
+            else:  # pragma: no cover
+                msg = f"Field {model_field} is not a related field."
+                raise TypeError(msg)
 
-                related_model_fields: list[ModelField] = related_model._meta.get_fields()
+            if isinstance(model_field, ManyToOneRel):
+                nested_store.related_fields.append(model_field.field.name)
 
-                return self.find_field_from_model(
-                    field_name=field_name,
-                    prefix=model_field_name,
-                    store=nested_store,
-                    model_fields=related_model_fields,
-                )
+            related_model_fields: list[ModelField] = related_model._meta.get_fields()
+
+            return self.find_field_from_model(
+                field_name=field_name,
+                prefix=model_field_name,
+                store=nested_store,
+                model_fields=related_model_fields,
+            )
 
         msg = f"Field {field_name!r} not found in fields: {model_fields}."  # pragma: no cover
         raise ValueError(msg)  # pragma: no cover
@@ -338,7 +345,7 @@ class QueryOptimizer:
         if related_model == "self":  # pragma: no cover
             related_model = model_field.model
 
-        related_queryset = get_filtered_queryset(related_model.objects.all(), self.info)
+        related_queryset = get_filtered_queryset(related_model._default_manager.all(), self.info)
         store.prefetch_stores[model_field_name] = nested_store, related_queryset
 
     def optimize_fragment_spread(
@@ -377,7 +384,7 @@ class QueryOptimizer:
 
 
 def get_filtered_queryset(queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
-    object_type: ObjectType | None = get_global_registry().get_type_for_model(queryset.model)
-    if hasattr(object_type, "filter_queryset") and callable(object_type.filter_queryset):
-        queryset = object_type.filter_queryset(queryset, info)
+    object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
+    if callable(getattr(object_type, "filter_queryset", None)):
+        queryset = object_type.filter_queryset(queryset, info)  # type: ignore[union-attr]
     return queryset

@@ -37,6 +37,7 @@ classifiers = [
     "Framework :: Django :: 4.0",
     "Framework :: Django :: 4.1",
     "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
 ]
 include = [
     "README.md",
@@ -54,7 +55,7 @@ python = ">=3.9,<4"
 Django = ">=4.0"
 graphene-django = ">=3.0.0"
 django-filter = { version = ">=21.1", optional = true }
-typing-extensions = {version = ">=4.7.1", python = "<3.10"}
+typing-extensions = { version = ">=4.7.1", python = "<3.10" }
 django-settings-holder = ">=0.1.0"
 
 [tool.poetry.extras]
@@ -135,8 +136,10 @@ ignore = [
     "ANN101",   # Missing type annotation for `self` in method
     "ANN102",   # Missing type annotation for `cls` in method
     "ANN401",   # Any-typing allowed
+    "ARG003",   # Unused class method argument
     "N805",     # First argument of a method should be named `self`
     "SLF001",   # Accessing private members is allowed
+    "UP007",    # Use `X | Y` for union type annotations
     #
     # Conflicting with ruff-format
     #
@@ -196,7 +199,7 @@ filterwarnings = [
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py{39, 310, 311, 312}-django{40, 41, 42}-gd{30, 31}
+envlist = py{39, 310, 311, 312}-django{40, 41, 42, 50}-gd{30, 31, 32}
 isolated_build = true
 
 [gh-actions]
@@ -217,10 +220,15 @@ deps =
     django41: Django >=4.1,<4.2
     django42: Django >=4.2,<4.3
 
+    py39-django50: Django >=4.2,<4.3
+    py{310, 311, 312}-django50: Django >=5.0,<5.1
+
     gd30: graphene-django >=3.0.0,<3.1.0
     gd31: graphene-django >=3.1.0,<3.2.0
+    gd32: graphene-django >=3.2.0,<3.3.0
 
     django-filter
+    django-settings-holder
     typing-extensions
 
     pytest
@@ -228,7 +236,6 @@ deps =
     pytest-django
     faker
     sqlparse
-    django-settings-holder
 commands =
     coverage run -m pytest -vv -s --log-cli-level=INFO
 """

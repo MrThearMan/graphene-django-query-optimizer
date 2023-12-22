@@ -92,15 +92,12 @@ class BuildingType(DjangoObjectType):
 
 class ApartmentType(DjangoObjectType):
     @classmethod
-    def max_complexity(cls) -> int:
-        return 10
-
-    @classmethod
     def filter_queryset(cls, queryset: QuerySet, info: GQLInfo) -> QuerySet:
         return queryset.filter(rooms__isnull=False)
 
     class Meta:
         model = Apartment
+        max_complexity = 10
 
 
 class SaleType(DjangoObjectType):
@@ -126,12 +123,9 @@ class OwnershipType(DjangoObjectType):
 
 
 class ApartmentNode(DjangoObjectType):
-    @classmethod
-    def max_complexity(cls) -> int:
-        return 10
-
     class Meta:
         model = ApartmentProxy
+        max_complexity = 10
         filter_fields = {
             "street_address": ["exact"],
             "building__name": ["exact"],

@@ -65,13 +65,13 @@ It's important to notice, that the amount of queries is proportional to the
 amount of records in our database, so the number of queries is only going to increase.
 This is called an [N+1 problem].
 
-We are also over-fetching all fields on each model, and not taking advantage of
+We are also over-fetching all fields on each model, and thus not taking advantage of
 GraphQLs schema at all.
 
 This is the issue this library hopes to solve.
 
 > Shoutout to [graphene-django-optimizer][prev], which inspired this library.
-> The library seem to no longer work in modern versions of Django.
+> The library seem to no longer work in modern versions of `graphene-django`.
 > Hopefully this library can replace it, while offering a cleaner API.
 
 We can optimize this query by simply using `DjangoObjectType` from `query_optimizer`

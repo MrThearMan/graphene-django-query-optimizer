@@ -1,13 +1,18 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from django.db.models import Model, Prefetch, QuerySet
 from django.db.models.constants import LOOKUP_SEP
 
 from .settings import optimizer_settings
-from .typing import PK, TypeVar
 from .utils import mark_optimized, unique
 
-TModel = TypeVar("TModel", bound=Model)
+if TYPE_CHECKING:
+    from .typing import PK, TypeVar
+
+    TModel = TypeVar("TModel", bound=Model)
 
 
 __all__ = [
@@ -30,8 +35,8 @@ class QueryOptimizerStore:
         self.model = model
         self.only_fields: list[str] = []
         self.related_fields: list[str] = []
-        self.select_stores: dict[str, "QueryOptimizerStore"] = {}
-        self.prefetch_stores: dict[str, tuple["QueryOptimizerStore", QuerySet[Model]]] = {}
+        self.select_stores: dict[str, QueryOptimizerStore] = {}
+        self.prefetch_stores: dict[str, tuple[QueryOptimizerStore, QuerySet[Model]]] = {}
 
     def compile(self, *, in_prefetch: bool = False) -> CompilationResults:  # noqa: A003
         results = CompilationResults(
@@ -52,6 +57,7 @@ class QueryOptimizerStore:
             self._compile_nested(name, store, results, in_prefetch=True)
 
         results.only_fields = unique(results.only_fields)
+        results.related_fields = unique(results.related_fields)
         results.select_related = unique(results.select_related)
         results.prefetch_related = unique(results.prefetch_related)
         return results
@@ -59,7 +65,7 @@ class QueryOptimizerStore:
     @staticmethod
     def _compile_nested(
         name: str,
-        store: "QueryOptimizerStore",
+        store: QueryOptimizerStore,
         results: CompilationResults,
         *,
         in_prefetch: bool,
@@ -102,7 +108,7 @@ class QueryOptimizerStore:
             value += store.complexity
         return value + len(self.select_stores) + len(self.prefetch_stores)
 
-    def __add__(self, other: "QueryOptimizerStore") -> "QueryOptimizerStore":
+    def __add__(self, other: QueryOptimizerStore) -> QueryOptimizerStore:
         self.only_fields += other.only_fields
         self.related_fields += other.related_fields
         self.select_stores.update(other.select_stores)

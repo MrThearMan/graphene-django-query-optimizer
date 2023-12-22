@@ -68,13 +68,17 @@ div.wy-nav-content,
     border-top: 1px solid #343131;
 }
 
+.wy-menu-vertical li.current,
 .wy-menu-vertical li.current > a:hover,
 .wy-menu-vertical li.toctree-l1.current > a:hover,
 .wy-menu-vertical li.toctree-l2.current > a:hover,
 .wy-menu-vertical li.toctree-l2.current li.toctree-l3 > a:hover,
 .wy-menu-vertical li.toctree-l3.current > a:hover,
 .wy-menu-vertical li.toctree-l3.current li.toctree-l4 > a:hover {
+    color: #bbbbbb;
     background: #2d2d2d!important;
+    border-bottom: 1px solid #343131;
+    border-top: 1px solid #343131;
 }
 
 .rst-content pre code,
@@ -142,6 +146,10 @@ div.highlight > span.filename {
     color: #cccccc;
 }
 
+.rst-content .section .docutils {
+    display: inline-table;
+}
+
 .rst-content div[class^=highlight],
 .rst-content pre.literal-block {
     border: 1px solid #626262;
@@ -153,10 +161,13 @@ div.highlight > span.filename {
 .wy-table thead {
     color: #bbbbbb;
     background: #121212;
+    border-color: #121212!important;
 }
 
-.rst-versions {
-    margin-top: 6px;
+html.writer-html5 .rst-content table.docutils th {
+    color: #bbbbbb;
+    background: #121212;
+    border-color: #121212!important;
 }
 
 .rst-content table.docutils:not(.field-list) tr:nth-child(2n-1) td,
@@ -165,6 +176,27 @@ div.highlight > span.filename {
 .wy-table-striped tr:nth-child(2n-1) td {
     color: #bbbbbb;
     background: #414141;
+    border-color: #121212!important;
+}
+
+.rst-content table.docutils tbody>tr:last-child td,
+.wy-table-bordered-all tbody>tr:last-child td,
+.rst-content table.docutils td {
+    color: #bbbbbb;
+    background: #343131;
+    border-color: #121212!important;
+}
+
+.rst-content table.docutils thead,
+.rst-content table.field-list thead,
+.wy-table thead {
+    color: #bbbbbb;
+    background: #343131;
+    border-color: #121212!important;
+}
+
+.rst-versions {
+    margin-top: 6px;
 }
 
 blockquote {
@@ -179,6 +211,9 @@ blockquote > p {
     margin: 0;
 }
 
+.rst-content table.docutils td {
+    white-space: break-spaces;
+}
 
 blockquote code {
     line-height: normal;

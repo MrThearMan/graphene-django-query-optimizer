@@ -1,12 +1,22 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.db.models import ForeignKey, QuerySet
 from graphene import Connection
 from graphene.types.definitions import GrapheneObjectType
 from graphene_django import DjangoObjectType
-from graphql import GraphQLOutputType, SelectionNode
 from graphql.execution.execute import get_field_def
 
 from .settings import optimizer_settings
-from .typing import Collection, GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard, TypeVar
+
+if TYPE_CHECKING:
+    from graphql import GraphQLOutputType, SelectionNode
+
+    from .typing import Collection, GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard, TypeVar
+
+    T = TypeVar("T")
+
 
 __all__ = [
     "get_field_type",
@@ -20,9 +30,6 @@ __all__ = [
     "mark_unoptimized",
     "unique",
 ]
-
-
-T = TypeVar("T")
 
 
 def is_foreign_key_id(model_field: ModelField, name: str) -> bool:
@@ -79,4 +86,4 @@ def mark_unoptimized(queryset: QuerySet) -> None:  # pragma: no cover
 
 def is_optimized(queryset: QuerySet) -> bool:
     """Has the queryset be optimized?"""
-    return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)  # type: ignore[attr-defined]
+    return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)  # type: ignore[no-any-return, attr-defined]

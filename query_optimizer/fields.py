@@ -1,31 +1,39 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import graphene_django.filter
-from django.db.models import Model, QuerySet
-from django.db.models.manager import Manager
-from graphene.relay.connection import Connection
-from graphql_relay import EdgeType
-from graphql_relay.connection.connection import ConnectionType
 
 from .cache import store_in_query_cache
 from .optimizer import QueryOptimizer
-from .typing import Any, Callable, GQLInfo, Optional, TypeAlias, TypeVar
 from .utils import get_field_type, get_selections
 
-TModel = TypeVar("TModel", bound=Model)
+if TYPE_CHECKING:
+    from django.db.models import Model, QuerySet
+    from django.db.models.manager import Manager
+    from graphene.relay.connection import Connection
+    from graphql_relay import EdgeType
+    from graphql_relay.connection.connection import ConnectionType
+
+    from .typing import Any, Callable, GQLInfo, Optional, TypeAlias, TypeVar
+
+    TModel = TypeVar("TModel", bound=Model)
+
+    Args: TypeAlias = tuple[
+        Callable[..., Optional[Manager[TModel]]],  # resolver
+        Connection,  # connection
+        Manager[TModel],  # default_manager
+        Callable[..., QuerySet[TModel]],  # queryset_resolver
+        int,  # max_limit
+        bool,  # enforce_first_or_last
+        Optional[Model],  # enforce_first_or_last
+        GQLInfo,  # info
+    ]
+
 
 __all__ = [
     "ConnectionFieldCachingMixin",
     "DjangoConnectionField",
-]
-
-Args: TypeAlias = tuple[
-    Callable[..., Optional[Manager[TModel]]],  # resolver
-    Connection,  # connection
-    Manager[TModel],  # default_manager
-    Callable[..., QuerySet[TModel]],  # queryset_resolver
-    int,  # max_limit
-    bool,  # enforce_first_or_last
-    Optional[Model],  # enforce_first_or_last
-    GQLInfo,  # info
 ]
 
 

@@ -1,6 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Collection, Hashable, Iterable, NamedTuple, Optional, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Collection,
+    Hashable,
+    Iterable,
+    Literal,
+    NamedTuple,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 from graphene.relay.connection import ConnectionOptions
 from graphene_django.types import DjangoObjectTypeOptions
@@ -37,8 +49,10 @@ __all__ = [
     "GQLInfo",
     "Hashable",
     "Iterable",
+    "Literal",
     "ModelField",
     "NamedTuple",
+    "OptimizedDjangoOptions",
     "Optional",
     "PK",
     "QueryCache",
@@ -71,3 +85,7 @@ class UserHintedWSGIRequest(WSGIRequest):
 
 class GQLInfo(GraphQLResolveInfo):
     context: UserHintedWSGIRequest
+
+
+class OptimizedDjangoOptions(DjangoObjectTypeOptions):
+    max_complexity: int

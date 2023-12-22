@@ -33,13 +33,10 @@ from query_optimizer import DjangoObjectType
 from tests.example.models import Apartment
 
 class ApartmentNode(DjangoObjectType):
-    @classmethod
-    def max_complexity(cls) -> int:
-        return 4  # changed
-
     class Meta:
         model = Apartment
         interfaces = (relay.Node,)
+        max_complexity = 4  # changed
 
 class Query(graphene.ObjectType):
     apartment = relay.Node.Field(ApartmentNode)
