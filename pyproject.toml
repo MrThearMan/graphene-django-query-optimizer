@@ -78,7 +78,7 @@ pymdown-extensions = "10.5"
 mkdocs-mermaid2-plugin = "1.1.1"
 
 [tool.poetry.group.lint.dependencies]
-mypy = "1.7.1"
+mypy = "1.8.0"
 django-stubs = "4.2.7"
 
 [tool.ruff]
