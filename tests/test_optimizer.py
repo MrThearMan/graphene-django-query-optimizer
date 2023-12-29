@@ -7,7 +7,7 @@ from graphql_relay import to_global_id
 
 from tests.example.models import Apartment, Building, HousingCompany
 from tests.example.types import ApartmentNode
-from tests.example.utils import count_queries
+from tests.example.utils import capture_database_queries
 
 pytestmark = pytest.mark.django_db
 
@@ -37,7 +37,7 @@ def test_optimizer_deep_query(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -48,7 +48,8 @@ def test_optimizer_deep_query(client_query):
     assert len(apartments) != 0, apartments
 
     queries = len(results.queries)
-    assert queries == 1, results.message
+    # 1 query for fetching Apartments and related Buildings, RealEstates, HousingCompanies, and PostalCodes
+    assert queries == 1, results.log
 
 
 def test_optimizer_many_to_one_relations(client_query):
@@ -71,7 +72,7 @@ def test_optimizer_many_to_one_relations(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -82,7 +83,10 @@ def test_optimizer_many_to_one_relations(client_query):
     assert len(apartments) != 0, apartments
 
     queries = len(results.queries)
-    assert queries == 3, results.message
+    # 1 query for fetching Apartments
+    # 1 query for fetching Sales
+    # 1 query for fetching Ownerships and related Owners
+    assert queries == 3, results.log
 
 
 def test_optimizer_many_to_many_relations(client_query):
@@ -98,7 +102,7 @@ def test_optimizer_many_to_many_relations(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -109,7 +113,9 @@ def test_optimizer_many_to_many_relations(client_query):
     assert len(housing_companies) != 0, housing_companies
 
     queries = len(results.queries)
-    assert queries == 2, results.message
+    # 1 query for fetching HousingCompanies
+    # 1 query for fetching Developers
+    assert queries == 2, results.log
 
 
 def test_optimizer_relay_node(client_query):
@@ -128,7 +134,7 @@ def test_optimizer_relay_node(client_query):
         }
     """ % (global_id,)
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -137,7 +143,8 @@ def test_optimizer_relay_node(client_query):
     assert "apartment" in content["data"], content["data"]
 
     queries = len(results.queries)
-    assert queries == 1, results.message
+    # 1 query for fetching Apartment and related Buildings
+    assert queries == 1, results.log
 
 
 @pytest.mark.skipif(
@@ -168,7 +175,7 @@ def test_optimizer_relay_node_deep(client_query):
         }
     """ % (global_id,)
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -177,7 +184,10 @@ def test_optimizer_relay_node_deep(client_query):
     assert "apartment" in content["data"], content["data"]
 
     queries = len(results.queries)
-    assert queries == 3, results.message
+    # 1 query for fetching Apartment and related Buildings
+    # 1 query for fetching Sales
+    # 1 query for fetching Ownerships and related Owners
+    assert queries == 3, results.log
 
 
 def test_optimizer_relay_connection(client_query):
@@ -201,7 +211,7 @@ def test_optimizer_relay_connection(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -213,7 +223,9 @@ def test_optimizer_relay_connection(client_query):
     assert len(apartments) != 0, apartments
 
     queries = len(results.queries)
-    assert queries == 2, results.message
+    # 1 query for counting Apartments
+    # 1 query for fetching Apartments and related Buildings
+    assert queries == 2, results.log
 
 
 @pytest.mark.skipif(
@@ -249,7 +261,7 @@ def test_optimizer_relay_connection_deep(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -261,7 +273,11 @@ def test_optimizer_relay_connection_deep(client_query):
     assert len(apartments) != 0, apartments
 
     queries = len(results.queries)
-    assert queries == 4, results.message
+    # 1 query for counting Apartments
+    # 1 query for fetching Apartments and related Buildings
+    # 1 query for fetching Sales
+    # 1 query for fetching Ownerships and related Owners
+    assert queries == 4, results.log
 
 
 def test_optimizer_relay_connection_filtering(client_query):
@@ -283,7 +299,7 @@ def test_optimizer_relay_connection_filtering(client_query):
         }
     """ % (street_address,)
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -295,7 +311,9 @@ def test_optimizer_relay_connection_filtering(client_query):
     assert len(apartments) != 0, apartments
 
     queries = len(results.queries)
-    assert queries == 2, results.message
+    # 1 query for counting Apartments
+    # 1 query for fetching Apartments and related Buildings
+    assert queries == 2, results.log
 
 
 def test_optimizer_relay_connection_filtering_nested(client_query):
@@ -319,7 +337,7 @@ def test_optimizer_relay_connection_filtering_nested(client_query):
         }
     """ % (building_name,)
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -331,7 +349,9 @@ def test_optimizer_relay_connection_filtering_nested(client_query):
     assert len(apartments) != 0, apartments
 
     queries = len(results.queries)
-    assert queries == 2, results.message
+    # 1 query for counting Apartments
+    # 1 query for fetching Apartments and related Buildings
+    assert queries == 2, results.log
 
 
 def test_optimizer_relay_connection_filtering_empty(client_query):
@@ -351,7 +371,7 @@ def test_optimizer_relay_connection_filtering_empty(client_query):
         }
     """ % ("foo",)
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -363,7 +383,112 @@ def test_optimizer_relay_connection_filtering_empty(client_query):
     assert apartments == [], apartments
 
     queries = len(results.queries)
-    assert queries == 1, results.message
+    # 1 query for counting Apartments
+    assert queries == 1, results.log
+
+
+def test_optimizer_relay_connection_nested(client_query):
+    query = """
+        query {
+          pagedBuildings {
+            edges {
+              node {
+                id
+                apartments {
+                  edges {
+                    node {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    assert "data" in content
+    assert "pagedBuildings" in content["data"]
+    assert "edges" in content["data"]["pagedBuildings"]
+    buildings = content["data"]["pagedBuildings"]["edges"]
+    assert len(buildings) != 0, buildings
+
+    assert "node" in buildings[0]
+    assert "apartments" in buildings[0]["node"]
+    assert "edges" in buildings[0]["node"]["apartments"]
+    apartments = buildings[0]["node"]["apartments"]["edges"]
+    assert len(apartments) != 0, apartments
+
+    queries = len(results.queries)
+    # 1 query for counting HousingCompanies
+    # 1 query for fetching HousingCompanies
+    # 1 query for fetching RealEstates
+    assert queries == 3, results.log
+
+
+def test_optimizer_relay_connection_nested_filtered(client_query):
+    query = """
+        query {
+          pagedBuildings(first: 10) {
+            edges {
+              node {
+                id
+                apartments(first: 1) {
+                  edges {
+                    node {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    assert "data" in content
+    assert "pagedBuildings" in content["data"]
+    assert "edges" in content["data"]["pagedBuildings"]
+    buildings = content["data"]["pagedBuildings"]["edges"]
+    assert len(buildings) != 0, buildings
+
+    assert len(buildings) == 10
+
+    assert "node" in buildings[0]
+    assert "apartments" in buildings[0]["node"]
+    assert "edges" in buildings[0]["node"]["apartments"]
+    apartments = buildings[0]["node"]["apartments"]["edges"]
+    assert len(apartments) != 0, apartments
+
+    # Check that filtering worked for the nested connection
+    # (there are buildings with more than 1 apartment in the test data)
+    assert all([len(building["node"]["apartments"]["edges"]) == 1 for building in buildings]), buildings
+
+    queries = len(results.queries)
+    # 1 query for counting Buildings
+    # 1 query for fetching Buildings
+    # 1 query for fetching Apartments
+    assert queries == 3, results.log
 
 
 def test_optimizer_custom_fields(client_query):
@@ -378,7 +503,7 @@ def test_optimizer_custom_fields(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -389,7 +514,9 @@ def test_optimizer_custom_fields(client_query):
     assert len(developers) != 0, developers
 
     queries = len(results.queries)
-    assert queries == 2, results.message
+    # 1 query for fetching Developers
+    # 1 query for fetching HousingCompanies with custom attributes
+    assert queries == 2, results.log
 
 
 def test_optimizer_custom_fields_one_to_many(client_query):
@@ -401,7 +528,7 @@ def test_optimizer_custom_fields_one_to_many(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -412,7 +539,9 @@ def test_optimizer_custom_fields_one_to_many(client_query):
     assert len(developers) != 0, developers
 
     queries = len(results.queries)
-    assert queries == 2, results.message
+    # 1 query for fetching HousingCompanies
+    # 1 query for fetching primary RealEstate
+    assert queries == 2, results.log
 
 
 def test_optimizer_custom_fields_backtracking(client_query):
@@ -427,7 +556,7 @@ def test_optimizer_custom_fields_backtracking(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -438,7 +567,9 @@ def test_optimizer_custom_fields_backtracking(client_query):
     assert len(developers) != 0, developers
 
     queries = len(results.queries)
-    assert queries == 2, results.message
+    # 1 query for fetching RealEstates and related HousingCompanies
+    # 1 query for fetching primary RealEstate
+    assert queries == 2, results.log
 
 
 def test_optimizer_multiple_queries(client_query):
@@ -462,7 +593,7 @@ def test_optimizer_multiple_queries(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -476,7 +607,9 @@ def test_optimizer_multiple_queries(client_query):
     assert len(real_estates) != 0, real_estates
 
     queries = len(results.queries)
-    assert queries == 2, results.message
+    # 1 query for fetching Apartments and related Buildings and RealEstates
+    # 1 query for fetching RealEstates and related HousingCompanies
+    assert queries == 2, results.log
 
 
 def test_optimizer_fragment_spread(client_query):
@@ -493,7 +626,7 @@ def test_optimizer_fragment_spread(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -504,7 +637,8 @@ def test_optimizer_fragment_spread(client_query):
     assert len(apartments) != 0, apartments
 
     queries = len(results.queries)
-    assert queries == 1, results.message
+    # 1 query for fetching Apartments
+    assert queries == 1, results.log
 
 
 def test_optimizer_fragment_spread_deep(client_query):
@@ -532,7 +666,7 @@ def test_optimizer_fragment_spread_deep(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -543,7 +677,8 @@ def test_optimizer_fragment_spread_deep(client_query):
     assert len(apartments) != 0, apartments
 
     queries = len(results.queries)
-    assert queries == 1, results.message
+    # 1 query for fetching Apartments and related Buildings, RealEstates, HousingCompanies, and PostalCodes
+    assert queries == 1, results.log
 
 
 def test_optimizer_fragment_spread_many_to_one_relations(client_query):
@@ -568,7 +703,7 @@ def test_optimizer_fragment_spread_many_to_one_relations(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -579,7 +714,10 @@ def test_optimizer_fragment_spread_many_to_one_relations(client_query):
     assert len(apartments) != 0, apartments
 
     queries = len(results.queries)
-    assert queries == 3, results.message
+    # 1 query for fetching Apartments
+    # 1 query for fetching Sales
+    # 1 query for fetching Ownerships and related Owners
+    assert queries == 3, results.log
 
 
 def test_optimizer_inline_fragment(client_query):
@@ -611,7 +749,7 @@ def test_optimizer_inline_fragment(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -622,7 +760,13 @@ def test_optimizer_inline_fragment(client_query):
     assert len(people) != 0, people
 
     queries = len(results.queries)
-    assert queries == 6, results.message
+    # 1 query for fetching Developers
+    # 1 query for fetching HousingCompanies for Developers
+    # 1 query for fetching PropertyManagers
+    # 1 query for fetching HousingCompanies for PropertyManagers
+    # 1 query for fetching Owners
+    # 1 query for fetching Ownerships for Owners
+    assert queries == 6, results.log
 
 
 @pytest.mark.skipif(
@@ -655,7 +799,7 @@ def test_optimizer_filter(client_query):
         }
     """ % (postal_code,)
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -667,7 +811,10 @@ def test_optimizer_filter(client_query):
     assert len(housing_companies) != 0, housing_companies
 
     queries = len(results.queries)
-    assert queries == 3, results.message
+    # 1 query for counting HousingCompanies
+    # 1 query for fetching HousingCompanies and related PostalCodes
+    # 1 query for fetching Developers
+    assert queries == 3, results.log
 
 
 def test_optimizer_filter_to_many_relations(client_query):
@@ -689,7 +836,7 @@ def test_optimizer_filter_to_many_relations(client_query):
         }
     """ % (developer_name,)
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -701,7 +848,9 @@ def test_optimizer_filter_to_many_relations(client_query):
     assert len(housing_companies) != 0, housing_companies
 
     queries = len(results.queries)
-    assert queries == 2, results.message
+    # 1 query for counting HousingCompanies
+    # 1 query for fetching HousingCompanies
+    assert queries == 2, results.log
 
 
 def test_optimizer_filter_order_by(client_query):
@@ -721,7 +870,7 @@ def test_optimizer_filter_order_by(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -733,7 +882,9 @@ def test_optimizer_filter_order_by(client_query):
     assert len(housing_companies) != 0, housing_companies
 
     queries = len(results.queries)
-    assert queries == 2, results.message
+    # 1 query for counting HousingCompanies
+    # 1 query for fetching HousingCompanies
+    assert queries == 2, results.log
 
 
 def test_optimizer_max_complexity_reached(client_query):
@@ -767,7 +918,7 @@ def test_optimizer_max_complexity_reached(client_query):
         }
     """
 
-    with count_queries() as results:
+    with capture_database_queries() as results:
         response = client_query(query)
 
     content = json.loads(response.content)
@@ -784,4 +935,5 @@ def test_optimizer_max_complexity_reached(client_query):
     assert apartments is None
 
     queries = len(results.queries)
-    assert queries == 0, results.message
+    # No queries since fetching is stopped due to complexity
+    assert queries == 0, results.log

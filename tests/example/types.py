@@ -4,12 +4,13 @@ from django.db.models.functions import Concat
 from django_filters import CharFilter, FilterSet, OrderingFilter
 from graphene import relay
 
-from query_optimizer import DjangoObjectType, required_fields
+from query_optimizer import DjangoConnectionField, DjangoObjectType, required_fields
 from query_optimizer.typing import GQLInfo
 from tests.example.models import (
     Apartment,
     ApartmentProxy,
     Building,
+    BuildingProxy,
     Developer,
     HousingCompany,
     HousingCompanyProxy,
@@ -18,6 +19,7 @@ from tests.example.models import (
     PostalCode,
     PropertyManager,
     RealEstate,
+    RealEstateProxy,
     Sale,
 )
 
@@ -122,7 +124,15 @@ class OwnershipType(DjangoObjectType):
 # Relay
 
 
-class ApartmentNode(DjangoObjectType):
+class IsTypeOfProxyPatch:
+    @classmethod
+    def is_type_of(cls, root, info):
+        if cls._meta.model._meta.proxy:
+            return root._meta.model._meta.concrete_model == cls._meta.model._meta.concrete_model
+        return super().is_type_of(root, info)
+
+
+class ApartmentNode(IsTypeOfProxyPatch, DjangoObjectType):
     class Meta:
         model = ApartmentProxy
         max_complexity = 10
@@ -130,6 +140,22 @@ class ApartmentNode(DjangoObjectType):
             "street_address": ["exact"],
             "building__name": ["exact"],
         }
+        interfaces = (relay.Node,)
+
+
+class BuildingNode(IsTypeOfProxyPatch, DjangoObjectType):
+    apartments = DjangoConnectionField(ApartmentNode)
+
+    class Meta:
+        model = BuildingProxy
+        interfaces = (relay.Node,)
+
+
+class RealEstateNode(IsTypeOfProxyPatch, DjangoObjectType):
+    buildings = DjangoConnectionField(BuildingNode)
+
+    class Meta:
+        model = RealEstateProxy
         interfaces = (relay.Node,)
 
 
@@ -147,7 +173,7 @@ class HousingCompanyFilterSet(FilterSet):
         ],
     )
 
-    address = CharFilter(method="")
+    address = CharFilter(method="filter_address")
 
     class Meta:
         model = HousingCompany
@@ -171,7 +197,9 @@ class HousingCompanyFilterSet(FilterSet):
         ).filter(_address__icontains=value)
 
 
-class HousingCompanyNode(DjangoObjectType):
+class HousingCompanyNode(IsTypeOfProxyPatch, DjangoObjectType):
+    real_estates = DjangoConnectionField(RealEstateNode)
+
     class Meta:
         model = HousingCompanyProxy
         interfaces = (relay.Node,)

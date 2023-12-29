@@ -3,41 +3,36 @@ from dataclasses import dataclass
 from typing import Generator
 
 import sqlparse
-from django.conf import settings
-from django.db import connection
+from django import db
 
 
 @dataclass
-class QueryResult:
+class QueryData:
     queries: list[str]
-    message: str
+
+    @property
+    def log(self) -> str:
+        message = "-" * 75
+        message += f"\n>>> Queries ({len(self.queries)}):\n"
+        for index, query in enumerate(self.queries):
+            message += f"{index + 1}) ".ljust(75, "-") + f"\n{query}\n"
+        message += "-" * 75
+        return message
 
 
 @contextmanager
-def count_queries() -> Generator[QueryResult, None, None]:
-    orig_debug = settings.DEBUG
-    settings.DEBUG = True
-
-    results = QueryResult(queries=[], message="")
-    old_queries = connection.queries_log.copy()
-    connection.queries_log.clear()
+def capture_database_queries() -> Generator[QueryData, None, None]:
+    """Capture results of what database queries were executed. `DEBUG` needs to be set to True."""
+    results = QueryData(queries=[])
+    db.connection.queries_log.clear()
 
     try:
         yield results
     finally:
         results.queries = [
             sqlparse.format(query["sql"], reindent=True)
-            for query in connection.queries
+            for query in db.connection.queries
             if "sql" in query
             and not query["sql"].startswith("SAVEPOINT")
             and not query["sql"].startswith("RELEASE SAVEPOINT")
         ]
-
-        results.message = "-" * 75
-        results.message += f"\n>>> Queries ({len(results.queries)}):\n"
-        for index, query in enumerate(results.queries):
-            results.message += f"{index + 1}) ".ljust(75, "-") + f"\n{query}\n"
-        results.message += "-" * 75
-
-        connection.queries_log.extendleft(reversed(old_queries))
-        settings.DEBUG = orig_debug

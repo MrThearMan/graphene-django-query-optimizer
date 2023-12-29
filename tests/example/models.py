@@ -225,6 +225,16 @@ class ApartmentProxy(Apartment):
         proxy = True
 
 
+class BuildingProxy(Building):
+    class Meta:
+        proxy = True
+
+
+class RealEstateProxy(RealEstate):
+    class Meta:
+        proxy = True
+
+
 class HousingCompanyProxy(HousingCompany):
     class Meta:
         proxy = True

@@ -9,6 +9,7 @@ from graphene.relay.connection import ConnectionOptions
 from graphene.utils.str_converters import to_snake_case
 from graphene_django.registry import get_global_registry
 from graphene_django.types import DjangoObjectTypeOptions
+from graphene_django.utils import maybe_queryset
 from graphql import (
     FieldNode,
     FragmentSpreadNode,
@@ -79,6 +80,8 @@ def optimize(
                            Used to protect from malicious queries.
     :return: The optimized queryset.
     """
+    queryset = maybe_queryset(queryset)
+
     # Check if prior optimization has been done already
     if is_optimized(queryset):
         return queryset
@@ -257,7 +260,7 @@ class QueryOptimizer:
                 raise TypeError(msg)
 
             if isinstance(model_field, ManyToOneRel):
-                nested_store.related_fields.append(model_field.field.name)
+                nested_store.related_fields.append(model_field.field.attname)
 
             related_model_fields: list[ModelField] = related_model._meta.get_fields()
 
@@ -316,7 +319,7 @@ class QueryOptimizer:
         )
 
         if isinstance(model_field, ForeignKey):
-            store.related_fields.append(model_field_name)
+            store.related_fields.append(model_field.attname)
 
         store.select_stores[model_field_name] = nested_store
 
@@ -339,7 +342,7 @@ class QueryOptimizer:
         )
 
         if isinstance(model_field, ManyToOneRel):
-            nested_store.related_fields.append(model_field.field.name)
+            nested_store.related_fields.append(model_field.field.attname)
 
         related_model: type[Model] = model_field.related_model  # type: ignore[assignment]
         if related_model == "self":  # pragma: no cover

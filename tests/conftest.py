@@ -32,7 +32,9 @@ def db_access_without_rollback_and_truncate(request, django_db_setup, django_db_
 
 
 @pytest.fixture()
-def client_query(client: Client) -> Callable[..., HttpResponse]:
+def client_query(client: Client, settings) -> Callable[..., HttpResponse]:
+    settings.DEBUG = True
+
     def func(*args, **kwargs) -> HttpResponse:
         return graphql_query(*args, **kwargs, client=client)
 
