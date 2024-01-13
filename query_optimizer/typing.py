@@ -24,7 +24,6 @@ except ImportError:
     from typing_extensions import TypeAlias, TypeGuard
 
 
-from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import (
     Field,
@@ -41,6 +40,7 @@ from graphql import GraphQLResolveInfo
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser, User
+    from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
 __all__ = [
     "Any",
@@ -72,9 +72,9 @@ TableName: TypeAlias = str
 StoreStr: TypeAlias = str
 PK: TypeAlias = Any
 QueryCache: TypeAlias = dict[TableName, dict[StoreStr, dict[PK, TModel]]]
-ModelField: TypeAlias = Union[Field, ForeignObjectRel, GenericForeignKey]
-ToManyField: TypeAlias = Union[GenericRelation, ManyToManyField, ManyToOneRel, ManyToManyRel]
-ToOneField: TypeAlias = Union[GenericRelation, ForeignObject, ForeignKey, OneToOneField]
+ModelField: TypeAlias = Union[Field, ForeignObjectRel, "GenericForeignKey"]
+ToManyField: TypeAlias = Union["GenericRelation", ManyToManyField, ManyToOneRel, ManyToManyRel]
+ToOneField: TypeAlias = Union["GenericRelation", ForeignObject, ForeignKey, OneToOneField]
 TypeOptions: TypeAlias = Union[DjangoObjectTypeOptions, ConnectionOptions]
 AnyUser: TypeAlias = Union["User", "AnonymousUser"]
 
