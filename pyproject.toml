@@ -56,7 +56,7 @@ Django = ">=4.0"
 graphene-django = ">=3.0.0"
 django-filter = { version = ">=21.1", optional = true }
 typing-extensions = { version = ">=4.7.1", python = "<3.10" }
-django-settings-holder = ">=0.1.0"
+django-settings-holder = ">=0.1.2"
 
 [tool.poetry.extras]
 filter = ["django-filter"]
@@ -66,9 +66,9 @@ pytest = "7.4.4"
 coverage = "7.4.0"
 pytest-django = "4.7.0"
 pre-commit = "3.6.0"
-tox = "4.11.4"
+tox = "4.12.0"
 tox-gh-actions = "3.2.0"
-faker = "22.0.0"
+faker = "22.2.0"
 sqlparse = "0.4.4"
 django-graphiql-debug-toolbar = "0.2.0"
 
