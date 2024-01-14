@@ -136,6 +136,7 @@ ignore = [
     "ANN101",   # Missing type annotation for `self` in method
     "ANN102",   # Missing type annotation for `cls` in method
     "ANN401",   # Any-typing allowed
+    "ARG002",   # Unused method argument
     "ARG003",   # Unused class method argument
     "N805",     # First argument of a method should be named `self`
     "SLF001",   # Accessing private members is allowed

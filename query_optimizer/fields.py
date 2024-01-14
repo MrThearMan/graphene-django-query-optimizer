@@ -83,9 +83,9 @@ def cache_edges(edges: list[EdgeType], info: GQLInfo) -> None:
     )
 
 
-@convert_django_field.register
+@convert_django_field.register(models.OneToOneRel)
 def convert_reverse_to_one_field_to_django_model(
-    field: models.OneToOneRel,
+    field,  # noqa: ANN001
     registry: Registry | None = None,
 ) -> graphene.Dynamic:
     def dynamic_type() -> graphene.Field | None:
@@ -94,7 +94,7 @@ def convert_reverse_to_one_field_to_django_model(
             return None
 
         class CustomField(graphene.Field):
-            def wrap_resolve(self, parent_resolver: Any) -> Any:  # noqa: ARG002
+            def wrap_resolve(self, parent_resolver: Any) -> Any:
                 def custom_resolver(root: Any, info: GQLInfo) -> models.Model | None:
                     return _type.get_node(info, root.pk)
 
@@ -105,9 +105,10 @@ def convert_reverse_to_one_field_to_django_model(
     return graphene.Dynamic(dynamic_type)
 
 
-@convert_django_field.register
+@convert_django_field.register(models.OneToOneField)
+@convert_django_field.register(models.ForeignKey)
 def convert_forward_to_one_field_to_django_model(
-    field: models.OneToOneField | models.ForeignKey,
+    field,  # noqa: ANN001
     registry: Registry | None = None,
 ) -> graphene.Dynamic:
     def dynamic_type() -> graphene.Field | None:
@@ -116,7 +117,7 @@ def convert_forward_to_one_field_to_django_model(
             return None
 
         class CustomField(graphene.Field):
-            def wrap_resolve(self, parent_resolver: Any) -> Any:  # noqa: ARG002
+            def wrap_resolve(self, parent_resolver: Any) -> Any:
                 def custom_resolver(root: Any, info: GQLInfo) -> models.Model | None:
                     field_name = to_snake_case(info.field_name)
                     db_field_key: str = root.__class__._meta.get_field(field_name).attname
@@ -133,9 +134,11 @@ def convert_forward_to_one_field_to_django_model(
     return graphene.Dynamic(dynamic_type)
 
 
-@convert_django_field.register
+@convert_django_field.register(models.ManyToManyField)
+@convert_django_field.register(models.ManyToManyRel)
+@convert_django_field.register(models.ManyToOneRel)
 def convert_to_many_field_to_list_or_connection(
-    field: models.ManyToManyField | models.ManyToManyRel | models.ManyToOneRel,
+    field,  # noqa: ANN001
     registry: Registry | None = None,
 ) -> graphene.Dynamic:
     def dynamic_type() -> graphene_django.fields.DjangoConnectionField | DjangoListField | None:
