@@ -25,6 +25,10 @@ from .types import (
     BuildingNode,
     BuildingType,
     DeveloperType,
+    ExampleType,
+    ForwardManyToManyType,
+    ForwardManyToOneType,
+    ForwardOneToOneType,
     HousingCompanyNode,
     HousingCompanyType,
     OwnershipType,
@@ -34,6 +38,9 @@ from .types import (
     PropertyManagerType,
     RealEstateNode,
     RealEstateType,
+    ReverseManyToManyType,
+    ReverseOneToManyType,
+    ReverseOneToOneType,
     SaleType,
 )
 
@@ -84,6 +91,18 @@ class Query(graphene.ObjectType):
         property_managers = optimize(PropertyManager.objects.all(), info)
         owners = optimize(Owner.objects.all(), info)
         return itertools.chain(developers, property_managers, owners)
+
+    # --------------------------------------------------------------------
+
+    examples = DjangoConnectionField(ExampleType)
+    forward_one_to_ones = DjangoConnectionField(ForwardOneToOneType)
+    forward_many_to_ones = DjangoConnectionField(ForwardManyToOneType)
+    forward_many_to_manys = DjangoConnectionField(ForwardManyToManyType)
+    reverse_one_to_ones = DjangoConnectionField(ReverseOneToOneType)
+    reverse_many_to_ones = DjangoConnectionField(ReverseOneToManyType)
+    reverse_many_to_manys = DjangoConnectionField(ReverseManyToManyType)
+
+    # --------------------------------------------------------------------
 
     debug = graphene.Field(DjangoDebug, name="_debug")
 

@@ -94,6 +94,12 @@ def optimize(
     optimizer = QueryOptimizer(info)
     store = optimizer.optimize_selections(field_type, selections, queryset.model)
 
+    # When resolving reverse one-to-many relations (other model has foreign key to this model),
+    # if `known_related_fields` exist, they should be added to the store, since they are used to linked
+    # to the original model based on that field.
+    if queryset._known_related_objects:  # pragma: no cover
+        store.related_fields += [row.attname for row in queryset._known_related_objects]
+
     max_complexity = max_complexity if max_complexity is not None else optimizer_settings.MAX_COMPLEXITY
     complexity = store.complexity
     if complexity > max_complexity:

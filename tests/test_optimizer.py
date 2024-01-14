@@ -118,6 +118,132 @@ def test_optimizer_many_to_many_relations(client_query):
     assert queries == 2, results.log
 
 
+def test_optimizer_all_relation_types(client_query):
+    query = """
+        query {
+          examples {
+            edges {
+              node {
+                name
+                forwardOneToOneField {
+                  name
+                }
+                forwardManyToOneField {
+                  name
+                }
+                forwardManyToManyFields {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+                reverseOneToOneRel {
+                  name
+                }
+                reverseOneToManyRels {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+                reverseManyToManyRels {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "examples" in content["data"], content["data"]
+    assert "edges" in content["data"]["examples"], content["data"]["examples"]
+    edges = content["data"]["examples"]["edges"]
+    assert len(edges) != 0, edges
+
+    queries = len(results.queries)
+    # 1 query to count all examples
+    # 1 query for all examples wih forward one-to-one, forward many-to-one, and reverse one-to-one relations
+    # 1 query for all forward many-to-many relations
+    # 1 query for all reverse one-to-many relations
+    # 1 query for all reverse many-to-many relations
+    assert queries == 5, results.log
+
+
+def test_optimizer_all_relation_types__limit(client_query):
+    query = """
+        query {
+          examples(first: 1) {
+            edges {
+              node {
+                name
+                forwardOneToOneField {
+                  name
+                }
+                forwardManyToOneField {
+                  name
+                }
+                forwardManyToManyFields(first: 1) {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+                reverseOneToOneRel {
+                  name
+                }
+                reverseOneToManyRels(first: 1) {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+                reverseManyToManyRels(first: 1) {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "examples" in content["data"], content["data"]
+    assert "edges" in content["data"]["examples"], content["data"]["examples"]
+    edges = content["data"]["examples"]["edges"]
+    assert len(edges) != 0, edges
+
+    queries = len(results.queries)
+    # 1 query to count all examples
+    # 1 query for all examples wih forward one-to-one, forward many-to-one, and reverse one-to-one relations
+    # 1 query for all forward many-to-many relations
+    # 1 query for all reverse one-to-many relations
+    # 1 query for all reverse many-to-many relations
+    assert queries == 5, results.log
+
+
 def test_optimizer_relay_node(client_query):
     apartment_id: int = Apartment.objects.values_list("id", flat=True).first()
     global_id = to_global_id(str(ApartmentNode), apartment_id)

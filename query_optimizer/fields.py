@@ -2,14 +2,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import graphene
 import graphene_django.filter
+from django.db import models
+from graphene.utils.str_converters import to_snake_case
+from graphene_django import DjangoListField, DjangoObjectType
+from graphene_django.converter import convert_django_field, get_django_field_description
+from graphene_django.registry import Registry  # noqa: TCH002
 
 from .cache import store_in_query_cache
 from .optimizer import QueryOptimizer
 from .utils import get_field_type, get_selections
 
 if TYPE_CHECKING:
-    from django.db.models import Model, QuerySet
     from django.db.models.manager import Manager
     from graphene.relay.connection import Connection
     from graphql_relay import EdgeType
@@ -17,16 +22,16 @@ if TYPE_CHECKING:
 
     from .typing import Any, Callable, GQLInfo, Optional, TypeAlias, TypeVar
 
-    TModel = TypeVar("TModel", bound=Model)
+    TModel = TypeVar("TModel", bound=models.Model)
 
     Args: TypeAlias = tuple[
         Callable[..., Optional[Manager[TModel]]],  # resolver
         Connection,  # connection
         Manager[TModel],  # default_manager
-        Callable[..., QuerySet[TModel]],  # queryset_resolver
+        Callable[..., models.QuerySet[TModel]],  # queryset_resolver
         int,  # max_limit
         bool,  # enforce_first_or_last
-        Optional[Model],  # enforce_first_or_last
+        Optional[models.Model],  # enforce_first_or_last
         GQLInfo,  # info
     ]
 
@@ -76,3 +81,76 @@ def cache_edges(edges: list[EdgeType], info: GQLInfo) -> None:
         schema=info.schema,
         store=store,
     )
+
+
+@convert_django_field.register
+def convert_reverse_to_one_field_to_django_model(
+    field: models.OneToOneRel,
+    registry: Registry | None = None,
+) -> graphene.Dynamic:
+    def dynamic_type() -> graphene.Field | None:
+        _type: DjangoObjectType | None = registry.get_type_for_model(field.related_model)
+        if _type is None:  # pragma: no cover
+            return None
+
+        class CustomField(graphene.Field):
+            def wrap_resolve(self, parent_resolver: Any) -> Any:  # noqa: ARG002
+                def custom_resolver(root: Any, info: GQLInfo) -> models.Model | None:
+                    return _type.get_node(info, root.pk)
+
+                return custom_resolver
+
+        return CustomField(_type, description=get_django_field_description(field.field), required=not field.null)
+
+    return graphene.Dynamic(dynamic_type)
+
+
+@convert_django_field.register
+def convert_forward_to_one_field_to_django_model(
+    field: models.OneToOneField | models.ForeignKey,
+    registry: Registry | None = None,
+) -> graphene.Dynamic:
+    def dynamic_type() -> graphene.Field | None:
+        _type: DjangoObjectType | None = registry.get_type_for_model(field.related_model)
+        if _type is None:  # pragma: no cover
+            return None
+
+        class CustomField(graphene.Field):
+            def wrap_resolve(self, parent_resolver: Any) -> Any:  # noqa: ARG002
+                def custom_resolver(root: Any, info: GQLInfo) -> models.Model | None:
+                    field_name = to_snake_case(info.field_name)
+                    db_field_key: str = root.__class__._meta.get_field(field_name).attname
+                    object_pk = getattr(root, db_field_key, None)
+                    if object_pk is None:  # pragma: no cover
+                        return None
+
+                    return _type.get_node(info, object_pk)
+
+                return custom_resolver
+
+        return CustomField(_type, description=get_django_field_description(field), required=not field.null)
+
+    return graphene.Dynamic(dynamic_type)
+
+
+@convert_django_field.register
+def convert_to_many_field_to_list_or_connection(
+    field: models.ManyToManyField | models.ManyToManyRel | models.ManyToOneRel,
+    registry: Registry | None = None,
+) -> graphene.Dynamic:
+    def dynamic_type() -> graphene_django.fields.DjangoConnectionField | DjangoListField | None:
+        _type: DjangoObjectType | None = registry.get_type_for_model(field.related_model)
+        if _type is None:  # pragma: no cover
+            return None
+
+        description = get_django_field_description(field if isinstance(field, models.ManyToManyField) else field.field)
+
+        if _type._meta.connection:
+            if _type._meta.filter_fields or _type._meta.filterset_class:  # pragma: no cover
+                from .filter import DjangoFilterConnectionField
+
+                return DjangoFilterConnectionField(_type, required=True, description=description)
+            return DjangoConnectionField(_type, required=True, description=description)
+        return DjangoListField(_type, required=True, description=description)
+
+    return graphene.Dynamic(dynamic_type)

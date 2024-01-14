@@ -45,7 +45,7 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
 
     @classmethod
     def filter_queryset(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
-        """override this method to"""
+        """Implement this method filter to the available rows from the model on this node."""
         return queryset
 
     @classmethod
@@ -55,8 +55,12 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         return queryset
 
     @classmethod
-    def get_node(cls, info: GQLInfo, id: PK) -> Optional[TModel]:  # noqa: A002
-        queryset: QuerySet[TModel] = cls._meta.model.objects.filter(pk=id)
+    def get_node(cls, info: GQLInfo, pk: PK) -> Optional[TModel]:
+        queryset: QuerySet[TModel] = cls._meta.model.objects.filter(pk=pk)
         if can_optimize(info):
-            queryset = optimize(queryset, info, max_complexity=cls._meta.max_complexity, pk=id)
-        return queryset.first()
+            queryset = optimize(queryset, info, max_complexity=cls._meta.max_complexity, pk=pk)
+            # Can't use .first(), as it can apply additional ordering, which would cancel the optimization.
+            # The optimizer should have just inserted the right model instance based on the given primary key
+            # to the queryset result cache anyway, so we can just pick that out.
+            return queryset._result_cache[0]
+        return queryset.first()  # pragma: no cover

@@ -12,6 +12,10 @@ from tests.example.models import (
     Building,
     BuildingProxy,
     Developer,
+    Example,
+    ForwardManyToMany,
+    ForwardManyToOne,
+    ForwardOneToOne,
     HousingCompany,
     HousingCompanyProxy,
     Owner,
@@ -20,6 +24,9 @@ from tests.example.models import (
     PropertyManager,
     RealEstate,
     RealEstateProxy,
+    ReverseManyToMany,
+    ReverseOneToMany,
+    ReverseOneToOne,
     Sale,
 )
 
@@ -227,3 +234,88 @@ class People(graphene.Union):
             return OwnerType
         msg = f"Unknown type: {instance}"
         raise TypeError(msg)
+
+
+# --------------------------------------------------------------------
+
+
+class ExampleType(DjangoObjectType):
+    class Meta:
+        model = Example
+        fields = [
+            "id",
+            "name",
+            "forward_one_to_one_field",
+            "forward_many_to_one_field",
+            "forward_many_to_many_fields",
+            "reverse_one_to_one_rel",
+            "reverse_one_to_many_rels",
+            "reverse_many_to_many_rels",
+        ]
+        interfaces = (relay.Node,)
+
+
+class ForwardOneToOneType(DjangoObjectType):
+    class Meta:
+        model = ForwardOneToOne
+        fields = [
+            "id",
+            "name",
+            "example_rel",
+        ]
+        interfaces = (relay.Node,)
+
+
+class ForwardManyToOneType(DjangoObjectType):
+    class Meta:
+        model = ForwardManyToOne
+        fields = [
+            "id",
+            "name",
+            "example_rels",
+        ]
+        interfaces = (relay.Node,)
+
+
+class ForwardManyToManyType(DjangoObjectType):
+    class Meta:
+        model = ForwardManyToMany
+        fields = [
+            "id",
+            "name",
+            "example_rels",
+        ]
+        interfaces = (relay.Node,)
+
+
+class ReverseOneToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToOne
+        fields = [
+            "id",
+            "name",
+            "example_field",
+        ]
+        interfaces = (relay.Node,)
+
+
+class ReverseOneToManyType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToMany
+        fields = [
+            "id",
+            "name",
+            "example_field",
+        ]
+        interfaces = (relay.Node,)
+
+
+class ReverseManyToManyType(DjangoObjectType):
+    class Meta:
+        model = ReverseManyToMany
+        fields = [
+            "pk",
+            "name",
+            "example_fields",
+        ]
+        interfaces = (relay.Node,)

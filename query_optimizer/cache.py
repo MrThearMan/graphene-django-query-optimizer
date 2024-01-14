@@ -86,9 +86,12 @@ def store_in_query_cache(
     """
     query_cache = get_query_cache(key, schema)
     items = list(items)  # For QuerySets, the database query will occur here
-    annotations = _get_annotations(items[0])
+    if not items:  # pragma: no cover
+        return
+
+    annotations_ = _get_annotations(items[0])
     for item in items:
-        _add_item(query_cache, item, annotations, store)
+        _add_item(query_cache, item, annotations_, store)
 
 
 def _get_annotations(item: Model) -> list[str]:
