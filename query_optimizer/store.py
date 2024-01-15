@@ -38,7 +38,7 @@ class QueryOptimizerStore:
         self.select_stores: dict[str, QueryOptimizerStore] = {}
         self.prefetch_stores: dict[str, tuple[QueryOptimizerStore, QuerySet[Model]]] = {}
 
-    def compile(self, *, in_prefetch: bool = False) -> CompilationResults:  # noqa: A003
+    def compile(self, *, in_prefetch: bool = False) -> CompilationResults:
         results = CompilationResults(
             only_fields=self.only_fields.copy(),
             related_fields=self.related_fields.copy(),
