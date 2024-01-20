@@ -6,7 +6,7 @@ import graphene
 import graphene_django.filter
 from django.db import models
 from graphene.utils.str_converters import to_snake_case
-from graphene_django import DjangoListField, DjangoObjectType
+from graphene_django import DjangoListField
 from graphene_django.converter import convert_django_field, get_django_field_description
 from graphene_django.registry import Registry  # noqa: TCH002
 
@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from graphql_relay import EdgeType
     from graphql_relay.connection.connection import ConnectionType
 
+    from .types import DjangoObjectType
     from .typing import Any, Callable, GQLInfo, Optional, TypeAlias, TypeVar
 
     TModel = TypeVar("TModel", bound=models.Model)
@@ -96,7 +97,13 @@ def convert_reverse_to_one_field_to_django_model(
         class CustomField(graphene.Field):
             def wrap_resolve(self, parent_resolver: Any) -> Any:
                 def custom_resolver(root: Any, info: GQLInfo) -> models.Model | None:
-                    return _type.get_node(info, root.pk)
+                    field_name = to_snake_case(info.field_name)
+                    # Reverse object should be optimized to the root model.
+                    reverse_object: models.Model | None = getattr(root, field_name, None)
+                    if reverse_object is None:  # pragma: no cover
+                        return None
+
+                    return _type.get_node(info, reverse_object.pk)
 
                 return custom_resolver
 
