@@ -89,26 +89,12 @@ def store_in_query_cache(
     if not items:  # pragma: no cover
         return
 
-    annotations_ = _get_annotations(items[0])
     for item in items:
-        _add_item(query_cache, item, annotations_, store)
+        _add_item(query_cache, item, store)
 
 
-def _get_annotations(item: Model) -> list[str]:
-    # Don't use 'queryset.query.annotations' since we cannot extract annotations
-    # as cleanly from the model if some other iterable than a queryset is given.
-    # (these results contain foreign key ids as well)
-    model_builtins = {"_prefetched_objects_cache", "_state"}
-    fields: set[str] = {field.name for field in item._meta.get_fields()}
-    attributes: set[str] = set(item.__dict__)
-    diff = attributes.difference(fields)
-    return list(diff.difference(model_builtins))
-
-
-def _add_item(query_cache: QueryCache, instance: Model, annotations: list[str], store: QueryOptimizerStore) -> None:
+def _add_item(query_cache: QueryCache, instance: Model, store: QueryOptimizerStore) -> None:
     store_str = str(store)
-    if annotations:
-        store_str += f"|{annotations=}"
     table_name: TableName = instance._meta.db_table
     query_cache[table_name][store_str][instance.pk] = instance
     _add_selected(query_cache, instance, store)
@@ -118,11 +104,15 @@ def _add_item(query_cache: QueryCache, instance: Model, annotations: list[str], 
 def _add_selected(query_cache: QueryCache, instance: Model, store: QueryOptimizerStore) -> None:
     for nested_name, nested_store in store.select_stores.items():
         nested_instance: Model = getattr(instance, nested_name)
-        _add_item(query_cache, nested_instance, [], nested_store)
+        _add_item(query_cache, nested_instance, nested_store)
 
 
 def _add_prefetched(query_cache: QueryCache, instance: Model, store: QueryOptimizerStore) -> None:
-    for nested_name, (nested_store, _queryset) in store.prefetch_stores.items():
+    for nested_name, (nested_store, _) in store.prefetch_stores.items():
+        # Here we can fetch the many-related items from the instance with `.all()`
+        # without hitting the database, because the items have already been prefetched.
+        # See: `django.db.models.fields.related_descriptors.RelatedManager.get_queryset`
+        # and `django.db.models.fields.related_descriptors.ManyRelatedManager.get_queryset`
         selected: QuerySet[Model] = getattr(instance, nested_name).all()
         for select in selected:
-            _add_item(query_cache, select, [], nested_store)
+            _add_item(query_cache, select, nested_store)
