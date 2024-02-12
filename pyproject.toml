@@ -65,10 +65,10 @@ filter = ["django-filter"]
 pytest = "8.0.0"
 coverage = "7.4.1"
 pytest-django = "4.8.0"
-pre-commit = "3.6.0"
+pre-commit = "3.6.1"
 tox = "4.12.1"
 tox-gh-actions = "3.2.0"
-faker = "22.6.0"
+faker = "23.1.0"
 sqlparse = "0.4.4"
 django-graphiql-debug-toolbar = "0.2.0"
 
