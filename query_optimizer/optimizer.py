@@ -200,8 +200,11 @@ class QueryOptimizer:
 
         model_field_name = to_snake_case(selection_graphql_name)
         try:
-            model_field: ModelField
-            model_field = model._meta.pk if model_field_name == "pk" else model._meta.get_field(model_field_name)
+            if model_field_name == "pk":
+                model_field: ModelField = model._meta.pk
+                model_field_name = model_field.name  # use actual model pk name, e.g. 'id'
+            else:
+                model_field: ModelField = model._meta.get_field(model_field_name)
         except FieldDoesNotExist:
             self.add_hinted_fields(selection_graphql_field, model, store)
             return

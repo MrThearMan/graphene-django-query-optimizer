@@ -18,7 +18,7 @@ __all__ = [
 
 
 class PostalCode(models.Model):
-    code = models.CharField(max_length=5, unique=True)
+    code = models.CharField(max_length=5, unique=True, primary_key=True)
 
     class Meta:
         ordering = ["code"]

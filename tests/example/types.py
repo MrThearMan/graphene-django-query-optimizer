@@ -53,21 +53,48 @@ __all__ = [
 class PostalCodeType(DjangoObjectType):
     class Meta:
         model = PostalCode
+        fields = [
+            "pk",
+            "code",
+            "housing_companies",
+        ]
 
 
 class DeveloperType(DjangoObjectType):
     class Meta:
         model = Developer
+        fields = [
+            "pk",
+            "name",
+            "description",
+            "housing_companies",
+        ]
 
 
 class PropertyManagerType(DjangoObjectType):
     class Meta:
         model = PropertyManager
+        fields = [
+            "pk",
+            "name",
+            "email",
+            "housing_companies",
+        ]
 
 
 class HousingCompanyType(DjangoObjectType):
     class Meta:
         model = HousingCompany
+        fields = [
+            "pk",
+            "name",
+            "street_address",
+            "postal_code",
+            "city",
+            "developers",
+            "property_manager",
+            "real_estates",
+        ]
 
     def resolve_name(model: HousingCompany, info: GQLInfo) -> str:
         return model.name
@@ -92,26 +119,60 @@ class HousingCompanyType(DjangoObjectType):
 class RealEstateType(DjangoObjectType):
     class Meta:
         model = RealEstate
+        field = [
+            "pk",
+            "name",
+            "housing_company",
+            "buildings",
+        ]
 
 
 class BuildingType(DjangoObjectType):
     class Meta:
         model = Building
+        fields = [
+            "pk",
+            "name",
+            "street_address",
+            "real_estate",
+            "apartments",
+        ]
 
 
 class ApartmentType(DjangoObjectType):
+    class Meta:
+        model = Apartment
+        fields = [
+            "pk",
+            "completion_date",
+            "street_address",
+            "stair",
+            "floor",
+            "apartment_number",
+            "shares_start",
+            "shares_end",
+            "surface_area",
+            "rooms",
+            "building",
+            "sales",
+        ]
+        max_complexity = 10
+
     @classmethod
     def filter_queryset(cls, queryset: QuerySet, info: GQLInfo) -> QuerySet:
         return queryset.filter(rooms__isnull=False)
-
-    class Meta:
-        model = Apartment
-        max_complexity = 10
 
 
 class SaleType(DjangoObjectType):
     class Meta:
         model = Sale
+        fields = [
+            "pk",
+            "apartment",
+            "purchase_price",
+            "purchase_date",
+            "ownerships",
+        ]
 
     @classmethod
     def filter_queryset(cls, queryset: QuerySet, info: GQLInfo) -> QuerySet:
@@ -121,11 +182,24 @@ class SaleType(DjangoObjectType):
 class OwnerType(DjangoObjectType):
     class Meta:
         model = Owner
+        fields = [
+            "pk",
+            "name",
+            "email",
+            "sales",
+            "ownerships",
+        ]
 
 
 class OwnershipType(DjangoObjectType):
     class Meta:
         model = Ownership
+        fields = [
+            "pk",
+            "owner",
+            "sale",
+            "percentage",
+        ]
 
 
 # Relay

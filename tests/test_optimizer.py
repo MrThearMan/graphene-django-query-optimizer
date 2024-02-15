@@ -1063,3 +1063,39 @@ def test_optimizer_max_complexity_reached(client_query):
     queries = len(results.queries)
     # No queries since fetching is stopped due to complexity
     assert queries == 0, results.log
+
+
+def test_optimizer_deep_query__pks(client_query):
+    query = """
+        query {
+          allApartments {
+            pk
+            building {
+              pk
+              realEstate {
+                pk
+                housingCompany {
+                  pk
+                  postalCode {
+                    code
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+    assert "allApartments" in content["data"], content["data"]
+    apartments = content["data"]["allApartments"]
+    assert len(apartments) != 0, apartments
+
+    queries = len(results.queries)
+    # 1 query for fetching Apartments and related Buildings, RealEstates, HousingCompanies, and PostalCodes
+    assert queries == 1, results.log
