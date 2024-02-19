@@ -14,7 +14,7 @@ on:
 
 jobs:
   test:
-    uses: MrThearMan/CI/.github/workflows/test.yml@v0.4.8
+    uses: MrThearMan/CI/.github/workflows/test.yml@v0.4.9
     with:
       python-version: '["3.9", "3.10", "3.11", "3.12"]'
 
