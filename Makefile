@@ -89,6 +89,7 @@ test:
 
 tests:
 	@poetry run coverage run -m pytest
+	@poetry run coverage report -m
 
 tox:
 	@poetry run tox
