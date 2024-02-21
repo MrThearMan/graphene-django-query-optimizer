@@ -243,64 +243,298 @@ class HousingCompanyProxy(HousingCompany):
 # --------------------------------------------------------------------
 
 
-class ForwardOneToOne(models.Model):
+class BaseModel(models.Model):
     name = models.CharField(max_length=255)
 
+    class Meta:
+        abstract = True
 
-class ForwardManyToOne(models.Model):
-    name = models.CharField(max_length=255)
-
-
-class ForwardManyToMany(models.Model):
-    name = models.CharField(max_length=255)
+    def __str__(self) -> str:
+        return self.__class__.__name__ + ": " + self.name
 
 
-class Example(models.Model):
-    name = models.CharField(max_length=255)
+class Example(BaseModel):
     symmetrical_field = models.ManyToManyField("self")
     forward_one_to_one_field = models.OneToOneField(
-        ForwardOneToOne,
+        "ForwardOneToOne",
         on_delete=models.CASCADE,
         related_name="example_rel",
-        # related_query_name="example_query_rel",
     )
     forward_many_to_one_field = models.ForeignKey(
-        ForwardManyToOne,
+        "ForwardManyToOne",
         on_delete=models.CASCADE,
         related_name="example_rels",
-        # related_query_name="example_query_rels",
     )
     forward_many_to_many_fields = models.ManyToManyField(
-        ForwardManyToMany,
+        "ForwardManyToMany",
         related_name="example_rels",
-        # related_query_name="example_query_rels",
     )
 
 
-class ReverseOneToOne(models.Model):
-    name = models.CharField(max_length=255)
+class ForwardOneToOne(BaseModel):
+    forward_one_to_one_field = models.OneToOneField(
+        "ForwardOneToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="forward_one_to_one_rel",
+    )
+    forward_many_to_one_field = models.ForeignKey(
+        "ForwardManyToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="forward_one_to_one_rels",
+    )
+    forward_many_to_many_fields = models.ManyToManyField(
+        "ForwardManyToManyForRelated",
+        related_name="forward_one_to_one_rels",
+    )
+
+
+class ForwardManyToOne(BaseModel):
+    forward_one_to_one_field = models.OneToOneField(
+        "ForwardOneToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="forward_many_to_one_rel",
+    )
+    forward_many_to_one_field = models.ForeignKey(
+        "ForwardManyToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="forward_many_to_one_rels",
+    )
+    forward_many_to_many_fields = models.ManyToManyField(
+        "ForwardManyToManyForRelated",
+        related_name="forward_many_to_one_rels",
+    )
+
+
+class ForwardManyToMany(BaseModel):
+    forward_one_to_one_field = models.OneToOneField(
+        "ForwardOneToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="forward_many_to_many_rel",
+    )
+    forward_many_to_one_field = models.ForeignKey(
+        "ForwardManyToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="forward_many_to_many_rels",
+    )
+    forward_many_to_many_fields = models.ManyToManyField(
+        "ForwardManyToManyForRelated",
+        related_name="forward_many_to_many_rels",
+    )
+
+
+class ReverseOneToOne(BaseModel):
     example_field = models.OneToOneField(
-        Example,
+        "Example",
         on_delete=models.CASCADE,
         related_name="reverse_one_to_one_rel",
-        # related_query_name="reverse_one_to_one_query_rel",
+    )
+
+    forward_one_to_one_field = models.OneToOneField(
+        "ForwardOneToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_one_rel",
+    )
+    forward_many_to_one_field = models.ForeignKey(
+        "ForwardManyToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_one_rels",
+    )
+    forward_many_to_many_fields = models.ManyToManyField(
+        "ForwardManyToManyForRelated",
+        related_name="reverse_one_to_one_rels",
     )
 
 
-class ReverseOneToMany(models.Model):
-    name = models.CharField(max_length=255)
+class ReverseOneToMany(BaseModel):
     example_field = models.ForeignKey(
-        Example,
+        "Example",
         on_delete=models.CASCADE,
         related_name="reverse_one_to_many_rels",
-        # related_query_name="reverse_one_to_many_query_rels",
+    )
+
+    forward_one_to_one_field = models.OneToOneField(
+        "ForwardOneToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_many_rel",
+    )
+    forward_many_to_one_field = models.ForeignKey(
+        "ForwardManyToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_many_rels",
+    )
+    forward_many_to_many_fields = models.ManyToManyField(
+        "ForwardManyToManyForRelated",
+        related_name="reverse_one_to_many_rels",
     )
 
 
-class ReverseManyToMany(models.Model):
-    name = models.CharField(max_length=255)
+class ReverseManyToMany(BaseModel):
     example_fields = models.ManyToManyField(
-        Example,
+        "Example",
         related_name="reverse_many_to_many_rels",
-        # related_query_name="reverse_many_to_many_query_rels",
+    )
+
+    forward_one_to_one_field = models.OneToOneField(
+        "ForwardOneToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="reverse_many_to_many_rel",
+    )
+    forward_many_to_one_field = models.ForeignKey(
+        "ForwardManyToOneForRelated",
+        on_delete=models.CASCADE,
+        related_name="reverse_many_to_many_rels",
+    )
+    forward_many_to_many_fields = models.ManyToManyField(
+        "ForwardManyToManyForRelated",
+        related_name="reverse_many_to_many_rels",
+    )
+
+
+class ForwardOneToOneForRelated(BaseModel):
+    pass
+
+
+class ForwardManyToOneForRelated(BaseModel):
+    pass
+
+
+class ForwardManyToManyForRelated(BaseModel):
+    pass
+
+
+class ReverseOneToOneToForwardOneToOne(BaseModel):
+    forward_one_to_one_field = models.OneToOneField(
+        "ForwardOneToOne",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_one_rel",
+    )
+
+
+class ReverseOneToOneToForwardManyToOne(BaseModel):
+    forward_many_to_one_field = models.OneToOneField(
+        "ForwardManyToOne",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_one_rel",
+    )
+
+
+class ReverseOneToOneToForwardManyToMany(BaseModel):
+    forward_many_to_many_field = models.OneToOneField(
+        "ForwardManyToMany",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_one_rel",
+    )
+
+
+class ReverseOneToOneToReverseOneToOne(BaseModel):
+    reverse_one_to_one_field = models.OneToOneField(
+        "ReverseOneToOne",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_one_rel",
+    )
+
+
+class ReverseOneToOneToReverseOneToMany(BaseModel):
+    reverse_many_to_one_field = models.OneToOneField(
+        "ReverseOneToMany",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_one_rel",
+    )
+
+
+class ReverseOneToOneToReverseManyToMany(BaseModel):
+    reverse_many_to_many_field = models.OneToOneField(
+        "ReverseManyToMany",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_one_rel",
+    )
+
+
+class ReverseOneToManyToForwardOneToOne(BaseModel):
+    forward_one_to_one_field = models.ForeignKey(
+        "ForwardOneToOne",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_many_rels",
+    )
+
+
+class ReverseOneToManyToForwardManyToOne(BaseModel):
+    forward_many_to_one_field = models.ForeignKey(
+        "ForwardManyToOne",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_many_rels",
+    )
+
+
+class ReverseOneToManyToForwardManyToMany(BaseModel):
+    forward_many_to_many_field = models.ForeignKey(
+        "ForwardManyToMany",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_many_rels",
+    )
+
+
+class ReverseOneToManyToReverseOneToOne(BaseModel):
+    reverse_one_to_one_field = models.ForeignKey(
+        "ReverseOneToOne",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_many_rels",
+    )
+
+
+class ReverseOneToManyToReverseOneToMany(BaseModel):
+    reverse_many_to_one_field = models.ForeignKey(
+        "ReverseOneToMany",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_many_rels",
+    )
+
+
+class ReverseOneToManyToReverseManyToMany(BaseModel):
+    reverse_many_to_many_field = models.ForeignKey(
+        "ReverseManyToMany",
+        on_delete=models.CASCADE,
+        related_name="reverse_one_to_many_rels",
+    )
+
+
+class ReverseManyToManyToForwardOneToOne(BaseModel):
+    forward_one_to_one_fields = models.ManyToManyField(
+        "ForwardOneToOne",
+        related_name="reverse_many_to_many_rels",
+    )
+
+
+class ReverseManyToManyToForwardManyToOne(BaseModel):
+    forward_many_to_one_fields = models.ManyToManyField(
+        "ForwardManyToOne",
+        related_name="reverse_many_to_many_rels",
+    )
+
+
+class ReverseManyToManyToForwardManyToMany(BaseModel):
+    forward_many_to_many_fields = models.ManyToManyField(
+        "ForwardManyToMany",
+        related_name="reverse_many_to_many_rels",
+    )
+
+
+class ReverseManyToManyToReverseOneToOne(BaseModel):
+    reverse_one_to_one_fields = models.ManyToManyField(
+        "ReverseOneToOne",
+        related_name="reverse_many_to_many_rels",
+    )
+
+
+class ReverseManyToManyToReverseOneToMany(BaseModel):
+    reverse_many_to_one_fields = models.ManyToManyField(
+        "ReverseOneToMany",
+        related_name="reverse_many_to_many_rels",
+    )
+
+
+class ReverseManyToManyToReverseManyToMany(BaseModel):
+    reverse_many_to_many_fields = models.ManyToManyField(
+        "ReverseManyToMany",
+        related_name="reverse_many_to_many_rels",
     )

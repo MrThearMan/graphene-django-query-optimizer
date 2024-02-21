@@ -12,8 +12,11 @@ from tests.example.models import (
     Developer,
     Example,
     ForwardManyToMany,
+    ForwardManyToManyForRelated,
     ForwardManyToOne,
+    ForwardManyToOneForRelated,
     ForwardOneToOne,
+    ForwardOneToOneForRelated,
     HousingCompany,
     Owner,
     Ownership,
@@ -21,8 +24,26 @@ from tests.example.models import (
     PropertyManager,
     RealEstate,
     ReverseManyToMany,
+    ReverseManyToManyToForwardManyToMany,
+    ReverseManyToManyToForwardManyToOne,
+    ReverseManyToManyToForwardOneToOne,
+    ReverseManyToManyToReverseManyToMany,
+    ReverseManyToManyToReverseOneToMany,
+    ReverseManyToManyToReverseOneToOne,
     ReverseOneToMany,
+    ReverseOneToManyToForwardManyToMany,
+    ReverseOneToManyToForwardManyToOne,
+    ReverseOneToManyToForwardOneToOne,
+    ReverseOneToManyToReverseManyToMany,
+    ReverseOneToManyToReverseOneToMany,
+    ReverseOneToManyToReverseOneToOne,
     ReverseOneToOne,
+    ReverseOneToOneToForwardManyToMany,
+    ReverseOneToOneToForwardManyToOne,
+    ReverseOneToOneToForwardOneToOne,
+    ReverseOneToOneToReverseManyToMany,
+    ReverseOneToOneToReverseOneToMany,
+    ReverseOneToOneToReverseOneToOne,
     Sale,
 )
 
@@ -30,12 +51,12 @@ faker = Faker(locale="en_US")
 
 
 class Command(BaseCommand):
-    help = "Create test data."  # noqa: A003
+    help = "Create test data."
 
     def add_arguments(self, parser: CommandParser) -> None:
         pass
 
-    def handle(self, *args, **options) -> None:  # noqa: ARG002, ANN002, ANN003
+    def handle(self, *args, **options) -> None:  # noqa: ANN002, ANN003
         create_test_data()
 
 
@@ -213,13 +234,119 @@ def create_ownerships(owners: list[Owner], sales: list[Sale]) -> list[Ownership]
 
 
 def create_examples() -> None:
-    f10 = ForwardOneToOne.objects.create(name=faker.name())
-    f11 = ForwardOneToOne.objects.create(name=faker.name())
-    f20 = ForwardManyToOne.objects.create(name=faker.name())
-    f21 = ForwardManyToOne.objects.create(name=faker.name())
-    f30 = ForwardManyToMany.objects.create(name=faker.name())
-    f31 = ForwardManyToMany.objects.create(name=faker.name())
-    f32 = ForwardManyToMany.objects.create(name=faker.name())
+    # example
+    #   <-> symmetrical
+    #   --> forward_one_to_one
+    #       --> forward_one_to_one_for_related_field
+    #       --> forward_many_to_one_for_related_field
+    #       --> forward_many_to_many_for_related_fields
+    #       <-- reverse_one_to_one_for_forward_one_to_one
+    #       <-- reverse_many_to_one_for_forward_one_to_one
+    #       <-- reverse_many_to_many_for_forward_one_to_one
+    #   --> forward_many_to_one
+    #       --> forward_one_to_one_for_related_field
+    #       --> forward_many_to_one_for_related_field
+    #       --> forward_many_to_many_for_related_fields
+    #       <-- reverse_one_to_one_for_forward_many_to_one
+    #       <-- reverse_many_to_one_for_forward_many_to_one
+    #       <-- reverse_many_to_many_for_forward_many_to_one
+    #   --> forward_many_to_many
+    #       --> forward_one_to_one_for_related_field
+    #       --> forward_many_to_one_for_related_field
+    #       --> forward_many_to_many_for_related_fields
+    #       <-- reverse_one_to_one_for_forward_many_to_many
+    #       <-- reverse_many_to_one_for_forward_many_to_many
+    #       <-- reverse_many_to_many_for_forward_many_to_many
+    #   <-- reverse_one_to_one
+    #       --> forward_one_to_one_for_related_field
+    #       --> forward_many_to_one_for_related_field
+    #       --> forward_many_to_many_for_related_fields
+    #       <-- reverse_one_to_one_for_reverse_one_to_one
+    #       <-- reverse_many_to_one_for_reverse_one_to_one
+    #       <-- reverse_many_to_many_for_reverse_one_to_one
+    #   <-- reverse_many_to_one
+    #       --> forward_one_to_one_for_related
+    #       --> forward_many_to_one_for_related
+    #       --> forward_many_to_many_for_related
+    #       <-- reverse_one_to_one_for_reverse_many_to_one
+    #       <-- reverse_many_to_one_for_reverse_many_to_one
+    #       <-- reverse_many_to_many_for_reverse_many_to_one
+    #   <-- reverse_many_to_many
+    #       --> forward_one_to_one_for_related
+    #       --> forward_many_to_one_for_related
+    #       --> forward_many_to_many_for_related
+    #       <-- reverse_one_to_one_for_reverse_many_to_many
+    #       <-- reverse_many_to_one_for_reverse_many_to_many
+    #       <-- reverse_many_to_many_for_reverse_many_to_many
+
+    f100 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f101 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f102 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f103 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f104 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f105 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f106 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f107 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+
+    f110 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f111 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f112 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f113 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f114 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f115 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+    f116 = ForwardOneToOneForRelated.objects.create(name=faker.name())
+
+    f200 = ForwardManyToOneForRelated.objects.create(name=faker.name())
+    f201 = ForwardManyToOneForRelated.objects.create(name=faker.name())
+
+    f300 = ForwardManyToManyForRelated.objects.create(name=faker.name())
+    f301 = ForwardManyToManyForRelated.objects.create(name=faker.name())
+    f302 = ForwardManyToManyForRelated.objects.create(name=faker.name())
+
+    f10 = ForwardOneToOne.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f110,
+        forward_many_to_one_field=f200,
+    )
+    f11 = ForwardOneToOne.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f111,
+        forward_many_to_one_field=f201,
+    )
+    f10.forward_many_to_many_fields.add(f300, f301)
+    f11.forward_many_to_many_fields.add(f300, f302)
+
+    f20 = ForwardManyToOne.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f112,
+        forward_many_to_one_field=f200,
+    )
+    f21 = ForwardManyToOne.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f113,
+        forward_many_to_one_field=f201,
+    )
+    f20.forward_many_to_many_fields.add(f300, f301)
+    f21.forward_many_to_many_fields.add(f300, f302)
+
+    f30 = ForwardManyToMany.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f114,
+        forward_many_to_one_field=f200,
+    )
+    f31 = ForwardManyToMany.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f115,
+        forward_many_to_one_field=f201,
+    )
+    f32 = ForwardManyToMany.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f116,
+        forward_many_to_one_field=f200,
+    )
+    f30.forward_many_to_many_fields.add(f300, f301)
+    f31.forward_many_to_many_fields.add(f300, f302)
+    f32.forward_many_to_many_fields.add(f301, f302)
 
     e1 = Example.objects.create(
         name=faker.name(),
@@ -237,15 +364,207 @@ def create_examples() -> None:
 
     e1.symmetrical_field.add(e2)
 
-    ReverseOneToOne.objects.create(name=faker.name(), example_field=e1)
-    ReverseOneToOne.objects.create(name=faker.name(), example_field=e2)
+    r10 = ReverseOneToOne.objects.create(
+        name=faker.name(),
+        example_field=e1,
+        forward_one_to_one_field=f100,
+        forward_many_to_one_field=f200,
+    )
+    r11 = ReverseOneToOne.objects.create(
+        name=faker.name(),
+        example_field=e2,
+        forward_one_to_one_field=f101,
+        forward_many_to_one_field=f201,
+    )
+    r10.forward_many_to_many_fields.add(f300, f301)
+    r11.forward_many_to_many_fields.add(f300, f302)
 
-    ReverseOneToMany.objects.create(name=faker.name(), example_field=e1)
-    ReverseOneToMany.objects.create(name=faker.name(), example_field=e1)
-    ReverseOneToMany.objects.create(name=faker.name(), example_field=e2)
-    ReverseOneToMany.objects.create(name=faker.name(), example_field=e2)
+    r20 = ReverseOneToMany.objects.create(
+        name=faker.name(),
+        example_field=e1,
+        forward_one_to_one_field=f102,
+        forward_many_to_one_field=f200,
+    )
+    r21 = ReverseOneToMany.objects.create(
+        name=faker.name(),
+        example_field=e1,
+        forward_one_to_one_field=f103,
+        forward_many_to_one_field=f201,
+    )
+    r22 = ReverseOneToMany.objects.create(
+        name=faker.name(),
+        example_field=e2,
+        forward_one_to_one_field=f104,
+        forward_many_to_one_field=f200,
+    )
+    r23 = ReverseOneToMany.objects.create(
+        name=faker.name(),
+        example_field=e2,
+        forward_one_to_one_field=f105,
+        forward_many_to_one_field=f201,
+    )
+    r20.forward_many_to_many_fields.add(f300, f301)
+    r21.forward_many_to_many_fields.add(f300, f302)
+    r22.forward_many_to_many_fields.add(f300, f301)
+    r23.forward_many_to_many_fields.add(f300, f302)
 
-    r30 = ReverseManyToMany.objects.create(name=faker.name())
+    r30 = ReverseManyToMany.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f106,
+        forward_many_to_one_field=f200,
+    )
+    r31 = ReverseManyToMany.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f107,
+        forward_many_to_one_field=f201,
+    )
     r30.example_fields.add(e1, e2)
-    r31 = ReverseManyToMany.objects.create(name=faker.name())
     r31.example_fields.add(e1, e2)
+    r30.forward_many_to_many_fields.add(f300, f301)
+    r31.forward_many_to_many_fields.add(f300, f302)
+
+    ReverseOneToOneToForwardOneToOne.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f10,
+    )
+    ReverseOneToOneToForwardOneToOne.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f11,
+    )
+
+    ReverseOneToOneToForwardManyToOne.objects.create(
+        name=faker.name(),
+        forward_many_to_one_field=f20,
+    )
+    ReverseOneToOneToForwardManyToOne.objects.create(
+        name=faker.name(),
+        forward_many_to_one_field=f21,
+    )
+
+    ReverseOneToOneToForwardManyToMany.objects.create(
+        name=faker.name(),
+        forward_many_to_many_field=f30,
+    )
+    ReverseOneToOneToForwardManyToMany.objects.create(
+        name=faker.name(),
+        forward_many_to_many_field=f31,
+    )
+    ReverseOneToOneToForwardManyToMany.objects.create(
+        name=faker.name(),
+        forward_many_to_many_field=f32,
+    )
+
+    ReverseOneToOneToReverseOneToOne.objects.create(
+        name=faker.name(),
+        reverse_one_to_one_field=r10,
+    )
+    ReverseOneToOneToReverseOneToOne.objects.create(
+        name=faker.name(),
+        reverse_one_to_one_field=r11,
+    )
+
+    ReverseOneToOneToReverseOneToMany.objects.create(
+        name=faker.name(),
+        reverse_many_to_one_field=r20,
+    )
+    ReverseOneToOneToReverseOneToMany.objects.create(
+        name=faker.name(),
+        reverse_many_to_one_field=r21,
+    )
+
+    ReverseOneToOneToReverseManyToMany.objects.create(
+        name=faker.name(),
+        reverse_many_to_many_field=r30,
+    )
+    ReverseOneToOneToReverseManyToMany.objects.create(
+        name=faker.name(),
+        reverse_many_to_many_field=r31,
+    )
+
+    ReverseOneToManyToForwardOneToOne.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f10,
+    )
+    ReverseOneToManyToForwardOneToOne.objects.create(
+        name=faker.name(),
+        forward_one_to_one_field=f11,
+    )
+
+    ReverseOneToManyToForwardManyToOne.objects.create(
+        name=faker.name(),
+        forward_many_to_one_field=f20,
+    )
+    ReverseOneToManyToForwardManyToOne.objects.create(
+        name=faker.name(),
+        forward_many_to_one_field=f21,
+    )
+
+    ReverseOneToManyToForwardManyToMany.objects.create(
+        name=faker.name(),
+        forward_many_to_many_field=f30,
+    )
+    ReverseOneToManyToForwardManyToMany.objects.create(
+        name=faker.name(),
+        forward_many_to_many_field=f31,
+    )
+    ReverseOneToManyToForwardManyToMany.objects.create(
+        name=faker.name(),
+        forward_many_to_many_field=f32,
+    )
+
+    ReverseOneToManyToReverseOneToOne.objects.create(
+        name=faker.name(),
+        reverse_one_to_one_field=r10,
+    )
+    ReverseOneToManyToReverseOneToOne.objects.create(
+        name=faker.name(),
+        reverse_one_to_one_field=r11,
+    )
+
+    ReverseOneToManyToReverseOneToMany.objects.create(
+        name=faker.name(),
+        reverse_many_to_one_field=r20,
+    )
+    ReverseOneToManyToReverseOneToMany.objects.create(
+        name=faker.name(),
+        reverse_many_to_one_field=r21,
+    )
+
+    ReverseOneToManyToReverseManyToMany.objects.create(
+        name=faker.name(),
+        reverse_many_to_many_field=r30,
+    )
+    ReverseOneToManyToReverseManyToMany.objects.create(
+        name=faker.name(),
+        reverse_many_to_many_field=r31,
+    )
+
+    r30f10 = ReverseManyToManyToForwardOneToOne.objects.create(name=faker.name())
+    r30f10.forward_one_to_one_fields.add(f10, f11)
+    r30f11 = ReverseManyToManyToForwardOneToOne.objects.create(name=faker.name())
+    r30f11.forward_one_to_one_fields.add(f10, f11)
+
+    r30f20 = ReverseManyToManyToForwardManyToOne.objects.create(name=faker.name())
+    r30f20.forward_many_to_one_fields.add(f20, f21)
+    r30f21 = ReverseManyToManyToForwardManyToOne.objects.create(name=faker.name())
+    r30f21.forward_many_to_one_fields.add(f20, f21)
+
+    r30f30 = ReverseManyToManyToForwardManyToMany.objects.create(name=faker.name())
+    r30f30.forward_many_to_many_fields.add(f30, f31)
+    r30f31 = ReverseManyToManyToForwardManyToMany.objects.create(name=faker.name())
+    r30f31.forward_many_to_many_fields.add(f30, f32)
+
+    r30r10 = ReverseManyToManyToReverseOneToOne.objects.create(name=faker.name())
+    r30r10.reverse_one_to_one_fields.add(r10, r11)
+    r30r11 = ReverseManyToManyToReverseOneToOne.objects.create(name=faker.name())
+    r30r11.reverse_one_to_one_fields.add(r10, r11)
+
+    r30r20 = ReverseManyToManyToReverseOneToMany.objects.create(name=faker.name())
+    r30r20.reverse_many_to_one_fields.add(r20, r21)
+    r30r21 = ReverseManyToManyToReverseOneToMany.objects.create(name=faker.name())
+    r30r21.reverse_many_to_one_fields.add(r20, r21)
+
+    r30r30 = ReverseManyToManyToReverseManyToMany.objects.create(name=faker.name())
+    r30r30.reverse_many_to_many_fields.add(r30, r31)
+    r30r31 = ReverseManyToManyToReverseManyToMany.objects.create(name=faker.name())
+    r30r31.reverse_many_to_many_fields.add(r30, r31)

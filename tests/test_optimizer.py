@@ -5,7 +5,11 @@ import pytest
 from django.db.models import Count
 from graphql_relay import to_global_id
 
-from tests.example.models import Apartment, Building, HousingCompany
+from tests.example.models import (
+    Apartment,
+    Building,
+    HousingCompany,
+)
 from tests.example.types import ApartmentNode
 from tests.example.utils import capture_database_queries
 
@@ -122,40 +126,24 @@ def test_optimizer_all_relation_types(client_query):
     query = """
         query {
           examples {
-            edges {
-              node {
-                name
-                forwardOneToOneField {
-                  name
-                }
-                forwardManyToOneField {
-                  name
-                }
-                forwardManyToManyFields {
-                  edges {
-                    node {
-                      name
-                    }
-                  }
-                }
-                reverseOneToOneRel {
-                  name
-                }
-                reverseOneToManyRels {
-                  edges {
-                    node {
-                      name
-                    }
-                  }
-                }
-                reverseManyToManyRels {
-                  edges {
-                    node {
-                      name
-                    }
-                  }
-                }
-              }
+            name
+            forwardOneToOneField {
+              name
+            }
+            forwardManyToOneField {
+              name
+            }
+            forwardManyToManyFields {
+              name
+            }
+            reverseOneToOneRel {
+              name
+            }
+            reverseOneToManyRels {
+              name
+            }
+            reverseManyToManyRels {
+              name
             }
           }
         }
@@ -168,80 +156,14 @@ def test_optimizer_all_relation_types(client_query):
     assert "errors" not in content, content["errors"]
     assert "data" in content, content
     assert "examples" in content["data"], content["data"]
-    assert "edges" in content["data"]["examples"], content["data"]["examples"]
-    edges = content["data"]["examples"]["edges"]
-    assert len(edges) != 0, edges
+    assert len(content["data"]["examples"]) != 0, content
 
     queries = len(results.queries)
-    # 1 query to count all examples
     # 1 query for all examples wih forward one-to-one, forward many-to-one, and reverse one-to-one relations
     # 1 query for all forward many-to-many relations
     # 1 query for all reverse one-to-many relations
     # 1 query for all reverse many-to-many relations
-    assert queries == 5, results.log
-
-
-def test_optimizer_all_relation_types__limit(client_query):
-    query = """
-        query {
-          examples(first: 1) {
-            edges {
-              node {
-                name
-                forwardOneToOneField {
-                  name
-                }
-                forwardManyToOneField {
-                  name
-                }
-                forwardManyToManyFields(first: 1) {
-                  edges {
-                    node {
-                      name
-                    }
-                  }
-                }
-                reverseOneToOneRel {
-                  name
-                }
-                reverseOneToManyRels(first: 1) {
-                  edges {
-                    node {
-                      name
-                    }
-                  }
-                }
-                reverseManyToManyRels(first: 1) {
-                  edges {
-                    node {
-                      name
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-    assert "data" in content, content
-    assert "examples" in content["data"], content["data"]
-    assert "edges" in content["data"]["examples"], content["data"]["examples"]
-    edges = content["data"]["examples"]["edges"]
-    assert len(edges) != 0, edges
-
-    queries = len(results.queries)
-    # 1 query to count all examples
-    # 1 query for all examples wih forward one-to-one, forward many-to-one, and reverse one-to-one relations
-    # 1 query for all forward many-to-many relations
-    # 1 query for all reverse one-to-many relations
-    # 1 query for all reverse many-to-many relations
-    assert queries == 5, results.log
+    assert queries == 4, results.log
 
 
 def test_optimizer_relay_node(client_query):

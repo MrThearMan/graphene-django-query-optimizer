@@ -15,6 +15,7 @@ from query_optimizer.typing import GQLInfo
 from .models import (
     Apartment,
     Developer,
+    Example,
     HousingCompany,
     Owner,
     PropertyManager,
@@ -26,9 +27,6 @@ from .types import (
     BuildingType,
     DeveloperType,
     ExampleType,
-    ForwardManyToManyType,
-    ForwardManyToOneType,
-    ForwardOneToOneType,
     HousingCompanyNode,
     HousingCompanyType,
     OwnershipType,
@@ -38,9 +36,6 @@ from .types import (
     PropertyManagerType,
     RealEstateNode,
     RealEstateType,
-    ReverseManyToManyType,
-    ReverseOneToManyType,
-    ReverseOneToOneType,
     SaleType,
 )
 
@@ -94,13 +89,11 @@ class Query(graphene.ObjectType):
 
     # --------------------------------------------------------------------
 
-    examples = DjangoConnectionField(ExampleType)
-    forward_one_to_ones = DjangoConnectionField(ForwardOneToOneType)
-    forward_many_to_ones = DjangoConnectionField(ForwardManyToOneType)
-    forward_many_to_manys = DjangoConnectionField(ForwardManyToManyType)
-    reverse_one_to_ones = DjangoConnectionField(ReverseOneToOneType)
-    reverse_many_to_ones = DjangoConnectionField(ReverseOneToManyType)
-    reverse_many_to_manys = DjangoConnectionField(ReverseManyToManyType)
+    example = graphene.Field(ExampleType, pk=graphene.Int(required=True))
+    examples = DjangoListField(ExampleType)
+
+    def resolve_example(parent: None, info: GQLInfo, pk: int = None):
+        return Example.objects.get(pk=pk)
 
     # --------------------------------------------------------------------
 

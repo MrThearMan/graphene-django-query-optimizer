@@ -14,8 +14,11 @@ from tests.example.models import (
     Developer,
     Example,
     ForwardManyToMany,
+    ForwardManyToManyForRelated,
     ForwardManyToOne,
+    ForwardManyToOneForRelated,
     ForwardOneToOne,
+    ForwardOneToOneForRelated,
     HousingCompany,
     HousingCompanyProxy,
     Owner,
@@ -25,8 +28,26 @@ from tests.example.models import (
     RealEstate,
     RealEstateProxy,
     ReverseManyToMany,
+    ReverseManyToManyToForwardManyToMany,
+    ReverseManyToManyToForwardManyToOne,
+    ReverseManyToManyToForwardOneToOne,
+    ReverseManyToManyToReverseManyToMany,
+    ReverseManyToManyToReverseOneToMany,
+    ReverseManyToManyToReverseOneToOne,
     ReverseOneToMany,
+    ReverseOneToManyToForwardManyToMany,
+    ReverseOneToManyToForwardManyToOne,
+    ReverseOneToManyToForwardOneToOne,
+    ReverseOneToManyToReverseManyToMany,
+    ReverseOneToManyToReverseOneToMany,
+    ReverseOneToManyToReverseOneToOne,
     ReverseOneToOne,
+    ReverseOneToOneToForwardManyToMany,
+    ReverseOneToOneToForwardManyToOne,
+    ReverseOneToOneToForwardOneToOne,
+    ReverseOneToOneToReverseManyToMany,
+    ReverseOneToOneToReverseOneToMany,
+    ReverseOneToOneToReverseOneToOne,
     Sale,
 )
 
@@ -316,80 +337,166 @@ class People(graphene.Union):
 class ExampleType(DjangoObjectType):
     class Meta:
         model = Example
-        fields = [
-            "id",
-            "name",
-            "forward_one_to_one_field",
-            "forward_many_to_one_field",
-            "forward_many_to_many_fields",
-            "reverse_one_to_one_rel",
-            "reverse_one_to_many_rels",
-            "reverse_many_to_many_rels",
-        ]
-        interfaces = (relay.Node,)
+        fields = "__all__"
 
 
 class ForwardOneToOneType(DjangoObjectType):
     class Meta:
         model = ForwardOneToOne
-        fields = [
-            "id",
-            "name",
-            "example_rel",
-        ]
-        interfaces = (relay.Node,)
+        fields = "__all__"
 
 
 class ForwardManyToOneType(DjangoObjectType):
     class Meta:
         model = ForwardManyToOne
-        fields = [
-            "id",
-            "name",
-            "example_rels",
-        ]
-        interfaces = (relay.Node,)
+        fields = "__all__"
 
 
 class ForwardManyToManyType(DjangoObjectType):
     class Meta:
         model = ForwardManyToMany
-        fields = [
-            "id",
-            "name",
-            "example_rels",
-        ]
-        interfaces = (relay.Node,)
+        fields = "__all__"
 
 
 class ReverseOneToOneType(DjangoObjectType):
     class Meta:
         model = ReverseOneToOne
-        fields = [
-            "id",
-            "name",
-            "example_field",
-        ]
-        interfaces = (relay.Node,)
+        fields = "__all__"
 
 
 class ReverseOneToManyType(DjangoObjectType):
     class Meta:
         model = ReverseOneToMany
-        fields = [
-            "id",
-            "name",
-            "example_field",
-        ]
-        interfaces = (relay.Node,)
+        fields = "__all__"
 
 
 class ReverseManyToManyType(DjangoObjectType):
     class Meta:
         model = ReverseManyToMany
-        fields = [
-            "pk",
-            "name",
-            "example_fields",
-        ]
-        interfaces = (relay.Node,)
+        fields = "__all__"
+
+
+class ForwardOneToOneForRelatedType(DjangoObjectType):
+    class Meta:
+        model = ForwardOneToOneForRelated
+        fields = "__all__"
+
+
+class ForwardManyToOneForRelatedType(DjangoObjectType):
+    class Meta:
+        model = ForwardManyToOneForRelated
+        fields = "__all__"
+
+
+class ForwardManyToManyForRelatedType(DjangoObjectType):
+    class Meta:
+        model = ForwardManyToManyForRelated
+        fields = "__all__"
+
+
+class ReverseOneToOneToForwardOneToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToOneToForwardOneToOne
+        fields = "__all__"
+
+
+class ReverseOneToOneToForwardManyToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToOneToForwardManyToOne
+        fields = "__all__"
+
+
+class ReverseOneToOneToForwardManyToManyType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToOneToForwardManyToMany
+        fields = "__all__"
+
+
+class ReverseOneToOneToReverseOneToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToOneToReverseOneToOne
+        fields = "__all__"
+
+
+class ReverseOneToOneToReverseManyToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToOneToReverseOneToMany
+        fields = "__all__"
+
+
+class ReverseOneToOneToReverseManyToManyType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToOneToReverseManyToMany
+        fields = "__all__"
+
+
+class ReverseOneToManyToForwardOneToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToManyToForwardOneToOne
+        fields = "__all__"
+
+
+class ReverseOneToManyToForwardManyToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToManyToForwardManyToOne
+        fields = "__all__"
+
+
+class ReverseOneToManyToForwardManyToManyType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToManyToForwardManyToMany
+        fields = "__all__"
+
+
+class ReverseOneToManyToReverseOneToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToManyToReverseOneToOne
+        fields = "__all__"
+
+
+class ReverseOneToManyToReverseManyToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToManyToReverseOneToMany
+        fields = "__all__"
+
+
+class ReverseOneToManyToReverseManyToManyType(DjangoObjectType):
+    class Meta:
+        model = ReverseOneToManyToReverseManyToMany
+        fields = "__all__"
+
+
+class ReverseManyToManyToForwardOneToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseManyToManyToForwardOneToOne
+        fields = "__all__"
+
+
+class ReverseManyToManyToForwardManyToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseManyToManyToForwardManyToOne
+        fields = "__all__"
+
+
+class ReverseManyToManyToForwardManyToManyType(DjangoObjectType):
+    class Meta:
+        model = ReverseManyToManyToForwardManyToMany
+        fields = "__all__"
+
+
+class ReverseManyToManyToReverseOneToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseManyToManyToReverseOneToOne
+        fields = "__all__"
+
+
+class ReverseManyToManyToReverseManyToOneType(DjangoObjectType):
+    class Meta:
+        model = ReverseManyToManyToReverseOneToMany
+        fields = "__all__"
+
+
+class ReverseManyToManyToReverseManyToManyType(DjangoObjectType):
+    class Meta:
+        model = ReverseManyToManyToReverseManyToMany
+        fields = "__all__"
