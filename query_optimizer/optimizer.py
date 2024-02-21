@@ -124,23 +124,6 @@ def optimize(
     return queryset
 
 
-def required_fields(*fields: str) -> Callable[[TCallable], TCallable]:
-    """
-    Annotate custom field resolver to require given fields
-    in relation to its DjangoObjectType model.
-
-    :param fields: Fields that the decorated resolver needs.
-                   Related entity fields can also be used with
-                   the field lookup syntax (e.g., 'related__field')
-    """
-
-    def decorator(resolver: TCallable) -> TCallable:
-        resolver.hints = fields  # type: ignore[attr-defined]
-        return resolver
-
-    return decorator
-
-
 class QueryOptimizer:
     """Query optimizer for Django QuerySets."""
 
@@ -397,6 +380,23 @@ class QueryOptimizer:
         selections = selection.selection_set.selections
         nested_store = self.optimize_selections(selection_graphql_field, selections, fragment_model)
         store += nested_store
+
+
+def required_fields(*args: str) -> Callable[[TCallable], TCallable]:
+    """
+    Add hints to a resolver to require given fields
+    in relation to its DjangoObjectType model.
+
+    :param args: Fields that the decorated resolver needs.
+                 Related entity fields can also be used with
+                 the field lookup syntax (e.g., 'related__field')
+    """
+
+    def decorator(resolver: TCallable) -> TCallable:
+        resolver.hints = args  # type: ignore[attr-defined]
+        return resolver
+
+    return decorator
 
 
 def get_filtered_queryset(queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:

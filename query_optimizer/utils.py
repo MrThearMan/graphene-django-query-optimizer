@@ -110,7 +110,7 @@ def is_optimized(queryset: QuerySet) -> bool:
 
 def maybe_skip_optimization_on_error(func: Callable[P, T]) -> Callable[P, T]:
     @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> bool:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:
             return func(*args, **kwargs)
         except OptimizerError:

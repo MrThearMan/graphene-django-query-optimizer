@@ -23,7 +23,6 @@ __all__ = [
 @dataclass
 class CompilationResults:
     only_fields: list[str]
-    related_fields: list[str]
     select_related: list[str]
     prefetch_related: list[Prefetch]
 
@@ -41,7 +40,6 @@ class QueryOptimizerStore:
     def compile(self, *, in_prefetch: bool = False) -> CompilationResults:
         results = CompilationResults(
             only_fields=self.only_fields.copy(),
-            related_fields=self.related_fields.copy(),
             select_related=[],
             prefetch_related=[],
         )
@@ -57,7 +55,6 @@ class QueryOptimizerStore:
             self._compile_nested(name, store, results, in_prefetch=True)
 
         results.only_fields = unique(results.only_fields)
-        results.related_fields = unique(results.related_fields)
         results.select_related = unique(results.select_related)
         results.prefetch_related = unique(results.prefetch_related)
         return results
@@ -95,6 +92,8 @@ class QueryOptimizerStore:
             queryset = queryset.select_related(*results.select_related)
         if not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (results.only_fields or results.related_fields):
             queryset = queryset.only(*results.only_fields, *results.related_fields)
+        if not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (results.only_fields or self.related_fields):
+            queryset = queryset.only(*results.only_fields, *self.related_fields)
         if pk is not None:
             queryset = queryset.filter(pk=pk)
 

@@ -66,9 +66,13 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         queryset: QuerySet[TModel] = cls._meta.model.objects.filter(pk=pk)
         if can_optimize(info):
             queryset = optimize(queryset, info, max_complexity=cls._meta.max_complexity, pk=pk)
-            # Can't use .first(), as it can apply additional ordering, which would cancel the optimization.
+            # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
             # The optimizer should have just inserted the right model instance based on the given primary key
-            # to the queryset result cache anyway, so we can just pick that out.
+            # to the queryset result cache anyway, so we can just pick that out. The only exception
+            # is if the optimization was cancelled due to an error, and the result cache was not set,
+            # in which case we fall back to .first().
+            if queryset._result_cache is None:
+                return queryset.first()  # pragma: no cover
             return queryset._result_cache[0]
         return queryset.first()  # pragma: no cover
 
