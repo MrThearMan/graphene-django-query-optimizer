@@ -113,6 +113,7 @@ class QueryOptimizerStore:
     def __add__(self, other: QueryOptimizerStore) -> QueryOptimizerStore:
         self.only_fields += other.only_fields
         self.related_fields += other.related_fields
+        self.annotations.update(other.annotations)
         self.select_stores.update(other.select_stores)
         self.prefetch_stores.update(other.prefetch_stores)
         return self
