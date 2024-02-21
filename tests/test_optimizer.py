@@ -1021,3 +1021,228 @@ def test_optimizer_deep_query__pks(client_query):
     queries = len(results.queries)
     # 1 query for fetching Apartments and related Buildings, RealEstates, HousingCompanies, and PostalCodes
     assert queries == 1, results.log
+
+
+def test_optimizer__forward_many_to_many__reverse_one_to_many(client_query):
+    query = """
+        query {
+          examples {
+            forwardManyToManyFields {
+              reverseOneToManyRels {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    # 1 query for all examples
+    # 1 query for all forward many-to-many relations
+    # 1 query for all nested reverse one-to-many relations
+    assert results.query_count == 3, results.log
+
+
+def test_optimizer__forward_many_to_many__reverse_many_to_many(client_query):
+    query = """
+        query {
+          examples {
+            forwardManyToManyFields {
+              reverseManyToManyRels {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    # 1 query for all examples
+    # 1 query for all forward many-to-many relations
+    # 1 query for all nested reverse many-to-many relations
+    assert results.query_count == 3, results.log
+
+
+def test_optimizer__forward_many_to_many__forward_many_to_many(client_query):
+    query = """
+        query {
+          examples {
+            forwardManyToManyFields {
+              forwardManyToManyFields {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    # 1 query for all examples
+    # 1 query for all forward many-to-many relations
+    # 1 query for all nested forward many-to-many relations
+    assert results.query_count == 3, results.log
+
+
+def test_optimizer__reverse_one_to_many__reverse_one_to_many(client_query):
+    query = """
+        query {
+          examples {
+            reverseOneToManyRels {
+              reverseOneToManyRels {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    # 1 query for all examples
+    # 1 query for all reverse one-to-many relations
+    # 1 query for all nested reverse one-to-many relations
+    assert results.query_count == 3, results.log
+
+
+def test_optimizer__reverse_one_to_many__reverse_many_to_many(client_query):
+    query = """
+        query {
+          examples {
+            reverseOneToManyRels {
+              reverseManyToManyRels {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    # 1 query for all examples
+    # 1 query for all reverse one-to-many relations
+    # 1 query for all nested reverse many-to-many relations
+    assert results.query_count == 3, results.log
+
+
+def test_optimizer__reverse_one_to_many__forward_many_to_many(client_query):
+    query = """
+        query {
+          examples {
+            reverseOneToManyRels {
+              forwardManyToManyFields {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    # 1 query for all examples
+    # 1 query for all reverse one-to-many relations
+    # 1 query for all nested forward many-to-many relations
+    assert results.query_count == 3, results.log
+
+
+def test_optimizer__reverse_many_to_many__reverse_one_to_many(client_query):
+    query = """
+        query {
+          examples {
+            reverseManyToManyRels {
+              reverseOneToManyRels {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    # 1 query for all examples
+    # 1 query for all reverse many-to-many relations
+    # 1 query for all nested reverse one-to-many relations
+    assert results.query_count == 3, results.log
+
+
+def test_optimizer__reverse_many_to_many__reverse_many_to_many(client_query):
+    query = """
+        query {
+          examples {
+            reverseManyToManyRels {
+              reverseManyToManyRels {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    # 1 query for all examples
+    # 1 query for all reverse many-to-many relations
+    # 1 query for all nested reverse many-to-many relations
+    assert results.query_count == 3, results.log
+
+
+def test_optimizer__reverse_many_to_many__forward_many_to_many(client_query):
+    query = """
+        query {
+          examples {
+            reverseManyToManyRels {
+              forwardManyToManyFields {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    # 1 query for all examples
+    # 1 query for all reverse many-to-many relations
+    # 1 query for all nested forward many-to-many relations
+    assert results.query_count == 3, results.log

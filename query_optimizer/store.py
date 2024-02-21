@@ -75,6 +75,8 @@ class QueryOptimizerStore:
             results.only_fields.extend(f"{name}{LOOKUP_SEP}{only}" for only in nested_results.only_fields)
 
         results.select_related.extend(f"{name}{LOOKUP_SEP}{select}" for select in nested_results.select_related)
+        if in_prefetch:
+            return
         for prefetch in nested_results.prefetch_related:
             prefetch.add_prefix(name)
             results.prefetch_related.append(prefetch)
