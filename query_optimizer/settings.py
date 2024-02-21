@@ -28,6 +28,8 @@ class DefaultSettings(NamedTuple):
     """Disable optimizing fetched fields with `queryset.only()`."""
     MAX_COMPLEXITY: int = 10
     """Default max number of 'select_related' and 'prefetch related' joins optimizer is allowed to optimize."""
+    DONT_OPTIMIZE_ON_ERROR: bool = False
+    """If there is an unexpected error, should the optimizer skip optimization (False) or throw an error (True)?"""
 
 
 DEFAULTS: dict[str, Any] = DefaultSettings()._asdict()

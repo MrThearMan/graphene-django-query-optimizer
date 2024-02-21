@@ -19,9 +19,9 @@ from graphene_django.types import DjangoObjectTypeOptions
 
 # New in version 3.10
 try:
-    from typing import TypeAlias, TypeGuard
+    from typing import ParamSpec, TypeAlias, TypeGuard
 except ImportError:
-    from typing_extensions import TypeAlias, TypeGuard
+    from typing_extensions import ParamSpec, TypeAlias, TypeGuard
 
 
 from django.core.handlers.wsgi import WSGIRequest
@@ -54,6 +54,7 @@ __all__ = [
     "NamedTuple",
     "OptimizedDjangoOptions",
     "Optional",
+    "ParamSpec",
     "PK",
     "QueryCache",
     "StoreStr",

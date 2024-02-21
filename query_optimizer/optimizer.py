@@ -20,6 +20,7 @@ from graphql import (
 )
 
 from .cache import get_from_query_cache, store_in_query_cache
+from .errors import OptimizerError
 from .settings import optimizer_settings
 from .store import QueryOptimizerStore
 from .utils import (
@@ -30,6 +31,7 @@ from .utils import (
     is_optimized,
     is_to_many,
     is_to_one,
+    maybe_skip_optimization_on_error,
 )
 
 if TYPE_CHECKING:
@@ -61,6 +63,7 @@ __all__ = [
 ]
 
 
+@maybe_skip_optimization_on_error
 def optimize(
     queryset: QuerySet[TModel],
     info: GQLInfo,
@@ -104,7 +107,7 @@ def optimize(
     complexity = store.complexity
     if complexity > max_complexity:
         msg = f"Query complexity of {complexity} exceeds the maximum allowed of {max_complexity}"
-        raise RuntimeError(msg)
+        raise OptimizerError(msg)
 
     if pk is not None:
         cached_item = get_from_query_cache(info.operation, info.schema, queryset.model, pk, store)
@@ -165,7 +168,7 @@ class QueryOptimizer:
 
             else:  # pragma: no cover
                 msg = f"Unhandled selection node: '{selection}'"
-                raise TypeError(msg)
+                raise OptimizerError(msg)
 
         return store
 
@@ -184,7 +187,7 @@ class QueryOptimizer:
             return self.handle_regular_node(field_type, selection, store)
 
         msg = f"Unhandled field options type: {options}"  # pragma: no cover
-        raise TypeError(msg)  # pragma: no cover
+        raise OptimizerError(msg)  # pragma: no cover
 
     def handle_regular_node(
         self,
@@ -220,7 +223,7 @@ class QueryOptimizer:
 
         else:  # pragma: no cover
             msg = f"Unhandled selection: '{selection.name.value}'"
-            raise TypeError(msg)
+            raise OptimizerError(msg)
 
     def add_hinted_fields(self, field: GraphQLField, model: type[Model], store: QueryOptimizerStore) -> None:
         hints: Optional[tuple[str, ...]] = getattr(field.resolve, "hints", None)
@@ -255,7 +258,7 @@ class QueryOptimizer:
             related_model: type[Model] = model_field.related_model  # type: ignore[assignment]
             if related_model is None:  # pragma: no cover
                 msg = f"No related model, but hint seems like has one: {field_name!r}"
-                raise ValueError(msg)
+                raise OptimizerError(msg)
             if related_model == "self":  # pragma: no cover
                 related_model = model_field.model
 
@@ -267,7 +270,7 @@ class QueryOptimizer:
                 store.select_stores[model_field.name] = nested_store
             else:  # pragma: no cover
                 msg = f"Field {model_field} is not a related field."
-                raise TypeError(msg)
+                raise OptimizerError(msg)
 
             if isinstance(model_field, ManyToOneRel):
                 nested_store.related_fields.append(model_field.field.attname)
@@ -282,7 +285,7 @@ class QueryOptimizer:
             )
 
         msg = f"Field {field_name!r} not found in fields: {model_fields}."  # pragma: no cover
-        raise ValueError(msg)  # pragma: no cover
+        raise OptimizerError(msg)  # pragma: no cover
 
     def handle_connection_node(
         self,

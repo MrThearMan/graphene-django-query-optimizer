@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+from functools import wraps
 from typing import TYPE_CHECKING
 
 from django.db.models import ForeignKey, QuerySet
@@ -8,14 +10,26 @@ from graphene.types.definitions import GrapheneObjectType
 from graphene_django import DjangoObjectType
 from graphql.execution.execute import get_field_def
 
+from .errors import OptimizerError
 from .settings import optimizer_settings
 
 if TYPE_CHECKING:
     from graphql import GraphQLOutputType, SelectionNode
 
-    from .typing import Collection, GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard, TypeVar
+    from .typing import (
+        Callable,
+        Collection,
+        GQLInfo,
+        ModelField,
+        ParamSpec,
+        ToManyField,
+        ToOneField,
+        TypeGuard,
+        TypeVar,
+    )
 
     T = TypeVar("T")
+    P = ParamSpec("P")
 
 
 __all__ = [
@@ -28,8 +42,13 @@ __all__ = [
     "is_to_one",
     "mark_optimized",
     "mark_unoptimized",
+    "maybe_skip_optimization_on_error",
+    "optimizer_logger",
     "unique",
 ]
+
+
+optimizer_logger = logging.getLogger("query_optimizer")
 
 
 def is_foreign_key_id(model_field: ModelField, name: str) -> bool:
@@ -87,3 +106,19 @@ def mark_unoptimized(queryset: QuerySet) -> None:  # pragma: no cover
 def is_optimized(queryset: QuerySet) -> bool:
     """Has the queryset be optimized?"""
     return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)  # type: ignore[no-any-return, attr-defined]
+
+
+def maybe_skip_optimization_on_error(func: Callable[P, T]) -> Callable[P, T]:
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> bool:
+        try:
+            return func(*args, **kwargs)
+        except OptimizerError:
+            raise
+        except Exception as error:  # pragma: no cover
+            if optimizer_settings.DONT_OPTIMIZE_ON_ERROR:
+                optimizer_logger.info("Something went wrong during the optimization process.", exc_info=error)
+                return args[0]  # original queryset
+            raise
+
+    return wrapper
