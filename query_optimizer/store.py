@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from django.db.models import Model, Prefetch, QuerySet
+from django.db.models import Expression, Model, Prefetch, QuerySet
 from django.db.models.constants import LOOKUP_SEP
 
 from .settings import optimizer_settings
@@ -34,6 +34,7 @@ class QueryOptimizerStore:
         self.model = model
         self.only_fields: list[str] = []
         self.related_fields: list[str] = []
+        self.annotations: dict[str, Expression] = {}
         self.select_stores: dict[str, QueryOptimizerStore] = {}
         self.prefetch_stores: dict[str, tuple[QueryOptimizerStore, QuerySet[Model]]] = {}
 
@@ -90,10 +91,10 @@ class QueryOptimizerStore:
             queryset = queryset.prefetch_related(*results.prefetch_related)
         if results.select_related:
             queryset = queryset.select_related(*results.select_related)
-        if not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (results.only_fields or results.related_fields):
-            queryset = queryset.only(*results.only_fields, *results.related_fields)
         if not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (results.only_fields or self.related_fields):
             queryset = queryset.only(*results.only_fields, *self.related_fields)
+        if self.annotations:
+            queryset = queryset.annotate(**self.annotations)
         if pk is not None:
             queryset = queryset.filter(pk=pk)
 

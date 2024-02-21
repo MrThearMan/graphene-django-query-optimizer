@@ -1246,3 +1246,22 @@ def test_optimizer__reverse_many_to_many__forward_many_to_many(client_query):
     # 1 query for all reverse many-to-many relations
     # 1 query for all nested forward many-to-many relations
     assert results.query_count == 3, results.log
+
+
+def test_optimizer__annotated_value(client_query):
+    query = """
+        query {
+          examples {
+            foo
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    # 1 query for all examples with the annotated values
+    assert results.query_count == 1, results.log

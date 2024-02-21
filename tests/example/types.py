@@ -5,6 +5,7 @@ from django_filters import CharFilter, FilterSet, OrderingFilter
 from graphene import relay
 
 from query_optimizer import DjangoConnectionField, DjangoObjectType, required_fields
+from query_optimizer.optimizer import required_annotations
 from query_optimizer.typing import GQLInfo
 from tests.example.models import (
     Apartment,
@@ -335,9 +336,15 @@ class People(graphene.Union):
 
 
 class ExampleType(DjangoObjectType):
+    foo = graphene.String()
+
     class Meta:
         model = Example
         fields = "__all__"
+
+    @required_annotations(foo=F("forward_one_to_one_field__name"))
+    def resolve_foo(self, info):
+        return self.foo
 
 
 class ForwardOneToOneType(DjangoObjectType):

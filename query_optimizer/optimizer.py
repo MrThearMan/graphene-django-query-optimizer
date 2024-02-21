@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import ForeignKey, ManyToOneRel, Model, QuerySet
+from django.db.models import Expression, ForeignKey, ManyToOneRel, Model, QuerySet
 from django.db.models.constants import LOOKUP_SEP
 from graphene.relay.connection import ConnectionOptions
 from graphene.utils.str_converters import to_snake_case
@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from .types import DjangoObjectType
     from .typing import (
         PK,
+        Any,
         Callable,
         GQLInfo,
         Iterable,
@@ -60,6 +61,7 @@ __all__ = [
     "optimize",
     "QueryOptimizer",
     "required_fields",
+    "required_annotations",
 ]
 
 
@@ -192,7 +194,7 @@ class QueryOptimizer:
             else:
                 model_field: ModelField = model._meta.get_field(model_field_name)
         except FieldDoesNotExist:
-            self.add_hinted_fields(selection_graphql_field, model, store)
+            self.check_resolver_hints(selection_graphql_field, model, store)
             return
 
         if not model_field.is_relation or is_foreign_key_id(model_field, model_field_name):
@@ -208,13 +210,17 @@ class QueryOptimizer:
             msg = f"Unhandled selection: '{selection.name.value}'"
             raise OptimizerError(msg)
 
-    def add_hinted_fields(self, field: GraphQLField, model: type[Model], store: QueryOptimizerStore) -> None:
-        hints: Optional[tuple[str, ...]] = getattr(field.resolve, "hints", None)
-        if hints is None:  # pragma: no cover
+    def check_resolver_hints(self, field: GraphQLField, model: type[Model], store: QueryOptimizerStore) -> None:
+        anns: Optional[dict[str, Expression]] = getattr(field.resolve, "annotations", None)
+        fields: Optional[tuple[str, ...]] = getattr(field.resolve, "fields", None)
+
+        if anns:
+            store.annotations.update(anns)
+        if fields is None:  # pragma: no cover
             return
 
         model_fields: list[ModelField] = model._meta.get_fields()
-        for field_name in hints:
+        for field_name in fields:
             hint_store = QueryOptimizerStore(model=model)
             self.find_field_from_model(field_name, model_fields, hint_store)
             store += hint_store
@@ -393,7 +399,24 @@ def required_fields(*args: str) -> Callable[[TCallable], TCallable]:
     """
 
     def decorator(resolver: TCallable) -> TCallable:
-        resolver.hints = args  # type: ignore[attr-defined]
+        resolver.fields = args  # type: ignore[attr-defined]
+        return resolver
+
+    return decorator
+
+
+def required_annotations(**kwargs: Any) -> Callable[[TCallable], TCallable]:
+    """
+    Add hints to a resolver to require given annotations
+    in relation to its DjangoObjectType model.
+
+    :param kwargs: Annotations that the decorated resolver needs.
+                   Values should be Expression or F-object instances,
+                   or any other value that works with queryset.annotate().
+    """
+
+    def decorator(resolver: TCallable) -> TCallable:
+        resolver.annotations = kwargs  # type: ignore[attr-defined]
         return resolver
 
     return decorator
