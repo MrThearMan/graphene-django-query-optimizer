@@ -309,11 +309,15 @@ class QueryOptimizer:
         if selection.selection_set is None:  # pragma: no cover
             return
 
+        related_model: type[Model] = model_field.related_model  # type: ignore[assignment]
+        if related_model == "self":  # pragma: no cover
+            related_model = model_field.model
+
         selection_field_type = get_underlying_type(selection_field_type)
         nested_store = self.optimize_selections(
             selection_field_type,
             selection.selection_set.selections,
-            model_field.model,
+            related_model,
         )
 
         if isinstance(model_field, ForeignKey):
@@ -402,8 +406,9 @@ def required_fields(*args: str) -> Callable[[TCallable], TCallable]:
 
 def required_annotations(**kwargs: Any) -> Callable[[TCallable], TCallable]:
     """
-    Add hints to a resolver to require given annotations
-    in relation to its DjangoObjectType model.
+    Add hints to a resolver function indicating that the given annotations
+    should be applied to the ObjectType queryset _after_ filters are applied.
+    See. https://docs.djangoproject.com/en/dev/topics/db/aggregation/#order-of-annotate-and-filter-clauses
 
     :param kwargs: Annotations that the decorated resolver needs.
                    Values should be Expression or F-object instances,

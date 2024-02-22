@@ -49,7 +49,13 @@ class QueryOptimizerStore:
         )
 
         for name, store in self.select_stores.items():
-            if not in_prefetch:
+            # Promote select related to prefetch related if any annotations are needed.
+            if store.annotations:
+                queryset: QuerySet = store.model._default_manager.all()
+                optimized_queryset = store.optimize_queryset(queryset)
+                results.prefetch_related.append(Prefetch(name, optimized_queryset))
+                in_prefetch = True
+            elif not in_prefetch:
                 results.select_related.append(name)
             self._compile_nested(name, store, results, in_prefetch=in_prefetch)
 
@@ -73,12 +79,11 @@ class QueryOptimizerStore:
         in_prefetch: bool,
     ) -> None:
         nested_results = store.compile(in_prefetch=in_prefetch)
-        if not in_prefetch:
-            results.only_fields.extend(f"{name}{LOOKUP_SEP}{only}" for only in nested_results.only_fields)
-
         results.select_related.extend(f"{name}{LOOKUP_SEP}{select}" for select in nested_results.select_related)
         if in_prefetch:
             return
+
+        results.only_fields.extend(f"{name}{LOOKUP_SEP}{only}" for only in nested_results.only_fields)
         for prefetch in nested_results.prefetch_related:
             prefetch.add_prefix(name)
             results.prefetch_related.append(prefetch)
@@ -107,7 +112,6 @@ class QueryOptimizerStore:
             queryset = queryset.select_related(*results.select_related)
         if not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (results.only_fields or self.related_fields):
             queryset = queryset.only(*results.only_fields, *self.related_fields)
-        # https://docs.djangoproject.com/en/dev/topics/db/aggregation/#filtering-on-annotations
         if self.annotations:
             queryset = queryset.annotate(**self.annotations)
 

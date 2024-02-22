@@ -1265,3 +1265,26 @@ def test_optimizer__annotated_value(client_query):
 
     # 1 query for all examples with the annotated values
     assert results.query_count == 1, results.log
+
+
+def test_optimizer__select_related_promoted_to_prefetch_due_to_annotations(client_query):
+    query = """
+        query {
+          examples {
+            forwardManyToOneField {
+              name
+              bar
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    # 1 query for all examples
+    # 1 query for fetching forward many-to-one relations with the annotations
+    assert results.query_count == 2, results.log

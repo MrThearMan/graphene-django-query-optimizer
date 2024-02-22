@@ -354,9 +354,15 @@ class ForwardOneToOneType(DjangoObjectType):
 
 
 class ForwardManyToOneType(DjangoObjectType):
+    bar = graphene.String()
+
     class Meta:
         model = ForwardManyToOne
         fields = "__all__"
+
+    @required_annotations(bar=F("name"))
+    def resolve_bar(self, info):
+        return self.bar
 
 
 class ForwardManyToManyType(DjangoObjectType):
