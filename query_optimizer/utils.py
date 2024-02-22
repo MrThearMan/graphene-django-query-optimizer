@@ -116,7 +116,7 @@ def maybe_skip_optimization_on_error(func: Callable[P, T]) -> Callable[P, T]:
         except OptimizerError:
             raise
         except Exception as error:  # pragma: no cover
-            if optimizer_settings.DONT_OPTIMIZE_ON_ERROR:
+            if optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
                 optimizer_logger.info("Something went wrong during the optimization process.", exc_info=error)
                 return args[0]  # original queryset
             raise

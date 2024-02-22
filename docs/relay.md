@@ -93,37 +93,7 @@ class Query(graphene.ObjectType):
 schema = graphene.Schema(query=Query)
 ```
 
-If we want filtering, we can use:
-
-```python
-import graphene
-from graphene import relay
-from query_optimizer import DjangoObjectType  # replaced import
-from query_optimizer.filter import DjangoFilterConnectionField  # replaced import
-from tests.example.models import Apartment
-
-
-class ApartmentNode(DjangoObjectType):
-    class Meta:
-        model = Apartment
-        filter_fields = {
-            "street_address": ["exact"],
-            "building__name": ["exact"],
-        }
-        interfaces = (relay.Node,)
-
-
-class Query(graphene.ObjectType):
-    paged_apartments = DjangoFilterConnectionField(ApartmentNode)
-
-
-schema = graphene.Schema(query=Query)
-```
-
-> [django-filter][filters] is required for the above to work.
-
 That's it!
 
 
 [Relay]: https://relay.dev/docs/guides/graphql-server-specification/
-[filters]: https://github.com/carltongibson/django-filter

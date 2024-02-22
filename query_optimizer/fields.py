@@ -155,8 +155,8 @@ def convert_to_many_field_to_list_or_connection(
 
         description = get_django_field_description(field if isinstance(field, models.ManyToManyField) else field.field)
 
-        if _type._meta.connection:
-            if _type._meta.filter_fields or _type._meta.filterset_class:  # pragma: no cover
+        if _type._meta.connection:  # pragma: no cover
+            if _type._meta.filter_fields or _type._meta.filterset_class:
                 from .filter import DjangoFilterConnectionField
 
                 return DjangoFilterConnectionField(_type, required=True, description=description)

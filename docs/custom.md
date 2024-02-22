@@ -48,3 +48,25 @@ class HousingCompanyType(DjangoObjectType):
     def resolve_primary_real_estate(model: HousingCompany, info: GQLInfo) -> str:
         return model.real_estates.first().name
 ```
+
+If the field you want to expose is purely computational, you can use `@required_annotations`
+instead to add an annotation to the queryset when the field is requested.
+
+```python
+import graphene
+from django.db.models import Value
+from django.db.models.functions import Concat
+from query_optimizer import DjangoObjectType, required_annotations  # new import
+from query_optimizer.typing import GQLInfo
+from tests.example.models import HousingCompany
+
+class HousingCompanyType(DjangoObjectType):
+    class Meta:
+        model = HousingCompany
+
+    address = graphene.String()
+
+    @required_annotations(address=Concat("street_address", Value(", "), "postal_code__code", "city"))
+    def resolve_address(model: HousingCompany, info: GQLInfo) -> str:
+        return f"Hello {model.address}!"
+```
