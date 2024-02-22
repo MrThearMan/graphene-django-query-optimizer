@@ -108,7 +108,7 @@ def _add_selected(query_cache: QueryCache, instance: Model, store: QueryOptimize
 
 
 def _add_prefetched(query_cache: QueryCache, instance: Model, store: QueryOptimizerStore) -> None:
-    for nested_name, (nested_store, _) in store.prefetch_stores.items():
+    for nested_name, nested_store in store.prefetch_stores.items():
         # Here we can fetch the many-related items from the instance with `.all()`
         # without hitting the database, because the items have already been prefetched.
         # See: `django.db.models.fields.related_descriptors.RelatedManager.get_queryset`

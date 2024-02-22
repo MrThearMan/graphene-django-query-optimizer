@@ -5,12 +5,14 @@ from typing import TYPE_CHECKING
 
 from django.db.models import Expression, Model, Prefetch, QuerySet
 from django.db.models.constants import LOOKUP_SEP
+from graphene_django.registry import get_global_registry
 
 from .settings import optimizer_settings
 from .utils import mark_optimized, unique
 
 if TYPE_CHECKING:
-    from .typing import PK, TypeVar
+    from .types import DjangoObjectType
+    from .typing import PK, GQLInfo, Optional, TypeVar
 
     TModel = TypeVar("TModel", bound=Model)
 
@@ -30,13 +32,14 @@ class CompilationResults:
 class QueryOptimizerStore:
     """Store for holding optimization data."""
 
-    def __init__(self, model: type[Model]) -> None:
+    def __init__(self, model: type[Model], info: GQLInfo) -> None:
         self.model = model
+        self.info = info
         self.only_fields: list[str] = []
         self.related_fields: list[str] = []
         self.annotations: dict[str, Expression] = {}
         self.select_stores: dict[str, QueryOptimizerStore] = {}
-        self.prefetch_stores: dict[str, tuple[QueryOptimizerStore, QuerySet[Model]]] = {}
+        self.prefetch_stores: dict[str, QueryOptimizerStore] = {}
 
     def compile(self, *, in_prefetch: bool = False) -> CompilationResults:
         results = CompilationResults(
@@ -50,7 +53,8 @@ class QueryOptimizerStore:
                 results.select_related.append(name)
             self._compile_nested(name, store, results, in_prefetch=in_prefetch)
 
-        for name, (store, queryset) in self.prefetch_stores.items():
+        for name, store in self.prefetch_stores.items():
+            queryset: QuerySet = store.model._default_manager.all()
             optimized_queryset = store.optimize_queryset(queryset)
             results.prefetch_related.append(Prefetch(name, optimized_queryset))
             self._compile_nested(name, store, results, in_prefetch=True)
@@ -79,6 +83,12 @@ class QueryOptimizerStore:
             prefetch.add_prefix(name)
             results.prefetch_related.append(prefetch)
 
+    def get_filtered_queryset(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
+        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
+        if callable(getattr(object_type, "filter_queryset", None)):
+            return object_type.filter_queryset(queryset, self.info)  # type: ignore[union-attr]
+        return queryset  # pragma: no cover
+
     def optimize_queryset(
         self,
         queryset: QuerySet[TModel],
@@ -87,16 +97,19 @@ class QueryOptimizerStore:
     ) -> QuerySet[TModel]:
         results = self.compile()
 
+        if pk is not None:
+            queryset = queryset.filter(pk=pk)
+        queryset = self.get_filtered_queryset(queryset)
+
         if results.prefetch_related:
             queryset = queryset.prefetch_related(*results.prefetch_related)
         if results.select_related:
             queryset = queryset.select_related(*results.select_related)
         if not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (results.only_fields or self.related_fields):
             queryset = queryset.only(*results.only_fields, *self.related_fields)
+        # https://docs.djangoproject.com/en/dev/topics/db/aggregation/#filtering-on-annotations
         if self.annotations:
             queryset = queryset.annotate(**self.annotations)
-        if pk is not None:
-            queryset = queryset.filter(pk=pk)
 
         mark_optimized(queryset)
         return queryset
@@ -106,7 +119,7 @@ class QueryOptimizerStore:
         value: int = 0
         for store in self.select_stores.values():
             value += store.complexity
-        for store, _ in self.prefetch_stores.values():
+        for store in self.prefetch_stores.values():
             value += store.complexity
         return value + len(self.select_stores) + len(self.prefetch_stores)
 

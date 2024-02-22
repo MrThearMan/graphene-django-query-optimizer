@@ -7,7 +7,6 @@ from django.db.models import Expression, ForeignKey, ManyToOneRel, Model, QueryS
 from django.db.models.constants import LOOKUP_SEP
 from graphene.relay.connection import ConnectionOptions
 from graphene.utils.str_converters import to_snake_case
-from graphene_django.registry import get_global_registry
 from graphene_django.types import DjangoObjectTypeOptions
 from graphene_django.utils import maybe_queryset
 from graphql import (
@@ -37,7 +36,6 @@ from .utils import (
 if TYPE_CHECKING:
     from graphene.types.definitions import GrapheneObjectType, GrapheneUnionType
 
-    from .types import DjangoObjectType
     from .typing import (
         PK,
         Any,
@@ -118,7 +116,6 @@ def optimize(
             return queryset
 
     queryset = store.optimize_queryset(queryset, pk=pk)
-    queryset = get_filtered_queryset(queryset, info)
 
     if optimizer.cache_results:
         store_in_query_cache(info.operation, queryset, info.schema, store)
@@ -139,7 +136,7 @@ class QueryOptimizer:
         selections: tuple[SelectionNode, ...],
         model: type[Model],
     ) -> QueryOptimizerStore:
-        store = QueryOptimizerStore(model=model)
+        store = QueryOptimizerStore(model=model, info=self.info)
 
         for selection in selections:
             if isinstance(selection, FieldNode):
@@ -221,7 +218,7 @@ class QueryOptimizer:
 
         model_fields: list[ModelField] = model._meta.get_fields()
         for field_name in fields:
-            hint_store = QueryOptimizerStore(model=model)
+            hint_store = QueryOptimizerStore(model=model, info=self.info)
             self.find_field_from_model(field_name, model_fields, hint_store)
             store += hint_store
 
@@ -251,10 +248,9 @@ class QueryOptimizer:
             if related_model == "self":  # pragma: no cover
                 related_model = model_field.model
 
-            nested_store = QueryOptimizerStore(model=related_model)
+            nested_store = QueryOptimizerStore(model=related_model, info=self.info)
             if is_to_many(model_field):
-                queryset = get_filtered_queryset(related_model._default_manager.all(), self.info)
-                store.prefetch_stores[model_field.name] = (nested_store, queryset)
+                store.prefetch_stores[model_field.name] = nested_store
             elif is_to_one(model_field):
                 store.select_stores[model_field.name] = nested_store
             else:  # pragma: no cover
@@ -336,22 +332,21 @@ class QueryOptimizer:
         if selection.selection_set is None:  # pragma: no cover
             return
 
+        related_model: type[Model] = model_field.related_model  # type: ignore[assignment]
+        if related_model == "self":  # pragma: no cover
+            related_model = model_field.model
+
         selection_field_type = get_underlying_type(selection_field_type)
         nested_store = self.optimize_selections(
             selection_field_type,
             selection.selection_set.selections,
-            model_field.model,
+            related_model,
         )
 
         if isinstance(model_field, ManyToOneRel):
             nested_store.related_fields.append(model_field.field.attname)
 
-        related_model: type[Model] = model_field.related_model  # type: ignore[assignment]
-        if related_model == "self":  # pragma: no cover
-            related_model = model_field.model
-
-        related_queryset = get_filtered_queryset(related_model._default_manager.all(), self.info)
-        store.prefetch_stores[model_field_name] = nested_store, related_queryset
+        store.prefetch_stores[model_field_name] = nested_store
 
     def optimize_fragment_spread(
         self,
@@ -420,10 +415,3 @@ def required_annotations(**kwargs: Any) -> Callable[[TCallable], TCallable]:
         return resolver
 
     return decorator
-
-
-def get_filtered_queryset(queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
-    object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
-    if callable(getattr(object_type, "filter_queryset", None)):
-        queryset = object_type.filter_queryset(queryset, info)  # type: ignore[union-attr]
-    return queryset

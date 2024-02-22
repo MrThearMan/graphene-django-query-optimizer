@@ -93,7 +93,7 @@ class Query(graphene.ObjectType):
     examples = DjangoListField(ExampleType)
 
     def resolve_example(parent: None, info: GQLInfo, pk: int = None):
-        return Example.objects.get(pk=pk)
+        return optimize(Example.objects.filter(pk=pk), info).first()
 
     # --------------------------------------------------------------------
 
