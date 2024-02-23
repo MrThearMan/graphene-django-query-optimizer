@@ -103,7 +103,9 @@ def _add_item(query_cache: QueryCache, instance: Model, store: QueryOptimizerSto
 
 def _add_selected(query_cache: QueryCache, instance: Model, store: QueryOptimizerStore) -> None:
     for nested_name, nested_store in store.select_stores.items():
-        nested_instance: Model | None = getattr(instance, nested_name)
+        # For forward one-to-one and many-to-one, the relation might be null.
+        # For reverse one-to-one, the relation might not exist.
+        nested_instance: Model | None = getattr(instance, nested_name, None)
         if nested_instance is not None:
             _add_item(query_cache, nested_instance, nested_store)
 
