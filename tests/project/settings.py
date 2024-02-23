@@ -2,7 +2,6 @@ from contextlib import suppress
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
-from django.utils.log import DEFAULT_LOGGING
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -81,18 +80,24 @@ AUTH_PASSWORD_VALIDATORS = [
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "filters": DEFAULT_LOGGING["filters"],
-    "formatters": DEFAULT_LOGGING["formatters"],
-    "handlers": DEFAULT_LOGGING["handlers"]
-    | {
-        "default": {
-            "class": "logging.StreamHandler",
+    "filters": {},
+    "formatters": {
+        "common": {
+            "()": "tests.project.logging.DotPathFormatter",
+            "format": "{asctime} | {levelname} | {dotpath}.{funcName}:{lineno} | {message}",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z",
+            "style": "{",
         },
     },
-    "loggers": DEFAULT_LOGGING["loggers"],
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "formatter": "common",
+        },
+    },
     "root": {
-        "handlers": ["default"],
         "level": "INFO",
+        "handlers": ["stdout"],
     },
 }
 
@@ -109,6 +114,7 @@ GRAPHENE = {
     "SCHEMA": "tests.example.schema.schema",
     "TESTING_ENDPOINT": "/graphql/",
     "MIDDLEWARE": [
+        "tests.project.logging.TracebackMiddleware",
         "graphene_django.debug.DjangoDebugMiddleware",
     ],
 }
