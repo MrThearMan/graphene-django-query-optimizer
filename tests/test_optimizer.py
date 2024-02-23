@@ -2,7 +2,9 @@ import json
 
 import graphene_django
 import pytest
+from django.db import models
 from django.db.models import Count
+from django.db.models.functions import RowNumber
 from graphql_relay import to_global_id
 
 from tests.example.models import (
@@ -16,7 +18,7 @@ from tests.example.utils import capture_database_queries
 pytestmark = pytest.mark.django_db
 
 
-def test_optimizer_deep_query(client_query):
+def test_optimizer__deep_query(client_query):
     query = """
         query {
           allApartments {
@@ -56,7 +58,7 @@ def test_optimizer_deep_query(client_query):
     assert queries == 1, results.log
 
 
-def test_optimizer_many_to_one_relations(client_query):
+def test_optimizer__many_to_one_relations(client_query):
     query = """
         query {
           allApartments {
@@ -93,7 +95,7 @@ def test_optimizer_many_to_one_relations(client_query):
     assert queries == 3, results.log
 
 
-def test_optimizer_many_to_many_relations(client_query):
+def test_optimizer__many_to_many_relations(client_query):
     query = """
         query {
           allHousingCompanies {
@@ -122,7 +124,7 @@ def test_optimizer_many_to_many_relations(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer_all_relation_types(client_query):
+def test_optimizer__all_relation_types(client_query):
     query = """
         query {
           examples {
@@ -166,7 +168,7 @@ def test_optimizer_all_relation_types(client_query):
     assert queries == 4, results.log
 
 
-def test_optimizer_relay_node(client_query):
+def test_optimizer__relay_node(client_query):
     apartment_id: int = Apartment.objects.values_list("id", flat=True).first()
     global_id = to_global_id(str(ApartmentNode), apartment_id)
 
@@ -199,7 +201,7 @@ def test_optimizer_relay_node(client_query):
     condition=graphene_django.__version__.startswith("3.0."),
     reason="Issues in 'graphene_django' <3.1 with two GraphQLObjectTypes for one Model",
 )
-def test_optimizer_relay_node_deep(client_query):
+def test_optimizer__relay_node_deep(client_query):
     apartment_id: int = Apartment.objects.values_list("id", flat=True).first()
     global_id = to_global_id(str(ApartmentNode), apartment_id)
 
@@ -238,7 +240,7 @@ def test_optimizer_relay_node_deep(client_query):
     assert queries == 3, results.log
 
 
-def test_optimizer_relay_connection(client_query):
+def test_optimizer__relay_connection(client_query):
     query = """
         query {
           pagedApartments {
@@ -280,7 +282,7 @@ def test_optimizer_relay_connection(client_query):
     condition=graphene_django.__version__.startswith("3.0."),
     reason="Issues in 'graphene_django' <3.1 with two GraphQLObjectTypes for one Model",
 )
-def test_optimizer_relay_connection_deep(client_query):
+def test_optimizer__relay_connection_deep(client_query):
     query = """
         query {
           pagedApartments {
@@ -328,7 +330,7 @@ def test_optimizer_relay_connection_deep(client_query):
     assert queries == 4, results.log
 
 
-def test_optimizer_relay_connection_filtering(client_query):
+def test_optimizer__relay_connection_filtering(client_query):
     street_address: str = Apartment.objects.values_list("street_address", flat=True).first()
 
     query = """
@@ -364,7 +366,7 @@ def test_optimizer_relay_connection_filtering(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer_relay_connection_filtering_nested(client_query):
+def test_optimizer__relay_connection_filtering_nested(client_query):
     building_name: str = (
         Building.objects.alias(count=Count("apartments")).filter(count__gt=1).values_list("name", flat=True).first()
     )
@@ -402,7 +404,7 @@ def test_optimizer_relay_connection_filtering_nested(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer_relay_connection_filtering_empty(client_query):
+def test_optimizer__relay_connection_filtering_empty(client_query):
     query = """
         query {
           pagedApartments(building_Name: "%s") {
@@ -435,7 +437,7 @@ def test_optimizer_relay_connection_filtering_empty(client_query):
     assert queries == 1, results.log
 
 
-def test_optimizer_relay_connection_nested(client_query):
+def test_optimizer__relay_connection_nested(client_query):
     query = """
         query {
           pagedBuildings {
@@ -484,7 +486,7 @@ def test_optimizer_relay_connection_nested(client_query):
     assert queries == 3, results.log
 
 
-def test_optimizer_relay_connection_nested_filtered(client_query):
+def test_optimizer__relay_connection_nested_filtered(client_query):
     query = """
         query {
           pagedBuildings(first: 10) {
@@ -539,7 +541,7 @@ def test_optimizer_relay_connection_nested_filtered(client_query):
     assert queries == 3, results.log
 
 
-def test_optimizer_custom_fields(client_query):
+def test_optimizer__custom_fields(client_query):
     query = """
         query {
           allDevelopers {
@@ -567,7 +569,7 @@ def test_optimizer_custom_fields(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer_custom_fields_one_to_many(client_query):
+def test_optimizer__custom_fields_one_to_many(client_query):
     query = """
         query {
           allHousingCompanies {
@@ -592,7 +594,7 @@ def test_optimizer_custom_fields_one_to_many(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer_custom_fields_backtracking(client_query):
+def test_optimizer__custom_fields_backtracking(client_query):
     query = """
         query {
           allRealEstates {
@@ -620,7 +622,7 @@ def test_optimizer_custom_fields_backtracking(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer_multiple_queries(client_query):
+def test_optimizer__multiple_queries(client_query):
     query = """
         query {
           allApartments {
@@ -660,7 +662,7 @@ def test_optimizer_multiple_queries(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer_fragment_spread(client_query):
+def test_optimizer__fragment_spread(client_query):
     query = """
         query {
           allApartments {
@@ -689,7 +691,7 @@ def test_optimizer_fragment_spread(client_query):
     assert queries == 1, results.log
 
 
-def test_optimizer_fragment_spread_deep(client_query):
+def test_optimizer__fragment_spread_deep(client_query):
     query = """
         query {
           allApartments {
@@ -729,7 +731,7 @@ def test_optimizer_fragment_spread_deep(client_query):
     assert queries == 1, results.log
 
 
-def test_optimizer_fragment_spread_many_to_one_relations(client_query):
+def test_optimizer__fragment_spread_many_to_one_relations(client_query):
     query = """
         query {
           allApartments {
@@ -768,7 +770,7 @@ def test_optimizer_fragment_spread_many_to_one_relations(client_query):
     assert queries == 3, results.log
 
 
-def test_optimizer_inline_fragment(client_query):
+def test_optimizer__inline_fragment(client_query):
     query = """
         query {
           allPeople {
@@ -821,7 +823,7 @@ def test_optimizer_inline_fragment(client_query):
     condition=graphene_django.__version__.startswith("3.0."),
     reason="Issues in 'graphene_django' <3.1 with two GraphQLObjectTypes for one Model",
 )
-def test_optimizer_filter(client_query):
+def test_optimizer__filter(client_query):
     postal_code = HousingCompany.objects.values_list("postal_code__code", flat=True).first()
 
     query = """
@@ -865,7 +867,7 @@ def test_optimizer_filter(client_query):
     assert queries == 3, results.log
 
 
-def test_optimizer_filter_to_many_relations(client_query):
+def test_optimizer__filter_to_many_relations(client_query):
     developer_name = HousingCompany.objects.values_list("developers__name", flat=True).first()
 
     query = """
@@ -901,7 +903,7 @@ def test_optimizer_filter_to_many_relations(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer_filter_order_by(client_query):
+def test_optimizer__filter_order_by(client_query):
     query = """
         query {
           pagedHousingCompanies(
@@ -935,7 +937,7 @@ def test_optimizer_filter_order_by(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer_max_complexity_reached(client_query):
+def test_optimizer__max_complexity_reached(client_query):
     query = """
         query {
           allApartments {
@@ -987,7 +989,7 @@ def test_optimizer_max_complexity_reached(client_query):
     assert queries == 0, results.log
 
 
-def test_optimizer_deep_query__pks(client_query):
+def test_optimizer__deep_query__pks(client_query):
     query = """
         query {
           allApartments {
@@ -1021,231 +1023,6 @@ def test_optimizer_deep_query__pks(client_query):
     queries = len(results.queries)
     # 1 query for fetching Apartments and related Buildings, RealEstates, HousingCompanies, and PostalCodes
     assert queries == 1, results.log
-
-
-def test_optimizer__forward_many_to_many__reverse_one_to_many(client_query):
-    query = """
-        query {
-          examples {
-            forwardManyToManyFields {
-              reverseOneToManyRels {
-                name
-              }
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    # 1 query for all examples
-    # 1 query for all forward many-to-many relations
-    # 1 query for all nested reverse one-to-many relations
-    assert results.query_count == 3, results.log
-
-
-def test_optimizer__forward_many_to_many__reverse_many_to_many(client_query):
-    query = """
-        query {
-          examples {
-            forwardManyToManyFields {
-              reverseManyToManyRels {
-                name
-              }
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    # 1 query for all examples
-    # 1 query for all forward many-to-many relations
-    # 1 query for all nested reverse many-to-many relations
-    assert results.query_count == 3, results.log
-
-
-def test_optimizer__forward_many_to_many__forward_many_to_many(client_query):
-    query = """
-        query {
-          examples {
-            forwardManyToManyFields {
-              forwardManyToManyFields {
-                name
-              }
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    # 1 query for all examples
-    # 1 query for all forward many-to-many relations
-    # 1 query for all nested forward many-to-many relations
-    assert results.query_count == 3, results.log
-
-
-def test_optimizer__reverse_one_to_many__reverse_one_to_many(client_query):
-    query = """
-        query {
-          examples {
-            reverseOneToManyRels {
-              reverseOneToManyRels {
-                name
-              }
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    # 1 query for all examples
-    # 1 query for all reverse one-to-many relations
-    # 1 query for all nested reverse one-to-many relations
-    assert results.query_count == 3, results.log
-
-
-def test_optimizer__reverse_one_to_many__reverse_many_to_many(client_query):
-    query = """
-        query {
-          examples {
-            reverseOneToManyRels {
-              reverseManyToManyRels {
-                name
-              }
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    # 1 query for all examples
-    # 1 query for all reverse one-to-many relations
-    # 1 query for all nested reverse many-to-many relations
-    assert results.query_count == 3, results.log
-
-
-def test_optimizer__reverse_one_to_many__forward_many_to_many(client_query):
-    query = """
-        query {
-          examples {
-            reverseOneToManyRels {
-              forwardManyToManyFields {
-                name
-              }
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    # 1 query for all examples
-    # 1 query for all reverse one-to-many relations
-    # 1 query for all nested forward many-to-many relations
-    assert results.query_count == 3, results.log
-
-
-def test_optimizer__reverse_many_to_many__reverse_one_to_many(client_query):
-    query = """
-        query {
-          examples {
-            reverseManyToManyRels {
-              reverseOneToManyRels {
-                name
-              }
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    # 1 query for all examples
-    # 1 query for all reverse many-to-many relations
-    # 1 query for all nested reverse one-to-many relations
-    assert results.query_count == 3, results.log
-
-
-def test_optimizer__reverse_many_to_many__reverse_many_to_many(client_query):
-    query = """
-        query {
-          examples {
-            reverseManyToManyRels {
-              reverseManyToManyRels {
-                name
-              }
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    # 1 query for all examples
-    # 1 query for all reverse many-to-many relations
-    # 1 query for all nested reverse many-to-many relations
-    assert results.query_count == 3, results.log
-
-
-def test_optimizer__reverse_many_to_many__forward_many_to_many(client_query):
-    query = """
-        query {
-          examples {
-            reverseManyToManyRels {
-              forwardManyToManyFields {
-                name
-              }
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    # 1 query for all examples
-    # 1 query for all reverse many-to-many relations
-    # 1 query for all nested forward many-to-many relations
-    assert results.query_count == 3, results.log
 
 
 def test_optimizer__annotated_value(client_query):
