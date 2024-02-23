@@ -103,8 +103,9 @@ def _add_item(query_cache: QueryCache, instance: Model, store: QueryOptimizerSto
 
 def _add_selected(query_cache: QueryCache, instance: Model, store: QueryOptimizerStore) -> None:
     for nested_name, nested_store in store.select_stores.items():
-        nested_instance: Model = getattr(instance, nested_name)
-        _add_item(query_cache, nested_instance, nested_store)
+        nested_instance: Model | None = getattr(instance, nested_name)
+        if nested_instance is not None:
+            _add_item(query_cache, nested_instance, nested_store)
 
 
 def _add_prefetched(query_cache: QueryCache, instance: Model, store: QueryOptimizerStore) -> None:
