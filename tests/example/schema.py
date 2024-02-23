@@ -33,6 +33,7 @@ from .types import (
     OwnerType,
     People,
     PostalCodeType,
+    PropertyManagerNode,
     PropertyManagerType,
     RealEstateNode,
     RealEstateType,
@@ -78,6 +79,8 @@ class Query(graphene.ObjectType):
     paged_real_estates = DjangoConnectionField(RealEstateNode)
     housing_company = relay.Node.Field(HousingCompanyNode)
     paged_housing_companies = DjangoFilterConnectionField(HousingCompanyNode)
+    property_managers = relay.Node.Field(PropertyManagerNode)
+    paged_property_managers = DjangoFilterConnectionField(PropertyManagerNode)
 
     all_people = graphene.List(People)
 

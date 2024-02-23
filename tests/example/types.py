@@ -1,10 +1,11 @@
 import graphene
 from django.db.models import F, Model, QuerySet, Value
 from django.db.models.functions import Concat
-from django_filters import CharFilter, FilterSet, OrderingFilter
+from django_filters import CharFilter, OrderingFilter
 from graphene import relay
 
 from query_optimizer import DjangoConnectionField, DjangoObjectType, required_fields
+from query_optimizer.filter import DjangoFilterConnectionField, FilterSet
 from query_optimizer.optimizer import required_annotations
 from query_optimizer.typing import GQLInfo
 from tests.example.models import (
@@ -26,6 +27,7 @@ from tests.example.models import (
     Ownership,
     PostalCode,
     PropertyManager,
+    PropertyManagerProxy,
     RealEstate,
     RealEstateProxy,
     ReverseManyToMany,
@@ -307,6 +309,21 @@ class HousingCompanyNode(IsTypeOfProxyPatch, DjangoObjectType):
         model = HousingCompanyProxy
         interfaces = (relay.Node,)
         filterset_class = HousingCompanyFilterSet
+
+
+class PropertyManagerFilterSet(FilterSet):
+    class Meta:
+        model = PropertyManager
+        fields = ["name", "email"]
+
+
+class PropertyManagerNode(IsTypeOfProxyPatch, DjangoObjectType):
+    housing_companies = DjangoFilterConnectionField(HousingCompanyNode)
+
+    class Meta:
+        model = PropertyManagerProxy
+        interfaces = (relay.Node,)
+        filterset_class = PropertyManagerFilterSet
 
 
 # Union
