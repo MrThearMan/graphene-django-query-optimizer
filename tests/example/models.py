@@ -5,6 +5,7 @@ __all__ = [
     "Apartment",
     "ApartmentProxy",
     "Building",
+    "BuildingProxy",
     "Developer",
     "HousingCompany",
     "HousingCompanyProxy",
@@ -12,8 +13,39 @@ __all__ = [
     "Ownership",
     "PostalCode",
     "PropertyManager",
+    "PropertyManagerProxy",
     "RealEstate",
+    "RealEstateProxy",
     "Sale",
+    #
+    "Example",
+    "ForwardOneToOne",
+    "ForwardManyToOne",
+    "ForwardManyToMany",
+    "ReverseOneToOne",
+    "ReverseOneToMany",
+    "ReverseManyToMany",
+    "ForwardOneToOneForRelated",
+    "ForwardManyToOneForRelated",
+    "ForwardManyToManyForRelated",
+    "ReverseOneToOneToForwardOneToOne",
+    "ReverseOneToOneToForwardManyToOne",
+    "ReverseOneToOneToForwardManyToMany",
+    "ReverseOneToOneToReverseOneToOne",
+    "ReverseOneToOneToReverseOneToMany",
+    "ReverseOneToOneToReverseManyToMany",
+    "ReverseOneToManyToForwardOneToOne",
+    "ReverseOneToManyToForwardManyToOne",
+    "ReverseOneToManyToForwardManyToMany",
+    "ReverseOneToManyToReverseOneToOne",
+    "ReverseOneToManyToReverseOneToMany",
+    "ReverseOneToManyToReverseManyToMany",
+    "ReverseManyToManyToForwardOneToOne",
+    "ReverseManyToManyToForwardManyToOne",
+    "ReverseManyToManyToForwardManyToMany",
+    "ReverseManyToManyToReverseOneToOne",
+    "ReverseManyToManyToReverseOneToMany",
+    "ReverseManyToManyToReverseManyToMany",
 ]
 
 
@@ -240,6 +272,11 @@ class HousingCompanyProxy(HousingCompany):
         proxy = True
 
 
+class PropertyManagerProxy(PropertyManager):
+    class Meta:
+        proxy = True
+
+
 # --------------------------------------------------------------------
 
 
@@ -269,6 +306,9 @@ class Example(BaseModel):
         "ForwardManyToMany",
         related_name="example_rels",
     )
+
+
+# --------------------------------------------------------------------
 
 
 class ForwardOneToOne(BaseModel):
@@ -390,6 +430,9 @@ class ReverseManyToMany(BaseModel):
     )
 
 
+# --------------------------------------------------------------------
+
+
 class ForwardOneToOneForRelated(BaseModel):
     pass
 
@@ -400,6 +443,9 @@ class ForwardManyToOneForRelated(BaseModel):
 
 class ForwardManyToManyForRelated(BaseModel):
     pass
+
+
+# --------------------------------------------------------------------
 
 
 class ReverseOneToOneToForwardOneToOne(BaseModel):
@@ -450,6 +496,9 @@ class ReverseOneToOneToReverseManyToMany(BaseModel):
     )
 
 
+# --------------------------------------------------------------------
+
+
 class ReverseOneToManyToForwardOneToOne(BaseModel):
     forward_one_to_one_field = models.ForeignKey(
         "ForwardOneToOne",
@@ -496,6 +545,9 @@ class ReverseOneToManyToReverseManyToMany(BaseModel):
         on_delete=models.CASCADE,
         related_name="reverse_one_to_many_rels",
     )
+
+
+# --------------------------------------------------------------------
 
 
 class ReverseManyToManyToForwardOneToOne(BaseModel):
