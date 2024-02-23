@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 
     from .typing import (
         Callable,
-        Collection,
         GQLInfo,
         ModelField,
         ParamSpec,
@@ -44,7 +43,6 @@ __all__ = [
     "mark_unoptimized",
     "maybe_skip_optimization_on_error",
     "optimizer_logger",
-    "unique",
 ]
 
 
@@ -79,10 +77,6 @@ def get_selections(info: GQLInfo) -> tuple[SelectionNode, ...]:
     field_node = info.field_nodes[0]
     selection_set = field_node.selection_set
     return () if selection_set is None else selection_set.selections
-
-
-def unique(items: Collection[T]) -> list[T]:
-    return list(dict.fromkeys(items))
 
 
 def can_optimize(info: GQLInfo) -> bool:

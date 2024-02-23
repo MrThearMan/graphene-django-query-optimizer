@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from django.db.models import Expression, Model, Prefetch, QuerySet
@@ -8,7 +8,7 @@ from django.db.models.constants import LOOKUP_SEP
 from graphene_django.registry import get_global_registry
 
 from .settings import optimizer_settings
-from .utils import mark_optimized, unique
+from .utils import mark_optimized
 
 if TYPE_CHECKING:
     from .types import DjangoObjectType
@@ -24,9 +24,9 @@ __all__ = [
 
 @dataclass
 class CompilationResults:
-    only_fields: list[str]
-    select_related: list[str]
-    prefetch_related: list[Prefetch]
+    only_fields: list[str] = field(default_factory=list)
+    select_related: list[str] = field(default_factory=list)
+    prefetch_related: list[Prefetch] = field(default_factory=list)
 
 
 class QueryOptimizerStore:
@@ -41,65 +41,7 @@ class QueryOptimizerStore:
         self.select_stores: dict[str, QueryOptimizerStore] = {}
         self.prefetch_stores: dict[str, QueryOptimizerStore] = {}
 
-    def compile(self, *, in_prefetch: bool = False) -> CompilationResults:
-        results = CompilationResults(
-            only_fields=self.only_fields.copy(),
-            select_related=[],
-            prefetch_related=[],
-        )
-
-        for name, store in self.select_stores.items():
-            # Promote select related to prefetch related if any annotations are needed.
-            if store.annotations:
-                queryset: QuerySet = store.model._default_manager.all()
-                optimized_queryset = store.optimize_queryset(queryset)
-                results.prefetch_related.append(Prefetch(name, optimized_queryset))
-                in_prefetch = True
-            elif not in_prefetch:
-                results.select_related.append(name)
-            self._compile_nested(name, store, results, in_prefetch=in_prefetch)
-
-        for name, store in self.prefetch_stores.items():
-            queryset: QuerySet = store.model._default_manager.all()
-            optimized_queryset = store.optimize_queryset(queryset)
-            results.prefetch_related.append(Prefetch(name, optimized_queryset))
-            self._compile_nested(name, store, results, in_prefetch=True)
-
-        results.only_fields = unique(results.only_fields)
-        results.select_related = unique(results.select_related)
-        results.prefetch_related = unique(results.prefetch_related)
-        return results
-
-    @staticmethod
-    def _compile_nested(
-        name: str,
-        store: QueryOptimizerStore,
-        results: CompilationResults,
-        *,
-        in_prefetch: bool,
-    ) -> None:
-        nested_results = store.compile(in_prefetch=in_prefetch)
-        results.select_related.extend(f"{name}{LOOKUP_SEP}{select}" for select in nested_results.select_related)
-        if in_prefetch:
-            return
-
-        results.only_fields.extend(f"{name}{LOOKUP_SEP}{only}" for only in nested_results.only_fields)
-        for prefetch in nested_results.prefetch_related:
-            prefetch.add_prefix(name)
-            results.prefetch_related.append(prefetch)
-
-    def get_filtered_queryset(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
-        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
-        if callable(getattr(object_type, "filter_queryset", None)):
-            return object_type.filter_queryset(queryset, self.info)  # type: ignore[union-attr]
-        return queryset  # pragma: no cover
-
-    def optimize_queryset(
-        self,
-        queryset: QuerySet[TModel],
-        *,
-        pk: PK = None,
-    ) -> QuerySet[TModel]:
+    def optimize_queryset(self, queryset: QuerySet[TModel], *, pk: PK = None) -> QuerySet[TModel]:
         results = self.compile()
 
         if pk is not None:
@@ -117,6 +59,44 @@ class QueryOptimizerStore:
 
         mark_optimized(queryset)
         return queryset
+
+    def compile(self) -> CompilationResults:
+        results = CompilationResults(only_fields=self.only_fields.copy())
+
+        for name, store in self.select_stores.items():
+            # Promote select related to prefetch related if any annotations are needed.
+            if store.annotations:
+                self.compile_prefetch(name, store, results)
+            else:
+                self.compile_select(name, store, results)
+
+        for name, store in self.prefetch_stores.items():
+            self.compile_prefetch(name, store, results)
+
+        return results
+
+    def compile_select(self, name: str, store: QueryOptimizerStore, results: CompilationResults) -> None:
+        results.select_related.append(name)
+        nested_results = store.compile()
+        results.only_fields.extend(f"{name}{LOOKUP_SEP}{only}" for only in nested_results.only_fields)
+        results.select_related.extend(f"{name}{LOOKUP_SEP}{select}" for select in nested_results.select_related)
+        for prefetch in nested_results.prefetch_related:
+            prefetch.add_prefix(name)
+            results.prefetch_related.append(prefetch)
+
+    def compile_prefetch(self, name: str, store: QueryOptimizerStore, results: CompilationResults) -> None:
+        queryset = self.get_prefetch_queryset(store.model)
+        optimized_queryset = store.optimize_queryset(queryset)
+        results.prefetch_related.append(Prefetch(name, optimized_queryset))
+
+    def get_prefetch_queryset(self, model: type[TModel]) -> QuerySet[TModel]:
+        return model._default_manager.all()
+
+    def get_filtered_queryset(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
+        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
+        if callable(getattr(object_type, "filter_queryset", None)):
+            return object_type.filter_queryset(queryset, self.info)  # type: ignore[union-attr]
+        return queryset  # pragma: no cover
 
     @property
     def complexity(self) -> int:
