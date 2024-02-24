@@ -2,6 +2,7 @@ import json
 
 import graphene_django
 import pytest
+from django import VERSION
 from django.db import models
 from django.db.models import Count
 from django.db.models.functions import RowNumber
@@ -1101,6 +1102,7 @@ def test_optimizer__select_related_promoted_to_prefetch_due_to_annotations(clien
     assert results.query_count == 2, results.log
 
 
+@pytest.mark.skipif(VERSION < (4, 2), reason="Django 4.2+ is required")
 def test_optimizer__limit_in_nested_connection_field__testing():
     # TODO: Nested connection fields need to be optimized when using `first` or `last` arguments
     #  We would need to generate the following windows function to the prefetch queryset.
