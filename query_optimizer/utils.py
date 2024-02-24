@@ -20,6 +20,7 @@ if TYPE_CHECKING:
         Callable,
         GQLInfo,
         ModelField,
+        Optional,
         ParamSpec,
         ToManyField,
         ToOneField,
@@ -120,10 +121,10 @@ def maybe_skip_optimization_on_error(func: Callable[P, T]) -> Callable[P, T]:
 
 def calculate_queryset_slice(
     *,
-    after: int | None,
-    before: int | None,
-    first: int | None,
-    last: int | None,
+    after: Optional[int],
+    before: Optional[int],
+    first: Optional[int],
+    last: Optional[int],
     size: int,
 ) -> slice:
     """

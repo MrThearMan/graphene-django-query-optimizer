@@ -1,8 +1,7 @@
-from typing import Any, NamedTuple
-
 import pytest
 from graphql_relay import offset_to_cursor
 
+from query_optimizer.typing import Any, NamedTuple, Optional
 from query_optimizer.validators import PaginationArgs, validate_pagination_args
 from tests.helpers import parametrize_helper
 
@@ -19,7 +18,7 @@ class PaginationInput(NamedTuple):
 class Params(NamedTuple):
     pagination_input: PaginationInput
     output: PaginationArgs
-    errors: str | None
+    errors: Optional[str]
 
 
 @pytest.mark.parametrize(

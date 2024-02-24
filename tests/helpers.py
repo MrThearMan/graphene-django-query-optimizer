@@ -1,4 +1,4 @@
-from typing import NamedTuple, TypedDict, TypeVar
+from query_optimizer.typing import NamedTuple, TypedDict, TypeVar
 
 __all__ = [
     "parametrize_helper",

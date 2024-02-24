@@ -1,10 +1,11 @@
 import os
-from typing import Callable
 
 import pytest
 from django.http import HttpResponse
 from django.test.client import Client
 from graphene_django.utils.testing import graphql_query
+
+from query_optimizer.typing import Callable
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tests.project.settings")
 

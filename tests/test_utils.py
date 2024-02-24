@@ -1,16 +1,15 @@
-from typing import NamedTuple
-
 import pytest
 
+from query_optimizer.typing import NamedTuple, Optional
 from query_optimizer.utils import calculate_queryset_slice
 from tests.helpers import parametrize_helper
 
 
 class PaginationInput(NamedTuple):
-    first: int | None = None
-    last: int | None = None
-    after: int | None = None
-    before: int | None = None
+    first: Optional[int] = None
+    last: Optional[int] = None
+    after: Optional[int] = None
+    before: Optional[int] = None
     size: int = 100
 
 

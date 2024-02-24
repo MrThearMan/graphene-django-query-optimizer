@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING
 
 import graphene
 from django.core.exceptions import ValidationError
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from graphql_relay.connection.connection import ConnectionType
 
     from .types import DjangoObjectType
-    from .typing import Any, ConnectionResolver, GQLInfo, QuerySetResolver, TypeVar
+    from .typing import Any, ConnectionResolver, GQLInfo, Optional, QuerySetResolver, Type, TypeVar, Union
 
     TModel = TypeVar("TModel", bound=models.Model)
 
@@ -51,11 +51,11 @@ class DjangoConnectionField(ConnectionField):
         """
         # Maximum number of items that can be requested in a single query for this connection.
         # Set to None to disable the limit.
-        self.max_limit: int | None = kwargs.get("max_limit", graphene_settings.RELAY_CONNECTION_MAX_LIMIT)
+        self.max_limit: Optional[int] = kwargs.get("max_limit", graphene_settings.RELAY_CONNECTION_MAX_LIMIT)
 
-        self._base_args: dict[str, Any] | None = None
-        self._filterset_class: Type[FilterSet] | None = None
-        self._filtering_args: dict[str, graphene.Argument] | None = None
+        self._base_args: Optional[dict[str, Any]] = None
+        self._filterset_class: Optional[Type[FilterSet]] = None
+        self._filtering_args: Optional[dict[str, graphene.Argument]] = None
 
         # Default inputs for a connection field
         kwargs.setdefault("first", graphene.Int())
@@ -123,7 +123,7 @@ class DjangoConnectionField(ConnectionField):
         connection.length = count
         return connection
 
-    def to_queryset(self, iterable: models.QuerySet | Manager | None) -> models.QuerySet:
+    def to_queryset(self, iterable: Union[models.QuerySet, Manager, None]) -> models.QuerySet:
         # Default resolver returns a Manager-instance or None.
         if iterable is None:
             iterable = self.model._default_manager
@@ -157,7 +157,7 @@ class DjangoConnectionField(ConnectionField):
         self._base_args = args
 
     @cached_property
-    def type(self) -> Type[Connection] | graphene.NonNull:
+    def type(self) -> Union[Type[Connection], graphene.NonNull]:
         from graphene_django.types import DjangoObjectType
 
         type_ = get_type(self._type)
@@ -169,7 +169,7 @@ class DjangoConnectionField(ConnectionField):
             msg = f"{self.__class__.__name__} only accepts DjangoObjectType types"
             raise TypeError(msg)
 
-        connection_type: Type[Connection] | None = type_._meta.connection
+        connection_type: Optional[Type[Connection]] = type_._meta.connection
         if connection_type is None:  # pragma: no cover
             msg = f"The type {type_.__name__} doesn't have a connection"
             raise ValueError(msg)
@@ -194,7 +194,7 @@ class DjangoConnectionField(ConnectionField):
         return self.node_type._meta.model
 
     @cached_property
-    def filterset_class(self) -> Type[FilterSet] | None:
+    def filterset_class(self) -> Optional[Type[FilterSet]]:
         if not self._filterset_class and self.has_filters:
             from graphene_django.filter.utils import get_filterset_class
 
@@ -209,7 +209,7 @@ class DjangoConnectionField(ConnectionField):
         return self._filterset_class
 
     @cached_property
-    def filtering_args(self) -> dict[Any, graphene.Argument] | None:
+    def filtering_args(self) -> Optional[dict[Any, graphene.Argument]]:
         if not self._filtering_args and self.has_filters:
             from graphene_django.filter.utils import get_filtering_args_from_filterset
 

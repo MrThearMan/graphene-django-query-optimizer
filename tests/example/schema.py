@@ -1,5 +1,4 @@
 import itertools
-from typing import Iterable, Union
 
 import graphene
 from django.db import models
@@ -10,7 +9,7 @@ from graphene_django.debug import DjangoDebug
 
 from query_optimizer import optimize
 from query_optimizer.fields import DjangoConnectionField
-from query_optimizer.typing import GQLInfo
+from query_optimizer.typing import GQLInfo, Iterable, Union
 
 from .models import (
     Apartment,

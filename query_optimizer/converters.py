@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
     from query_optimizer import DjangoObjectType
     from query_optimizer.fields import DjangoConnectionField
-    from query_optimizer.typing import Any, GQLInfo
+    from query_optimizer.typing import Any, GQLInfo, Optional, Union
 
 __all__ = [
     "convert_reverse_to_one_field_to_django_model",
@@ -25,19 +25,19 @@ __all__ = [
 @convert_django_field.register(models.OneToOneRel)
 def convert_reverse_to_one_field_to_django_model(
     field,  # noqa: ANN001
-    registry: Registry | None = None,
+    registry: Optional[Registry] = None,
 ) -> graphene.Dynamic:
-    def dynamic_type() -> graphene.Field | None:
-        _type: DjangoObjectType | None = registry.get_type_for_model(field.related_model)
+    def dynamic_type() -> Optional[graphene.Field]:
+        _type: Optional[DjangoObjectType] = registry.get_type_for_model(field.related_model)
         if _type is None:  # pragma: no cover
             return None
 
         class CustomField(graphene.Field):
             def wrap_resolve(self, parent_resolver: Any) -> Any:
-                def custom_resolver(root: Any, info: GQLInfo) -> models.Model | None:
+                def custom_resolver(root: Any, info: GQLInfo) -> Optional[models.Model]:
                     field_name = to_snake_case(info.field_name)
                     # Reverse object should be optimized to the root model.
-                    reverse_object: models.Model | None = getattr(root, field_name, None)
+                    reverse_object: Optional[models.Model] = getattr(root, field_name, None)
                     if reverse_object is None:  # pragma: no cover
                         return None
 
@@ -54,16 +54,16 @@ def convert_reverse_to_one_field_to_django_model(
 @convert_django_field.register(models.ForeignKey)
 def convert_forward_to_one_field_to_django_model(
     field,  # noqa: ANN001
-    registry: Registry | None = None,
+    registry: Optional[Registry] = None,
 ) -> graphene.Dynamic:
-    def dynamic_type() -> graphene.Field | None:
-        _type: DjangoObjectType | None = registry.get_type_for_model(field.related_model)
+    def dynamic_type() -> Optional[graphene.Field]:
+        _type: Optional[DjangoObjectType] = registry.get_type_for_model(field.related_model)
         if _type is None:  # pragma: no cover
             return None
 
         class CustomField(graphene.Field):
             def wrap_resolve(self, parent_resolver: Any) -> Any:
-                def custom_resolver(root: Any, info: GQLInfo) -> models.Model | None:
+                def custom_resolver(root: Any, info: GQLInfo) -> Optional[models.Model]:
                     field_name = to_snake_case(info.field_name)
                     db_field_key: str = root.__class__._meta.get_field(field_name).attname
                     object_pk = getattr(root, db_field_key, None)
@@ -84,10 +84,10 @@ def convert_forward_to_one_field_to_django_model(
 @convert_django_field.register(models.ManyToOneRel)
 def convert_to_many_field_to_list_or_connection(
     field,  # noqa: ANN001
-    registry: Registry | None = None,
+    registry: Optional[Registry] = None,
 ) -> graphene.Dynamic:
-    def dynamic_type() -> DjangoConnectionField | DjangoListField | None:
-        type_: type[DjangoObjectType] | None = registry.get_type_for_model(field.related_model)
+    def dynamic_type() -> Union[DjangoConnectionField, DjangoListField, None]:
+        type_: Optional[type[DjangoObjectType]] = registry.get_type_for_model(field.related_model)
         if type_ is None:  # pragma: no cover
             return None
 

@@ -11,6 +11,8 @@ from typing import (
     Literal,
     NamedTuple,
     Optional,
+    Type,
+    TypedDict,
     TypeVar,
     Union,
 )
@@ -67,9 +69,11 @@ __all__ = [
     "TableName",
     "ToManyField",
     "ToOneField",
+    "Type",
     "TypeGuard",
     "TypeOptions",
     "TypeVar",
+    "TypedDict",
     "Union",
 ]
 
@@ -85,8 +89,8 @@ ToOneField: TypeAlias = Union["GenericRelation", ForeignObject, ForeignKey, OneT
 TypeOptions: TypeAlias = Union[DjangoObjectTypeOptions, ConnectionOptions]
 AnyUser: TypeAlias = Union["User", "AnonymousUser"]
 
-QuerySetResolver = Callable[..., QuerySet | Manager | None]
-ConnectionResolver = Callable[..., QuerySet | Manager | None]
+QuerySetResolver = Callable[..., Union[QuerySet, Manager, None]]
+ConnectionResolver = Callable[..., Union[QuerySet, Manager, None]]
 
 
 class UserHintedWSGIRequest(WSGIRequest):

@@ -14,7 +14,7 @@ from .utils import can_optimize
 if TYPE_CHECKING:
     from django.db.models import Model, QuerySet
 
-    from .typing import PK, Any, GQLInfo, Literal, Optional, TypeVar
+    from .typing import PK, Any, GQLInfo, Literal, Optional, TypeVar, Union
 
     TModel = TypeVar("TModel", bound=Model)
 
@@ -36,9 +36,9 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
     def __init_subclass_with_meta__(
         cls,
         _meta: Optional[OptimizedDjangoOptions] = None,
-        model: type[Model] | None = None,
-        fields: list[str] | Literal["__all__"] | None = "__all__",
-        max_complexity: int | None = None,
+        model: Optional[type[Model]] = None,
+        fields: Union[list[str], Literal["__all__"], None] = "__all__",
+        max_complexity: Optional[int] = None,
         **options: Any,
     ) -> None:
         if _meta is None:
