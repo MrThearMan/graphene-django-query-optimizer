@@ -84,7 +84,7 @@ LOGGING = {
     "formatters": {
         "common": {
             "()": "tests.project.logging.DotPathFormatter",
-            "format": "{asctime} | {levelname} | {dotpath}.{funcName}:{lineno} | {message}",
+            "format": "{asctime} | {levelname} | {module}.{funcName}:{lineno} | {message}",
             "datefmt": "%Y-%m-%dT%H:%M:%S%z",
             "style": "{",
         },

@@ -9,7 +9,7 @@ BASE_PATH = str(Path(__file__).resolve().parent.parent)
 
 class DotPathFormatter(logging.Formatter):
     def format(self, record):
-        self._style._defaults = {"dotpath": self.get_dotpath(record)}
+        record.module = self.get_dotpath(record)
         return super().format(record)
 
     def get_dotpath(self, record: logging.LogRecord) -> str:
