@@ -486,7 +486,7 @@ def test_optimizer__relay_connection_nested(client_query):
     assert queries == 3, results.log
 
 
-def test_optimizer__relay_connection_nested_filtered(client_query):
+def test_optimizer__relay_connection_nested__paginated(client_query):
     query = """
         query {
           pagedBuildings(first: 10) {
@@ -501,10 +501,6 @@ def test_optimizer__relay_connection_nested_filtered(client_query):
                   }
                 }
               }
-            }
-            pageInfo {
-              hasNextPage
-              endCursor
             }
           }
         }
@@ -538,6 +534,44 @@ def test_optimizer__relay_connection_nested_filtered(client_query):
     # 1 query for counting Buildings
     # 1 query for fetching Buildings
     # 1 query for fetching Apartments
+    assert queries == 3, results.log
+
+
+@pytest.mark.xfail(reason="Not implemented yet")
+def test_optimizer__relay_connection_nested__filtered(client_query):
+    # TODO: result cache is lost when filtering nested connections.
+    name = HousingCompany.objects.values_list("name", flat=True).first()
+    query = """
+        query {
+          pagedPropertyManagers {
+            edges {
+              node {
+                id
+                housingCompanies(
+                  name_Iexact: "%s"
+                ) {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """ % (name,)
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting Property Managers
+    # 1 query for fetching Property Managers
+    # 1 query for fetching Housing Companies
     assert queries == 3, results.log
 
 
@@ -1065,3 +1099,43 @@ def test_optimizer__select_related_promoted_to_prefetch_due_to_annotations(clien
     # 1 query for all examples
     # 1 query for fetching forward many-to-one relations with the annotations
     assert results.query_count == 2, results.log
+
+
+def test_optimizer__limit_in_nested_connection_field__testing():
+    # TODO: Nested connection fields need to be optimized when using `first` or `last` arguments
+    #  We would need to generate the following windows function to the prefetch queryset.
+    limit_parent = 2
+    limit_child = 2
+
+    buildings_1 = (
+        Building.objects.prefetch_related(
+            models.Prefetch(
+                "apartments",
+                queryset=(
+                    Apartment.objects.alias(
+                        _row_number=models.Window(
+                            expression=RowNumber(),
+                            partition_by=models.F("building_id"),
+                        ),
+                    )
+                    # This doesn't support pagination fully, since you can't
+                    # get the total count, or continue pagination from the last
+                    # item in the previous page.
+                    .filter(_row_number__lte=limit_child)
+                    .only("pk", "building_id")
+                ),
+            )
+        )
+        .only("pk")
+        .all()[:limit_parent]
+    )
+
+    with capture_database_queries() as count_1:
+        builds = list(buildings_1)
+
+    print(count_1.log)
+    assert count_1.query_count == 2, count_1.log
+
+    assert len(builds) == limit_parent
+    for build in builds:
+        assert len(build.apartments.all()) <= limit_parent

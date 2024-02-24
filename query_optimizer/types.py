@@ -63,7 +63,7 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
 
     @classmethod
     def get_node(cls, info: GQLInfo, pk: PK) -> Optional[TModel]:
-        queryset: QuerySet[TModel] = cls._meta.model.objects.filter(pk=pk)
+        queryset: QuerySet[TModel] = cls._meta.model._default_manager.filter(pk=pk)
         if can_optimize(info):
             queryset = optimize(queryset, info, max_complexity=cls._meta.max_complexity, pk=pk)
             # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.

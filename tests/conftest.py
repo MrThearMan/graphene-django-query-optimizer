@@ -10,12 +10,19 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tests.project.settings")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_database(django_db_blocker) -> None:
+def setup_database(django_db_blocker, request) -> None:
     """Setup database."""
     from django.core.management import call_command
 
+    create_db: bool = request.config.getoption("--create-db")
+    reuse_db: bool = request.config.getoption("--reuse-db")
+    if reuse_db and not create_db:
+        return
+
+    no_migrations: bool = request.config.getoption("--no-migrations")
     with django_db_blocker.unblock():
-        call_command("migrate")
+        if not no_migrations or create_db:
+            call_command("migrate")
         call_command("create_test_data")
 
 

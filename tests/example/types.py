@@ -4,8 +4,9 @@ from django.db.models.functions import Concat
 from django_filters import CharFilter, OrderingFilter
 from graphene import relay
 
-from query_optimizer import DjangoConnectionField, DjangoObjectType, required_fields
-from query_optimizer.filter import DjangoFilterConnectionField, FilterSet
+from query_optimizer import DjangoObjectType, required_fields
+from query_optimizer.fields import DjangoConnectionField
+from query_optimizer.filter import FilterSet
 from query_optimizer.optimizer import required_annotations
 from query_optimizer.typing import GQLInfo
 from tests.example.models import (
@@ -318,7 +319,7 @@ class PropertyManagerFilterSet(FilterSet):
 
 
 class PropertyManagerNode(IsTypeOfProxyPatch, DjangoObjectType):
-    housing_companies = DjangoFilterConnectionField(HousingCompanyNode)
+    housing_companies = DjangoConnectionField(HousingCompanyNode)
 
     class Meta:
         model = PropertyManagerProxy

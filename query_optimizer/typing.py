@@ -31,11 +31,13 @@ from django.db.models import (
     ForeignKey,
     ForeignObject,
     ForeignObjectRel,
+    Manager,
     ManyToManyField,
     ManyToManyRel,
     ManyToOneRel,
     Model,
     OneToOneField,
+    QuerySet,
 )
 from graphql import GraphQLResolveInfo
 
@@ -47,8 +49,9 @@ __all__ = [
     "Any",
     "Callable",
     "Collection",
-    "Generator",
+    "ConnectionResolver",
     "GQLInfo",
+    "Generator",
     "Hashable",
     "Iterable",
     "Literal",
@@ -56,9 +59,10 @@ __all__ = [
     "NamedTuple",
     "OptimizedDjangoOptions",
     "Optional",
-    "ParamSpec",
     "PK",
+    "ParamSpec",
     "QueryCache",
+    "QuerySetResolver",
     "StoreStr",
     "TableName",
     "ToManyField",
@@ -80,6 +84,9 @@ ToManyField: TypeAlias = Union["GenericRelation", ManyToManyField, ManyToOneRel,
 ToOneField: TypeAlias = Union["GenericRelation", ForeignObject, ForeignKey, OneToOneField]
 TypeOptions: TypeAlias = Union[DjangoObjectTypeOptions, ConnectionOptions]
 AnyUser: TypeAlias = Union["User", "AnonymousUser"]
+
+QuerySetResolver = Callable[..., QuerySet | Manager | None]
+ConnectionResolver = Callable[..., QuerySet | Manager | None]
 
 
 class UserHintedWSGIRequest(WSGIRequest):

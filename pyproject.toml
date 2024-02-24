@@ -87,6 +87,8 @@ line-length = 120
 extend-exclude = [
     "tests/*",
 ]
+
+[tool.ruff.lint]
 typing-modules = [
     "query_optimizer.typing",
 ]
@@ -160,7 +162,7 @@ ignore = [
     "W191",     # tab-indentation
 ]
 
-[tool.ruff.pylint]
+[tool.ruff.lint.pylint]
 max-args = 7
 
 [tool.mypy]

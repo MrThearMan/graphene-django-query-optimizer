@@ -8,8 +8,8 @@ from graphene import relay
 from graphene_django import DjangoListField
 from graphene_django.debug import DjangoDebug
 
-from query_optimizer import DjangoConnectionField, optimize
-from query_optimizer.filter import DjangoFilterConnectionField
+from query_optimizer import optimize
+from query_optimizer.fields import DjangoConnectionField
 from query_optimizer.typing import GQLInfo
 
 from .models import (
@@ -72,15 +72,15 @@ class Query(graphene.ObjectType):
         return optimize(HousingCompany.objects.filter(name=name), info)
 
     apartment = relay.Node.Field(ApartmentNode)
-    paged_apartments = DjangoFilterConnectionField(ApartmentNode)
+    paged_apartments = DjangoConnectionField(ApartmentNode)
     building = relay.Node.Field(BuildingNode)
     paged_buildings = DjangoConnectionField(BuildingNode)
     real_estate = relay.Node.Field(RealEstateNode)
     paged_real_estates = DjangoConnectionField(RealEstateNode)
     housing_company = relay.Node.Field(HousingCompanyNode)
-    paged_housing_companies = DjangoFilterConnectionField(HousingCompanyNode)
+    paged_housing_companies = DjangoConnectionField(HousingCompanyNode)
     property_managers = relay.Node.Field(PropertyManagerNode)
-    paged_property_managers = DjangoFilterConnectionField(PropertyManagerNode)
+    paged_property_managers = DjangoConnectionField(PropertyManagerNode)
 
     all_people = graphene.List(People)
 
