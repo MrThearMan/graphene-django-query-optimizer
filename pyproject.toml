@@ -34,8 +34,6 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Framework :: Django :: 4.0",
-    "Framework :: Django :: 4.1",
     "Framework :: Django :: 4.2",
     "Framework :: Django :: 5.0",
 ]
@@ -52,7 +50,7 @@ exclude = [
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4"
-Django = ">=4.0"
+Django = ">=4.2"
 graphene-django = ">=3.0.0"
 django-filter = { version = ">=21.1", optional = true }
 typing-extensions = { version = ">=4.7.1", python = "<3.10" }
@@ -62,8 +60,8 @@ django-settings-holder = ">=0.1.2"
 filter = ["django-filter"]
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.0.1"
-coverage = "7.4.2"
+pytest = "8.0.2"
+coverage = "7.4.3"
 pytest-django = "4.8.0"
 pre-commit = "3.6.2"
 tox = "4.13.0"
@@ -203,7 +201,7 @@ filterwarnings = [
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py{39, 310, 311, 312}-django{40, 41, 42, 50}-gd{30, 31, 32}
+envlist = py{39, 310, 311, 312}-django{42, 50}-gd{30, 31, 32}
 isolated_build = true
 
 [gh-actions]
@@ -220,8 +218,6 @@ setenv =
     PYTHONPATH = {toxinidir}
     DJANGO_SETTINGS_MODULE = tests.project.settings
 deps =
-    django40: Django >=4.0,<4.1
-    django41: Django >=4.1,<4.2
     django42: Django >=4.2,<4.3
 
     py39-django50: Django >=4.2,<4.3
