@@ -216,23 +216,40 @@ def _get_arguments(
     schema: GraphQLSchema,
 ) -> dict[str, GraphQLFilterInfo]:
     arguments: dict[str, GraphQLFilterInfo] = {}
-    for selection in field_nodes:
-        if not isinstance(selection, FieldNode):  # pragma: no cover
+    for field_node in field_nodes:
+        if not isinstance(field_node, FieldNode):  # pragma: no cover
             continue
 
-        field_def: Optional[GraphQLField] = get_field_def(schema, parent, selection)
+        field_def: Optional[GraphQLField] = get_field_def(schema, parent, field_node)
         if field_def is None:  # pragma: no cover
             continue
 
-        new_parent = get_underlying_type(field_def.type)
+        name = to_snake_case(field_node.name.value)
+        filters = get_argument_values(type_def=field_def, node=field_node, variable_values=variable_values)
 
-        arguments[to_snake_case(selection.name.value)] = args = GraphQLFilterInfo(
-            filters=get_argument_values(type_def=field_def, node=selection, variable_values=variable_values),
+        new_parent = get_underlying_type(field_def.type)
+        if hasattr(new_parent, "graphene_type") and issubclass(new_parent.graphene_type, Connection):
+            # Skip the `edges` and `node` fields
+            field_def = new_parent.fields["edges"]
+            new_parent = get_underlying_type(field_def.type)
+            field_def = new_parent.fields["node"]
+            new_parent = get_underlying_type(field_def.type)
+            field_node = field_node.selection_set.selections[0].selection_set.selections[0]  # noqa: PLW2901
+
+        arguments[name] = args = GraphQLFilterInfo(
+            name=new_parent.name,
+            filters=filters,
             children=[],
+            filter_fields=None,
+            filterset_class=None,
         )
 
-        if selection.selection_set is not None:
-            result = _get_arguments(selection.selection_set.selections, variable_values, new_parent, schema)
+        if hasattr(new_parent, "graphene_type"):
+            args["filter_fields"] = getattr(new_parent.graphene_type._meta, "filter_fields", None)
+            args["filterset_class"] = getattr(new_parent.graphene_type._meta, "filterset_class", None)
+
+        if field_node.selection_set is not None:
+            result = _get_arguments(field_node.selection_set.selections, variable_values, new_parent, schema)
             if result:
                 args["children"].append(result)
 

@@ -48,6 +48,7 @@ from graphql import FieldNode, GraphQLResolveInfo, SelectionNode
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser, User
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+    from django_filters import FilterSet
 
 __all__ = [
     "Any",
@@ -114,5 +115,8 @@ class OptimizedDjangoOptions(DjangoObjectTypeOptions):
 
 
 class GraphQLFilterInfo(TypedDict):
+    name: str
     filters: dict[str, Any]
     children: list[dict[str, GraphQLFilterInfo]]
+    filter_fields: Optional[dict[str, list[str]]]
+    filterset_class: Optional[type[FilterSet]]

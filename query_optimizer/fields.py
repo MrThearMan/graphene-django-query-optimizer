@@ -14,25 +14,20 @@ from graphene_django.utils.utils import maybe_queryset
 from graphql_relay.connection.array_connection import offset_to_cursor
 
 from .cache import store_in_query_cache
-from .optimizer import QueryOptimizer
-from .utils import (
-    calculate_queryset_slice,
-    get_field_type,
-    get_selections,
-    get_underlying_type,
-)
+from .optimizer import QueryOptimizer, optimize
+from .settings import optimizer_settings
+from .utils import calculate_queryset_slice, get_field_type, get_selections, get_underlying_type
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
     from django.db import models
     from django.db.models.manager import Manager
-    from django_filters import FilterSet
     from graphene.relay.connection import Connection
-    from graphene_django.types import DjangoObjectType
-    from graphql import GraphQLOutputType
+    from graphene_django import DjangoObjectType
     from graphql_relay import EdgeType
     from graphql_relay.connection.connection import ConnectionType
 
+    from .filter import FilterSet
     from .typing import (
         Any,
         ConnectionResolver,
@@ -91,27 +86,14 @@ class RelatedField(graphene.Field):
         return self.underlying_type.get_node(info, reverse_object.pk)
 
     @cached_property
-    def type(self) -> Type[GraphQLOutputType]:
-        from graphene_django.types import DjangoObjectType
-
-        original_type = super().type
-        underlying_type = get_underlying_type(original_type)
-
-        if not issubclass(underlying_type, DjangoObjectType):  # pragma: no cover
-            msg = f"{self.__class__.__name__} only accepts DjangoObjectType types"
-            raise TypeError(msg)
-
-        return original_type
-
-    @cached_property
     def underlying_type(self) -> Type[DjangoObjectType]:
         return get_underlying_type(self.type)
 
 
 class FilteringMixin:
     # Subclasses should implement the following properties:
-    model: Type[models.Model]
-    underlying_type: Type[DjangoObjectType]
+    model: type[models.Model]
+    underlying_type: type[DjangoObjectType]
 
     @property
     def args(self) -> dict[str, graphene.Argument]:
@@ -142,23 +124,16 @@ class FilteringMixin:
         return data
 
     @cached_property
-    def filterset_class(self) -> Optional[Type[FilterSet]]:
+    def filterset_class(self) -> Optional[type[FilterSet]]:
         if not self.has_filters:
             return None
 
-        from graphene_django.filter.utils import get_filterset_class
+        from .filter import get_filterset_for_object_type
 
-        from .filter import FilterSet
-
-        meta: dict[str, Any] = {
-            "model": self.model,
-            "fields": self.underlying_type._meta.filter_fields,
-            "filterset_base_class": FilterSet,
-        }
-        return get_filterset_class(self.underlying_type._meta.filterset_class, **meta)
+        return get_filterset_for_object_type(self.underlying_type)
 
     @cached_property
-    def filtering_args(self) -> Optional[dict[Any, graphene.Argument]]:
+    def filtering_args(self) -> Optional[dict[str, graphene.Argument]]:
         if not self.has_filters:
             return None
 
@@ -194,26 +169,16 @@ class DjangoListField(FilteringMixin, graphene.Field):
         queryset = self.to_queryset(result)
         # TODO: Should do filtering for nested fields as well.
         queryset = self.filter_queryset(queryset, info, kwargs)
-        return self.underlying_type.get_queryset(queryset, info)
+        queryset = self.underlying_type.get_queryset(queryset, info)
+
+        max_complexity = getattr(self.underlying_type._meta, "max_complexity", optimizer_settings.MAX_COMPLEXITY)
+        return optimize(queryset, info, max_complexity=max_complexity)
 
     def to_queryset(self, iterable: Union[models.QuerySet, Manager, None]) -> models.QuerySet:
         # Default resolver can return a Manager-instance or None.
         if iterable is None:
             iterable = self.model._default_manager
         return maybe_queryset(iterable)
-
-    @cached_property
-    def type(self) -> Type[GraphQLOutputType]:
-        from graphene_django.types import DjangoObjectType
-
-        original_type = super().type
-        underlying_type = get_underlying_type(original_type)
-
-        if not issubclass(underlying_type, DjangoObjectType):  # pragma: no cover
-            msg = f"{self.__class__.__name__} only accepts DjangoObjectType types"
-            raise TypeError(msg)
-
-        return original_type
 
     @cached_property
     def underlying_type(self) -> Type[DjangoObjectType]:
@@ -253,11 +218,11 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
 
     def connection_resolver(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionType:
         pagination_args = validate_pagination_args(
-            first=kwargs.get("first"),
-            last=kwargs.get("last"),
-            offset=kwargs.get("offset"),
-            after=kwargs.get("after"),
-            before=kwargs.get("before"),
+            first=kwargs.pop("first", None),
+            last=kwargs.pop("last", None),
+            offset=kwargs.pop("offset", None),
+            after=kwargs.pop("after", None),
+            before=kwargs.pop("before", None),
             max_limit=self.max_limit,
         )
 
@@ -267,7 +232,10 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         queryset = self.to_queryset(result)
         # TODO: Should do filtering for nested fields as well.
         queryset = self.filter_queryset(queryset, info, kwargs)
-        optimized_queryset = self.underlying_type.get_queryset(queryset, info)
+        queryset = self.underlying_type.get_queryset(queryset, info)
+
+        max_complexity = getattr(self.underlying_type._meta, "max_complexity", optimizer_settings.MAX_COMPLEXITY)
+        optimized_queryset = optimize(queryset, info, max_complexity=max_complexity)
 
         # Queryset optimization contains filtering, so we count after optimization.
         pagination_args["size"] = count = optimized_queryset.count()
@@ -285,7 +253,6 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
 
         # Create a connection from the sliced queryset.
         edges: list[EdgeType] = [
-            # Connection type does contain an Edge, it's just added dynamically.
             self.connection_type.Edge(node=value, cursor=offset_to_cursor(cut.start + index))
             for index, value in enumerate(iterable)
         ]
@@ -311,16 +278,10 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
 
     @cached_property
     def type(self) -> Union[Type[Connection], graphene.NonNull]:
-        from graphene_django.types import DjangoObjectType
-
         type_ = super().type
         non_null = isinstance(type_, graphene.NonNull)
         if non_null:  # pragma: no cover
             type_ = type_.of_type
-
-        if not issubclass(type_, DjangoObjectType):  # pragma: no cover
-            msg = f"{self.__class__.__name__} only accepts DjangoObjectType types"
-            raise TypeError(msg)
 
         connection_type: Optional[Type[Connection]] = type_._meta.connection
         if connection_type is None:  # pragma: no cover

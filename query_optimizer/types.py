@@ -5,16 +5,16 @@ from typing import TYPE_CHECKING
 import graphene
 import graphene_django
 from django_filters.constants import ALL_FIELDS
+from graphene_django.utils import is_valid_django_model
 
-from .optimizer import optimize
+from . import optimize
 from .settings import optimizer_settings
-from .typing import OptimizedDjangoOptions
-from .utils import can_optimize
+from .typing import PK, OptimizedDjangoOptions
 
 if TYPE_CHECKING:
     from django.db.models import Model, QuerySet
 
-    from .typing import PK, Any, GQLInfo, Literal, Optional, TypeVar, Union
+    from .typing import Any, GQLInfo, Literal, Optional, TypeVar, Union
 
     TModel = TypeVar("TModel", bound=Model)
 
@@ -41,11 +41,16 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         max_complexity: Optional[int] = None,
         **options: Any,
     ) -> None:
+        if not is_valid_django_model(model):
+            msg = f"You need to pass a valid Django Model in {cls.__name__}.Meta, received {model}."
+            raise TypeError(msg)
+
         if _meta is None:
             _meta = OptimizedDjangoOptions(cls)
 
         if not hasattr(cls, "pk") and (fields == ALL_FIELDS or "pk" in fields):
-            cls._add_pk_field(model)
+            cls.pk = graphene.Int() if model._meta.pk.name == "id" else graphene.ID()
+            cls.resolve_pk = cls.resolve_id
 
         _meta.max_complexity = max_complexity or optimizer_settings.MAX_COMPLEXITY
         super().__init_subclass_with_meta__(_meta=_meta, model=model, fields=fields, **options)
@@ -57,26 +62,17 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
 
     @classmethod
     def get_queryset(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
-        if can_optimize(info):
-            queryset = optimize(queryset, info, max_complexity=cls._meta.max_complexity)
         return queryset
 
     @classmethod
     def get_node(cls, info: GQLInfo, pk: PK) -> Optional[TModel]:
-        queryset: QuerySet[TModel] = cls._meta.model._default_manager.filter(pk=pk)
-        if can_optimize(info):
-            queryset = optimize(queryset, info, max_complexity=cls._meta.max_complexity, pk=pk)
-            # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
-            # The optimizer should have just inserted the right model instance based on the given primary key
-            # to the queryset result cache anyway, so we can just pick that out. The only exception
-            # is if the optimization was cancelled due to an error, and the result cache was not set,
-            # in which case we fall back to .first().
-            if queryset._result_cache is None:
-                return queryset.first()  # pragma: no cover
-            return queryset._result_cache[0]
-        return queryset.first()  # pragma: no cover
-
-    @classmethod
-    def _add_pk_field(cls, model: type[Model]) -> None:
-        cls.pk = graphene.Int() if model._meta.pk.name == "id" else graphene.ID()
-        cls.resolve_pk = cls.resolve_id
+        queryset = cls._meta.model._default_manager.filter(pk=pk)
+        queryset = optimize(queryset, info, max_complexity=cls._meta.max_complexity, pk=pk)
+        # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
+        # The optimizer should have just inserted the right model instance based on the given primary key
+        # to the queryset result cache anyway, so we can just pick that out. The only exception
+        # is if the optimization was cancelled due to an error, and the result cache was not set,
+        # in which case we fall back to .first().
+        if queryset._result_cache is None:
+            return queryset.first()  # pragma: no cover
+        return queryset._result_cache[0]

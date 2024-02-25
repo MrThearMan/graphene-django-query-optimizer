@@ -4,11 +4,10 @@ import graphene
 from django.db import models
 from django.db.models.functions import Concat
 from graphene import relay
-from graphene_django import DjangoListField
 from graphene_django.debug import DjangoDebug
 
 from query_optimizer import optimize
-from query_optimizer.fields import DjangoConnectionField
+from query_optimizer.fields import DjangoConnectionField, DjangoListField
 from query_optimizer.typing import GQLInfo, Iterable, Union
 
 from .models import (
