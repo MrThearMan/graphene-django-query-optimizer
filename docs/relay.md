@@ -54,7 +54,7 @@ That's it!
 
 ## Connections
 
-Given the following connection in out schema:
+Given the following connection in our schema:
 
 ```python
 import graphene

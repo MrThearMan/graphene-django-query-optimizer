@@ -1,14 +1,12 @@
 # Filtering
 
-For adding additional filtering, we need to use `DjangoFilterConnectionField`
-instead of `DjangoConnectionField`. An optional dependency [django-filter][filters]
-is required this.
+For adding additional filtering, optional dependency [django-filter][filters]
+is required.
 
 ```python
 import graphene
 from graphene import relay
-from query_optimizer import DjangoObjectType
-from query_optimizer.filter import DjangoFilterConnectionField  # new import
+from query_optimizer import DjangoObjectType, DjangoConnectionField  # new import
 from tests.example.models import Apartment
 
 
@@ -23,7 +21,7 @@ class ApartmentNode(DjangoObjectType):
 
 
 class Query(graphene.ObjectType):
-    paged_apartments = DjangoFilterConnectionField(ApartmentNode)
+    paged_apartments = DjangoConnectionField(ApartmentNode)
 
 
 schema = graphene.Schema(query=Query)

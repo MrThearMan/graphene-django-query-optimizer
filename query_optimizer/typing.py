@@ -19,6 +19,7 @@ from typing import (
 
 from graphene.relay.connection import ConnectionOptions
 from graphene_django.types import DjangoObjectTypeOptions
+from graphql_relay import ConnectionType
 
 # New in version 3.10
 try:
@@ -90,7 +91,7 @@ TypeOptions: TypeAlias = Union[DjangoObjectTypeOptions, ConnectionOptions]
 AnyUser: TypeAlias = Union["User", "AnonymousUser"]
 
 QuerySetResolver = Callable[..., Union[QuerySet, Manager, None]]
-ConnectionResolver = Callable[..., Union[QuerySet, Manager, None]]
+ConnectionResolver = Callable[..., ConnectionType]
 
 
 class UserHintedWSGIRequest(WSGIRequest):

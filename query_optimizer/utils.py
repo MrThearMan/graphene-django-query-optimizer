@@ -130,7 +130,7 @@ def calculate_queryset_slice(
     """
     Calculate queryset slicing based on the provided arguments.
     Before this, the arguments should be validated so that:
-     - `first`, `last`, positive integers or `None`
+     - `first` and `last`, positive integers or `None`
      - `after` and `before` are non-negative integers or `None`
      - If both `after` and `before` are given, `after` is less than or equal to `before`
 
@@ -163,14 +163,14 @@ def calculate_queryset_slice(
     #
     # If first is given, and it's smaller than the current queryset size,
     # change the stop index to `start + first`
-    # -> Length becomes that of first, and the items after it have been removed.
+    # -> Length becomes that of `first`, and the items after it have been removed.
     #
     if first is not None and first < (stop - start):
         stop = start + first
     #
     # If last is given, and it's smaller than the current queryset size,
     # change the start index to `stop - last`.
-    # -> Length becomes that of last, and the items before it have been removed.
+    # -> Length becomes that of `last`, and the items before it have been removed.
     #
     if last is not None and last < (stop - start):
         start = stop - last
