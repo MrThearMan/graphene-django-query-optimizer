@@ -32,15 +32,13 @@ method calls to your QuerySets to fetch _only_ what you need.
 
 ```python
 import graphene
-from graphene_django import DjangoListField
-from example import ExampleModel
+from tests.example.models import Example
 
-# from graphene_django import DjangoObjectType  # old import
-from query_optimizer import DjangoObjectType  # new import
+from query_optimizer import DjangoObjectType, DjangoListField
 
 class ExampleType(DjangoObjectType):
     class Meta:
-        model = ExampleModel
+        model = Example
 
 class Query(graphene.ObjectType):
     all_examples = DjangoListField(ExampleType)

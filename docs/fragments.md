@@ -57,8 +57,9 @@ Here is how you would construct a resolver like this:
 ```python
 import itertools
 import graphene
-from query_optimizer import DjangoObjectType, optimize
 from tests.example.models import Developer, PropertyManager, Owner
+
+from query_optimizer import DjangoObjectType, optimize
 
 class DeveloperType(DjangoObjectType):
     class Meta:
@@ -84,7 +85,7 @@ class Query(graphene.ObjectType):
 
     all_people = graphene.List(People)
 
-    def resolve_all_people(parent, info):
+    def resolve_all_people(root, info):
         developers = optimize(Developer.objects.all(), info)
         property_managers = optimize(PropertyManager.objects.all(), info)
         owners = optimize(Owner.objects.all(), info)

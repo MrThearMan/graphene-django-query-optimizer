@@ -8,8 +8,9 @@ per resolver basis:
 
 ```python
 import graphene
-from query_optimizer import DjangoObjectType, optimize
 from tests.example.models import Apartment
+
+from query_optimizer import DjangoObjectType, optimize
 
 class ApartmentType(DjangoObjectType):
     class Meta:
@@ -29,8 +30,9 @@ schema = graphene.Schema(query=Query)
 ```python
 import graphene
 from graphene import relay
-from query_optimizer import DjangoObjectType
 from tests.example.models import Apartment
+
+from query_optimizer import DjangoObjectType
 
 class ApartmentNode(DjangoObjectType):
     class Meta:

@@ -79,9 +79,9 @@ instead of `graphene_django`
 
 ```python
 import graphene
-from graphene_django import DjangoListField
-from query_optimizer import DjangoObjectType  # new import
 from tests.example.models import Apartment
+
+from query_optimizer import DjangoListField, DjangoObjectType
 
 class ApartmentType(DjangoObjectType):
     class Meta:

@@ -32,8 +32,9 @@ We can optimize this query by simply using `DjangoObjectType` from `query_optimi
 ```python
 import graphene
 from graphene import relay
-from query_optimizer import DjangoObjectType  # replaced import
 from tests.example.models import Apartment
+
+from query_optimizer import DjangoObjectType
 
 class ApartmentNode(DjangoObjectType):
     class Meta:
@@ -59,8 +60,9 @@ Given the following connection in our schema:
 ```python
 import graphene
 from graphene import relay
-from graphene_django import DjangoObjectType, DjangoConnectionField
 from tests.example.models import Apartment
+
+from graphene_django import DjangoObjectType, DjangoConnectionField
 
 class ApartmentNode(DjangoObjectType):
     class Meta:
@@ -79,8 +81,9 @@ and `DjangoConnectionField` from `query_optimizer`, like this:
 ```python
 import graphene
 from graphene import relay
-from query_optimizer import DjangoObjectType, DjangoConnectionField  # replaced import
 from tests.example.models import Apartment
+
+from query_optimizer import DjangoObjectType, DjangoConnectionField
 
 class ApartmentNode(DjangoObjectType):
     class Meta:

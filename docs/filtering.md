@@ -6,9 +6,9 @@ is required.
 ```python
 import graphene
 from graphene import relay
-from query_optimizer import DjangoObjectType, DjangoConnectionField  # new import
 from tests.example.models import Apartment
 
+from query_optimizer import DjangoObjectType, DjangoConnectionField
 
 class ApartmentNode(DjangoObjectType):
     class Meta:
@@ -30,8 +30,9 @@ schema = graphene.Schema(query=Query)
 We can also implement a custom Filterset class to have more control over the filtering.
 
 ```python
-from query_optimizer.filter import FilterSet  # new import
 from tests.example.models import Apartment
+
+from query_optimizer.filter import FilterSet
 
 class ApartmentFilterSet(FilterSet):
     # Custom filters can be added here
