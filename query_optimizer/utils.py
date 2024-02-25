@@ -7,17 +7,28 @@ from typing import TYPE_CHECKING
 from django.db.models import ForeignKey, QuerySet
 from graphene import Connection
 from graphene.types.definitions import GrapheneObjectType
+from graphene.utils.str_converters import to_snake_case
 from graphene_django import DjangoObjectType
+from graphql import (
+    FieldNode,
+    GraphQLField,
+    GraphQLObjectType,
+    GraphQLSchema,
+    get_argument_values,
+)
 from graphql.execution.execute import get_field_def
 
 from .errors import OptimizerError
 from .settings import optimizer_settings
+from .typing import GraphQLFilterInfo, overload
 
 if TYPE_CHECKING:
     from graphql import GraphQLOutputType, SelectionNode
 
     from .typing import (
+        Any,
         Callable,
+        FieldNodes,
         GQLInfo,
         ModelField,
         Optional,
@@ -26,6 +37,7 @@ if TYPE_CHECKING:
         ToOneField,
         TypeGuard,
         TypeVar,
+        Union,
     )
 
     T = TypeVar("T")
@@ -34,6 +46,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "get_field_type",
+    "get_filter_info",
     "get_selections",
     "get_underlying_type",
     "is_foreign_key_id",
@@ -54,7 +67,17 @@ def is_foreign_key_id(model_field: ModelField, name: str) -> bool:
     return isinstance(model_field, ForeignKey) and model_field.name != name and model_field.get_attname() == name
 
 
-def get_underlying_type(field_type: GraphQLOutputType) -> GrapheneObjectType:
+@overload
+def get_underlying_type(field_type: type[GraphQLOutputType]) -> type[Union[DjangoObjectType, GrapheneObjectType]]:
+    ...
+
+
+@overload
+def get_underlying_type(field_type: GraphQLOutputType) -> Union[DjangoObjectType, GrapheneObjectType]:
+    ...
+
+
+def get_underlying_type(field_type):
     while hasattr(field_type, "of_type"):
         field_type = field_type.of_type
     return field_type
@@ -176,3 +199,41 @@ def calculate_queryset_slice(
         start = stop - last
 
     return slice(start, stop)
+
+
+def get_filter_info(info: GQLInfo) -> Optional[GraphQLFilterInfo]:
+    """Find filter arguments from the GraphQL query"""
+    args = _get_arguments(info.field_nodes, info.variable_values, info.parent_type, info.schema)
+    if not args:
+        return None
+    return args[to_snake_case(info.field_name)]
+
+
+def _get_arguments(
+    field_nodes: FieldNodes,
+    variable_values: dict[str, Any],
+    parent: GraphQLObjectType,
+    schema: GraphQLSchema,
+) -> dict[str, GraphQLFilterInfo]:
+    arguments: dict[str, GraphQLFilterInfo] = {}
+    for selection in field_nodes:
+        if not isinstance(selection, FieldNode):  # pragma: no cover
+            continue
+
+        field_def: Optional[GraphQLField] = get_field_def(schema, parent, selection)
+        if field_def is None:  # pragma: no cover
+            continue
+
+        new_parent = get_underlying_type(field_def.type)
+
+        arguments[to_snake_case(selection.name.value)] = args = GraphQLFilterInfo(
+            filters=get_argument_values(type_def=field_def, node=selection, variable_values=variable_values),
+            children=[],
+        )
+
+        if selection.selection_set is not None:
+            result = _get_arguments(selection.selection_set.selections, variable_values, new_parent, schema)
+            if result:
+                args["children"].append(result)
+
+    return {name: field for name, field in arguments.items() if field["filters"] or field["children"]}

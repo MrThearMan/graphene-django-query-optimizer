@@ -6,17 +6,21 @@ from typing import TYPE_CHECKING
 
 import graphene
 from django.core.exceptions import ValidationError
-from graphene.relay import ConnectionField
 from graphene.relay.connection import connection_adapter, page_info_adapter
 from graphene.types.argument import to_arguments
-from graphene.types.utils import get_type
+from graphene.utils.str_converters import to_snake_case
 from graphene_django.settings import graphene_settings
 from graphene_django.utils.utils import maybe_queryset
 from graphql_relay.connection.array_connection import offset_to_cursor
 
 from .cache import store_in_query_cache
 from .optimizer import QueryOptimizer
-from .utils import calculate_queryset_slice, get_field_type, get_selections
+from .utils import (
+    calculate_queryset_slice,
+    get_field_type,
+    get_selections,
+    get_underlying_type,
+)
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
@@ -24,25 +28,206 @@ if TYPE_CHECKING:
     from django.db.models.manager import Manager
     from django_filters import FilterSet
     from graphene.relay.connection import Connection
+    from graphene_django.types import DjangoObjectType
+    from graphql import GraphQLOutputType
     from graphql_relay import EdgeType
     from graphql_relay.connection.connection import ConnectionType
 
-    from .types import DjangoObjectType
-    from .typing import Any, ConnectionResolver, GQLInfo, Optional, QuerySetResolver, Type, TypeVar, Union
+    from .typing import (
+        Any,
+        ConnectionResolver,
+        GQLInfo,
+        ModelResolver,
+        Optional,
+        QuerySetResolver,
+        Type,
+        TypeVar,
+        Union,
+    )
 
     TModel = TypeVar("TModel", bound=models.Model)
 
 
 __all__ = [
     "DjangoConnectionField",
+    "DjangoListField",
+    "RelatedField",
 ]
 
 
-# Reimplemented relay ConnectionField for better control for optimizer.
-class DjangoConnectionField(ConnectionField):
-    """Connection field for Django models that works for both nodes and regular object types."""
+class RelatedField(graphene.Field):
+    """Field for `to-one` related models with automatic node resolution."""
 
-    def __init__(self, type_: Type[DjangoObjectType], **kwargs: Any) -> None:
+    def __init__(self, type_: Union[Type[DjangoObjectType], str], *, reverse: bool = False, **kwargs: Any) -> None:
+        """
+        Initialize a related field for the given type.
+
+        :param type_: Object type or dot import path to the object type.
+        :param reverse: Is the relation direction forward or reverse?
+        :param kwargs: Extra arguments passed to `graphene.types.field.Field`.
+        """
+        self.reverse = reverse
+        super().__init__(type_, **kwargs)
+
+    def wrap_resolve(self, parent_resolver: ModelResolver) -> ModelResolver:
+        if self.reverse:
+            return self.reverse_resolver
+        return self.forward_resolver
+
+    def forward_resolver(self, root: models.Model, info: GQLInfo) -> Optional[models.Model]:
+        field_name = to_snake_case(info.field_name)
+        db_field_key: str = root.__class__._meta.get_field(field_name).attname
+        object_pk = getattr(root, db_field_key, None)
+        if object_pk is None:  # pragma: no cover
+            return None
+        return self.underlying_type.get_node(info, object_pk)
+
+    def reverse_resolver(self, root: models.Model, info: GQLInfo) -> Optional[models.Model]:
+        field_name = to_snake_case(info.field_name)
+        # Reverse object should be optimized to the root model.
+        reverse_object: Optional[models.Model] = getattr(root, field_name, None)
+        if reverse_object is None:  # pragma: no cover
+            return None
+        return self.underlying_type.get_node(info, reverse_object.pk)
+
+    @cached_property
+    def type(self) -> Type[GraphQLOutputType]:
+        from graphene_django.types import DjangoObjectType
+
+        original_type = super().type
+        underlying_type = get_underlying_type(original_type)
+
+        if not issubclass(underlying_type, DjangoObjectType):  # pragma: no cover
+            msg = f"{self.__class__.__name__} only accepts DjangoObjectType types"
+            raise TypeError(msg)
+
+        return original_type
+
+    @cached_property
+    def underlying_type(self) -> Type[DjangoObjectType]:
+        return get_underlying_type(self.type)
+
+
+class FilteringMixin:
+    # Subclasses should implement the following properties:
+    model: Type[models.Model]
+    underlying_type: Type[DjangoObjectType]
+
+    @property
+    def args(self) -> dict[str, graphene.Argument]:
+        return to_arguments(getattr(self, "_base_args", None) or {}, self.filtering_args)
+
+    @args.setter
+    def args(self, args: dict[str, Any]) -> None:
+        # noinspection PyAttributeOutsideInit
+        self._base_args = args
+
+    def filter_queryset(self, queryset: models.QuerySet, info: GQLInfo, input_data: dict[str, Any]) -> models.QuerySet:
+        if not self.has_filters:
+            return queryset
+
+        data = self.get_filter_data(input_data)
+        filterset = self.filterset_class(data=data, queryset=queryset, request=info.context)
+        if filterset.is_valid():
+            return filterset.qs
+        raise ValidationError(filterset.form.errors.as_json())  # pragma: no cover
+
+    def get_filter_data(self, input_data: dict[str, Any]) -> dict[str, Any]:
+        from graphene_django.filter.fields import convert_enum
+
+        data: dict[str, Any] = {}
+        for key, value in input_data.items():
+            if key in self.filtering_args:
+                data[key] = convert_enum(value)
+        return data
+
+    @cached_property
+    def filterset_class(self) -> Optional[Type[FilterSet]]:
+        if not self.has_filters:
+            return None
+
+        from graphene_django.filter.utils import get_filterset_class
+
+        from .filter import FilterSet
+
+        meta: dict[str, Any] = {
+            "model": self.model,
+            "fields": self.underlying_type._meta.filter_fields,
+            "filterset_base_class": FilterSet,
+        }
+        return get_filterset_class(self.underlying_type._meta.filterset_class, **meta)
+
+    @cached_property
+    def filtering_args(self) -> Optional[dict[Any, graphene.Argument]]:
+        if not self.has_filters:
+            return None
+
+        from graphene_django.filter.utils import get_filtering_args_from_filterset
+
+        return get_filtering_args_from_filterset(self.filterset_class, self.underlying_type)
+
+    @cached_property
+    def has_filters(self) -> bool:
+        return bool(self.underlying_type._meta.filter_fields or self.underlying_type._meta.filterset_class)
+
+
+class DjangoListField(FilteringMixin, graphene.Field):
+    """Django list field that also supports filtering."""
+
+    def __init__(self, type_: Union[Type[DjangoObjectType], str], **kwargs: Any) -> None:
+        """
+        Initialize a list field for the given type.
+
+        :param type_: Object type or dot import path to the object type.
+        :param kwargs:  Extra arguments passed to `graphene.types.field.Field`.
+        """
+        if isinstance(type_, graphene.NonNull):  # pragma: no cover
+            type_ = type_.of_type
+        super().__init__(graphene.List(graphene.NonNull(type_)), **kwargs)
+
+    def wrap_resolve(self, parent_resolver: QuerySetResolver) -> QuerySetResolver:
+        self.resolver = parent_resolver
+        return self.list_resolver
+
+    def list_resolver(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
+        result = self.resolver(root, info, **kwargs)
+        queryset = self.to_queryset(result)
+        # TODO: Should do filtering for nested fields as well.
+        queryset = self.filter_queryset(queryset, info, kwargs)
+        return self.underlying_type.get_queryset(queryset, info)
+
+    def to_queryset(self, iterable: Union[models.QuerySet, Manager, None]) -> models.QuerySet:
+        # Default resolver can return a Manager-instance or None.
+        if iterable is None:
+            iterable = self.model._default_manager
+        return maybe_queryset(iterable)
+
+    @cached_property
+    def type(self) -> Type[GraphQLOutputType]:
+        from graphene_django.types import DjangoObjectType
+
+        original_type = super().type
+        underlying_type = get_underlying_type(original_type)
+
+        if not issubclass(underlying_type, DjangoObjectType):  # pragma: no cover
+            msg = f"{self.__class__.__name__} only accepts DjangoObjectType types"
+            raise TypeError(msg)
+
+        return original_type
+
+    @cached_property
+    def underlying_type(self) -> Type[DjangoObjectType]:
+        return get_underlying_type(self.type)
+
+    @cached_property
+    def model(self) -> Type[models.Model]:
+        return self.underlying_type._meta.model
+
+
+class DjangoConnectionField(FilteringMixin, graphene.Field):
+    """Connection field for Django models that works for both filtered and non-filtered Relay-nodes."""
+
+    def __init__(self, type_: Union[Type[DjangoObjectType], str], **kwargs: Any) -> None:
         """
         Initialize a connection field for the given type.
 
@@ -52,10 +237,6 @@ class DjangoConnectionField(ConnectionField):
         # Maximum number of items that can be requested in a single query for this connection.
         # Set to None to disable the limit.
         self.max_limit: Optional[int] = kwargs.get("max_limit", graphene_settings.RELAY_CONNECTION_MAX_LIMIT)
-
-        self._base_args: Optional[dict[str, Any]] = None
-        self._filterset_class: Optional[Type[FilterSet]] = None
-        self._filtering_args: Optional[dict[str, graphene.Argument]] = None
 
         # Default inputs for a connection field
         kwargs.setdefault("first", graphene.Int())
@@ -68,9 +249,9 @@ class DjangoConnectionField(ConnectionField):
 
     def wrap_resolve(self, parent_resolver: QuerySetResolver) -> ConnectionResolver:
         self.resolver = parent_resolver
-        return self.resolve
+        return self.connection_resolver
 
-    def resolve(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionType:
+    def connection_resolver(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionType:
         pagination_args = validate_pagination_args(
             first=kwargs.get("first"),
             last=kwargs.get("last"),
@@ -83,11 +264,10 @@ class DjangoConnectionField(ConnectionField):
         # Call the ObjectType's "resolve_{field_name}" method if it exists.
         # Otherwise, call the default resolver (usually `dict_or_attr_resolver`).
         result = self.resolver(root, info, **kwargs)
-
         queryset = self.to_queryset(result)
         # TODO: Should do filtering for nested fields as well.
         queryset = self.filter_queryset(queryset, info, kwargs)
-        optimized_queryset = self.node_type.get_queryset(queryset, info)
+        optimized_queryset = self.underlying_type.get_queryset(queryset, info)
 
         # Queryset optimization contains filtering, so we count after optimization.
         pagination_args["size"] = count = optimized_queryset.count()
@@ -124,43 +304,16 @@ class DjangoConnectionField(ConnectionField):
         return connection
 
     def to_queryset(self, iterable: Union[models.QuerySet, Manager, None]) -> models.QuerySet:
-        # Default resolver returns a Manager-instance or None.
+        # Default resolver can return a Manager-instance or None.
         if iterable is None:
             iterable = self.model._default_manager
         return maybe_queryset(iterable)
-
-    def filter_queryset(self, queryset: models.QuerySet, info: GQLInfo, input_data: dict[str, Any]) -> models.QuerySet:
-        if not self.has_filters:
-            return queryset
-
-        data = self.get_filter_data(input_data)
-        filterset = self.filterset_class(data=data, queryset=queryset, request=info.context)
-        if filterset.is_valid():
-            return filterset.qs
-        raise ValidationError(filterset.form.errors.as_json())  # pragma: no cover
-
-    def get_filter_data(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        from graphene_django.filter.fields import convert_enum
-
-        data: dict[str, Any] = {}
-        for key, value in input_data.items():
-            if key in self.filtering_args:
-                data[key] = convert_enum(value)
-        return data
-
-    @property
-    def args(self) -> dict[str, graphene.Argument]:
-        return to_arguments(self._base_args or {}, self.filtering_args)
-
-    @args.setter
-    def args(self, args: dict[str, Any]) -> None:
-        self._base_args = args
 
     @cached_property
     def type(self) -> Union[Type[Connection], graphene.NonNull]:
         from graphene_django.types import DjangoObjectType
 
-        type_ = get_type(self._type)
+        type_ = super().type
         non_null = isinstance(type_, graphene.NonNull)
         if non_null:  # pragma: no cover
             type_ = type_.of_type
@@ -186,36 +339,9 @@ class DjangoConnectionField(ConnectionField):
         return type_
 
     @cached_property
-    def node_type(self) -> Type[DjangoObjectType]:
+    def underlying_type(self) -> Type[DjangoObjectType]:
         return self.connection_type._meta.node
 
     @cached_property
     def model(self) -> Type[models.Model]:
-        return self.node_type._meta.model
-
-    @cached_property
-    def filterset_class(self) -> Optional[Type[FilterSet]]:
-        if not self._filterset_class and self.has_filters:
-            from graphene_django.filter.utils import get_filterset_class
-
-            from .filter import FilterSet
-
-            meta: dict[str, Any] = {
-                "model": self.model,
-                "fields": self.node_type._meta.filter_fields,
-                "filterset_base_class": FilterSet,
-            }
-            self._filterset_class = get_filterset_class(self.node_type._meta.filterset_class, **meta)
-        return self._filterset_class
-
-    @cached_property
-    def filtering_args(self) -> Optional[dict[Any, graphene.Argument]]:
-        if not self._filtering_args and self.has_filters:
-            from graphene_django.filter.utils import get_filtering_args_from_filterset
-
-            self._filtering_args = get_filtering_args_from_filterset(self.filterset_class, self.node_type)
-        return self._filtering_args
-
-    @cached_property
-    def has_filters(self) -> bool:
-        return bool(self.node_type._meta.filter_fields or self.node_type._meta.filterset_class)
+        return self.underlying_type._meta.model

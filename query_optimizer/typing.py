@@ -15,6 +15,7 @@ from typing import (
     TypedDict,
     TypeVar,
     Union,
+    overload,
 )
 
 from graphene.relay.connection import ConnectionOptions
@@ -42,7 +43,7 @@ from django.db.models import (
     OneToOneField,
     QuerySet,
 )
-from graphql import GraphQLResolveInfo
+from graphql import FieldNode, GraphQLResolveInfo, SelectionNode
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser, User
@@ -53,12 +54,15 @@ __all__ = [
     "Callable",
     "Collection",
     "ConnectionResolver",
+    "FieldNodes",
     "GQLInfo",
     "Generator",
+    "GraphQLFilterInfo",
     "Hashable",
     "Iterable",
     "Literal",
     "ModelField",
+    "ModelResolver",
     "NamedTuple",
     "OptimizedDjangoOptions",
     "Optional",
@@ -76,6 +80,7 @@ __all__ = [
     "TypeVar",
     "TypedDict",
     "Union",
+    "overload",
 ]
 
 
@@ -91,7 +96,9 @@ TypeOptions: TypeAlias = Union[DjangoObjectTypeOptions, ConnectionOptions]
 AnyUser: TypeAlias = Union["User", "AnonymousUser"]
 
 QuerySetResolver = Callable[..., Union[QuerySet, Manager, None]]
+ModelResolver = Callable[..., Union[Model, None]]
 ConnectionResolver = Callable[..., ConnectionType]
+FieldNodes = Iterable[Union[FieldNode, SelectionNode]]
 
 
 class UserHintedWSGIRequest(WSGIRequest):
@@ -104,3 +111,8 @@ class GQLInfo(GraphQLResolveInfo):
 
 class OptimizedDjangoOptions(DjangoObjectTypeOptions):
     max_complexity: int
+
+
+class GraphQLFilterInfo(TypedDict):
+    filters: dict[str, Any]
+    children: list[dict[str, GraphQLFilterInfo]]

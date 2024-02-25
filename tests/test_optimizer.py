@@ -535,6 +535,7 @@ def test_optimizer__relay_connection_nested__paginated(client_query):
     # 1 query for fetching Buildings
     # 1 query for fetching Apartments
     assert queries == 3, results.log
+    # TODO: assert "LIMIT 1" in results.queries[2], results.log
 
 
 @pytest.mark.xfail(reason="Not implemented yet")
