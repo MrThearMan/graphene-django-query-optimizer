@@ -307,6 +307,12 @@ class Example(BaseModel):
         related_name="example_rels",
     )
 
+    named_relation = models.ForeignKey(
+        "HousingCompany",
+        on_delete=models.CASCADE,
+        related_name="+",
+    )
+
 
 # --------------------------------------------------------------------
 

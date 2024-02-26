@@ -1139,3 +1139,24 @@ def test_optimizer__limit_in_nested_connection_field__testing():
     assert len(builds_1) == limit_parent
     for build in builds_1:
         assert len(build.apartments.all()) <= limit_parent
+
+
+def test_optimizer__named_relation(client_query):
+    query = """
+        query {
+          examples {
+            customRelation
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    assert "data" in content, content
+
+    # 1 query for all examples
+    # 1 query for fetching the named relations on each example
+    assert results.query_count == 1, results.log

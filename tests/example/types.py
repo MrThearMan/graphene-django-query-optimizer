@@ -355,6 +355,7 @@ class People(graphene.Union):
 
 class ExampleType(DjangoObjectType):
     foo = graphene.String()
+    custom_relation = graphene.Int()
 
     class Meta:
         model = Example
@@ -363,6 +364,10 @@ class ExampleType(DjangoObjectType):
     @required_annotations(foo=F("forward_one_to_one_field__name"))
     def resolve_foo(self, info):
         return self.foo
+
+    @required_fields("named_relation__id")
+    def resolve_custom_relation(parent: Example, info):
+        return parent.named_relation.id
 
 
 class ForwardOneToOneType(DjangoObjectType):

@@ -238,7 +238,7 @@ class QueryOptimizer:
                 store.only_fields.append(model_field.name)
                 return None
 
-            if not field_name.startswith(model_field_name):
+            if not f"{field_name}{LOOKUP_SEP}".startswith(f"{model_field_name}{LOOKUP_SEP}"):
                 continue
 
             related_model: type[Model] = model_field.related_model  # type: ignore[assignment]

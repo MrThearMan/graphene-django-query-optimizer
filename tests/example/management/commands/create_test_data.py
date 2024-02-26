@@ -348,10 +348,12 @@ def create_examples() -> None:
     f31.forward_many_to_many_fields.add(f300, f302)
     f32.forward_many_to_many_fields.add(f301, f302)
 
+    h = HousingCompany.objects.first()
     e1 = Example.objects.create(
         name=faker.name(),
         forward_one_to_one_field=f10,
         forward_many_to_one_field=f20,
+        named_relation=h,
     )
     e1.forward_many_to_many_fields.add(f30, f31)
 
@@ -359,6 +361,7 @@ def create_examples() -> None:
         name=faker.name(),
         forward_one_to_one_field=f11,
         forward_many_to_one_field=f21,
+        named_relation=h,
     )
     e2.forward_many_to_many_fields.add(f30, f32)
 
