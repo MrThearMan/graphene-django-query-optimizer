@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import logging
-from functools import wraps
 from typing import TYPE_CHECKING
 
-from django.db.models import ForeignKey, QuerySet
+from django.db.models import ForeignKey, Model, QuerySet
 from graphene import Connection
-from graphene.types.definitions import GrapheneObjectType
 from graphene.utils.str_converters import to_snake_case
-from graphene_django import DjangoObjectType
 from graphql import (
     FieldNode,
     GraphQLField,
@@ -18,16 +15,16 @@ from graphql import (
 )
 from graphql.execution.execute import get_field_def
 
-from .errors import OptimizerError
 from .settings import optimizer_settings
 from .typing import GraphQLFilterInfo, overload
 
 if TYPE_CHECKING:
+    from graphene.types.definitions import GrapheneObjectType
+    from graphene_django import DjangoObjectType
     from graphql import GraphQLOutputType, SelectionNode
 
     from .typing import (
         Any,
-        Callable,
         FieldNodes,
         GQLInfo,
         ModelField,
@@ -55,7 +52,6 @@ __all__ = [
     "is_to_one",
     "mark_optimized",
     "mark_unoptimized",
-    "maybe_skip_optimization_on_error",
     "optimizer_logger",
 ]
 
@@ -69,12 +65,12 @@ def is_foreign_key_id(model_field: ModelField, name: str) -> bool:
 
 @overload
 def get_underlying_type(field_type: type[GraphQLOutputType]) -> type[Union[DjangoObjectType, GrapheneObjectType]]:
-    ...
+    ...  # pragma: no cover
 
 
 @overload
 def get_underlying_type(field_type: GraphQLOutputType) -> Union[DjangoObjectType, GrapheneObjectType]:
-    ...
+    ...  # pragma: no cover
 
 
 def get_underlying_type(field_type):
@@ -103,14 +99,6 @@ def get_selections(info: GQLInfo) -> tuple[SelectionNode, ...]:
     return () if selection_set is None else selection_set.selections
 
 
-def can_optimize(info: GQLInfo) -> bool:
-    return_type = get_underlying_type(info.return_type)
-
-    return isinstance(return_type, GrapheneObjectType) and (
-        issubclass(return_type.graphene_type, (DjangoObjectType, Connection))
-    )
-
-
 def mark_optimized(queryset: QuerySet) -> None:
     """Mark queryset as optimized so that later optimizers know to skip optimization"""
     queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True  # type: ignore[attr-defined]
@@ -124,22 +112,6 @@ def mark_unoptimized(queryset: QuerySet) -> None:  # pragma: no cover
 def is_optimized(queryset: QuerySet) -> bool:
     """Has the queryset be optimized?"""
     return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)  # type: ignore[no-any-return, attr-defined]
-
-
-def maybe_skip_optimization_on_error(func: Callable[P, T]) -> Callable[P, T]:
-    @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        try:
-            return func(*args, **kwargs)
-        except OptimizerError:
-            raise
-        except Exception as error:  # pragma: no cover
-            if optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
-                optimizer_logger.info("Something went wrong during the optimization process.", exc_info=error)
-                return args[0]  # original queryset
-            raise
-
-    return wrapper
 
 
 def calculate_queryset_slice(
@@ -201,11 +173,11 @@ def calculate_queryset_slice(
     return slice(start, stop)
 
 
-def get_filter_info(info: GQLInfo) -> Optional[GraphQLFilterInfo]:
-    """Find filter arguments from the GraphQL query"""
+def get_filter_info(info: GQLInfo) -> GraphQLFilterInfo:
+    """Find filter arguments from the GraphQL query."""
     args = _get_arguments(info.field_nodes, info.variable_values, info.parent_type, info.schema)
     if not args:
-        return None
+        return {}
     return args[to_snake_case(info.field_name)]
 
 
@@ -236,21 +208,25 @@ def _get_arguments(
             new_parent = get_underlying_type(field_def.type)
             field_node = field_node.selection_set.selections[0].selection_set.selections[0]  # noqa: PLW2901
 
-        arguments[name] = args = GraphQLFilterInfo(
+        arguments[name] = info = GraphQLFilterInfo(
             name=new_parent.name,
             filters=filters,
-            children=[],
-            filter_fields=None,
+            children={},
             filterset_class=None,
         )
 
         if hasattr(new_parent, "graphene_type"):
-            args["filter_fields"] = getattr(new_parent.graphene_type._meta, "filter_fields", None)
-            args["filterset_class"] = getattr(new_parent.graphene_type._meta, "filterset_class", None)
+            filter_fields = getattr(new_parent.graphene_type._meta, "filter_fields", None)
+            filterset_class = getattr(new_parent.graphene_type._meta, "filterset_class", None)
+            if filterset_class is not None or filter_fields is not None:
+                from .filter import get_filterset_for_model
+
+                model: type[Model] = new_parent.graphene_type._meta.model
+                info["filterset_class"] = get_filterset_for_model(model, filterset_class, filter_fields)
 
         if field_node.selection_set is not None:
             result = _get_arguments(field_node.selection_set.selections, variable_values, new_parent, schema)
             if result:
-                args["children"].append(result)
+                info["children"] = result
 
     return {name: field for name, field in arguments.items() if field["filters"] or field["children"]}

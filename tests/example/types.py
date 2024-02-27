@@ -4,10 +4,9 @@ from django.db.models.functions import Concat
 from django_filters import CharFilter, OrderingFilter
 from graphene import relay
 
-from query_optimizer import DjangoObjectType, required_fields
+from query_optimizer import DjangoObjectType, required_annotations, required_fields
 from query_optimizer.fields import DjangoConnectionField
 from query_optimizer.filter import FilterSet
-from query_optimizer.optimizer import required_annotations
 from query_optimizer.typing import GQLInfo
 from tests.example.models import (
     Apartment,

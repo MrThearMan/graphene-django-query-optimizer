@@ -5,7 +5,6 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 import graphene
-from django.core.exceptions import ValidationError
 from graphene.relay.connection import connection_adapter, page_info_adapter
 from graphene.types.argument import to_arguments
 from graphene.utils.str_converters import to_snake_case
@@ -14,9 +13,10 @@ from graphene_django.utils.utils import maybe_queryset
 from graphql_relay.connection.array_connection import offset_to_cursor
 
 from .cache import store_in_query_cache
-from .optimizer import QueryOptimizer, optimize
+from .compiler import OptimizationCompiler, optimize
+from .errors import OptimizerError
 from .settings import optimizer_settings
-from .utils import calculate_queryset_slice, get_field_type, get_selections, get_underlying_type
+from .utils import calculate_queryset_slice, get_underlying_type, optimizer_logger
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
@@ -53,7 +53,7 @@ __all__ = [
 class RelatedField(graphene.Field):
     """Field for `to-one` related models with automatic node resolution."""
 
-    def __init__(self, type_: Union[Type[DjangoObjectType], str], *, reverse: bool = False, **kwargs: Any) -> None:
+    def __init__(self, type_: Union[type[DjangoObjectType], str], *, reverse: bool = False, **kwargs: Any) -> None:
         """
         Initialize a related field for the given type.
 
@@ -86,13 +86,12 @@ class RelatedField(graphene.Field):
         return self.underlying_type.get_node(info, reverse_object.pk)
 
     @cached_property
-    def underlying_type(self) -> Type[DjangoObjectType]:
+    def underlying_type(self) -> type[DjangoObjectType]:
         return get_underlying_type(self.type)
 
 
 class FilteringMixin:
     # Subclasses should implement the following properties:
-    model: type[models.Model]
     underlying_type: type[DjangoObjectType]
 
     @property
@@ -104,28 +103,9 @@ class FilteringMixin:
         # noinspection PyAttributeOutsideInit
         self._base_args = args
 
-    def filter_queryset(self, queryset: models.QuerySet, info: GQLInfo, input_data: dict[str, Any]) -> models.QuerySet:
-        if not self.has_filters:
-            return queryset
-
-        data = self.get_filter_data(input_data)
-        filterset = self.filterset_class(data=data, queryset=queryset, request=info.context)
-        if filterset.is_valid():
-            return filterset.qs
-        raise ValidationError(filterset.form.errors.as_json())  # pragma: no cover
-
-    def get_filter_data(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        from graphene_django.filter.fields import convert_enum
-
-        data: dict[str, Any] = {}
-        for key, value in input_data.items():
-            if key in self.filtering_args:
-                data[key] = convert_enum(value)
-        return data
-
     @cached_property
     def filterset_class(self) -> Optional[type[FilterSet]]:
-        if not self.has_filters:
+        if not self.has_filters:  # pragma: no cover
             return None
 
         from .filter import get_filterset_for_object_type
@@ -134,7 +114,7 @@ class FilteringMixin:
 
     @cached_property
     def filtering_args(self) -> Optional[dict[str, graphene.Argument]]:
-        if not self.has_filters:
+        if not self.has_filters:  # pragma: no cover
             return None
 
         from graphene_django.filter.utils import get_filtering_args_from_filterset
@@ -167,11 +147,9 @@ class DjangoListField(FilteringMixin, graphene.Field):
     def list_resolver(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
         result = self.resolver(root, info, **kwargs)
         queryset = self.to_queryset(result)
-        # TODO: Should do filtering for nested fields as well.
-        queryset = self.filter_queryset(queryset, info, kwargs)
         queryset = self.underlying_type.get_queryset(queryset, info)
 
-        max_complexity = getattr(self.underlying_type._meta, "max_complexity", optimizer_settings.MAX_COMPLEXITY)
+        max_complexity: Optional[int] = getattr(self.underlying_type._meta, "max_complexity", None)
         return optimize(queryset, info, max_complexity=max_complexity)
 
     def to_queryset(self, iterable: Union[models.QuerySet, Manager, None]) -> models.QuerySet:
@@ -181,11 +159,11 @@ class DjangoListField(FilteringMixin, graphene.Field):
         return maybe_queryset(iterable)
 
     @cached_property
-    def underlying_type(self) -> Type[DjangoObjectType]:
+    def underlying_type(self) -> type[DjangoObjectType]:
         return get_underlying_type(self.type)
 
     @cached_property
-    def model(self) -> Type[models.Model]:
+    def model(self) -> type[models.Model]:
         return self.underlying_type._meta.model
 
 
@@ -201,7 +179,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         """
         # Maximum number of items that can be requested in a single query for this connection.
         # Set to None to disable the limit.
-        self.max_limit: Optional[int] = kwargs.get("max_limit", graphene_settings.RELAY_CONNECTION_MAX_LIMIT)
+        self.max_limit: Optional[int] = kwargs.pop("max_limit", graphene_settings.RELAY_CONNECTION_MAX_LIMIT)
 
         # Default inputs for a connection field
         kwargs.setdefault("first", graphene.Int())
@@ -230,31 +208,44 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         # Otherwise, call the default resolver (usually `dict_or_attr_resolver`).
         result = self.resolver(root, info, **kwargs)
         queryset = self.to_queryset(result)
-        # TODO: Should do filtering for nested fields as well.
-        queryset = self.filter_queryset(queryset, info, kwargs)
-        queryset = self.underlying_type.get_queryset(queryset, info)
+        queryset = pre_optimized_queryset = self.underlying_type.get_queryset(queryset, info)
 
-        max_complexity = getattr(self.underlying_type._meta, "max_complexity", optimizer_settings.MAX_COMPLEXITY)
-        optimized_queryset = optimize(queryset, info, max_complexity=max_complexity)
+        max_complexity: Optional[int] = getattr(self.underlying_type._meta, "max_complexity", None)
 
-        # Queryset optimization contains filtering, so we count after optimization.
-        pagination_args["size"] = count = optimized_queryset.count()
+        try:
+            optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
+            if optimizer is not None:
+                queryset = optimizer.optimize_queryset(queryset)
 
-        # Slice a queryset using the calculated pagination arguments.
-        cut = calculate_queryset_slice(**pagination_args)
-        iterable = optimized_queryset[cut]
+            # Queryset optimization contains filtering, so we count after optimization.
+            pagination_args["size"] = count = queryset.count()
 
-        # Store data in cache
-        field_type = get_field_type(info)
-        selections = get_selections(info)
-        optimizer = QueryOptimizer(info)
-        store = optimizer.optimize_selections(field_type, selections, model=self.model)
-        store_in_query_cache(key=info.operation, items=iterable, schema=info.schema, store=store)
+            # Slice a queryset using the calculated pagination arguments.
+            cut = calculate_queryset_slice(**pagination_args)
+            queryset = queryset[cut]
+
+            # Store data in cache after pagination
+            if optimizer:
+                store_in_query_cache(key=info.operation, queryset=queryset, schema=info.schema, optimizer=optimizer)
+
+        except OptimizerError:  # pragma: no cover
+            raise
+
+        except Exception as error:  # pragma: no cover  # noqa: BLE001
+            if not optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
+                raise
+
+            # If an error occurs during optimization, we should still return the unoptimized queryset.
+            optimizer_logger.info("Something went wrong during the optimization process.", exc_info=error)
+            queryset = pre_optimized_queryset
+            pagination_args["size"] = count = queryset.count()
+            cut = calculate_queryset_slice(**pagination_args)
+            queryset = queryset[cut]
 
         # Create a connection from the sliced queryset.
         edges: list[EdgeType] = [
             self.connection_type.Edge(node=value, cursor=offset_to_cursor(cut.start + index))
-            for index, value in enumerate(iterable)
+            for index, value in enumerate(queryset)
         ]
         connection = connection_adapter(
             cls=self.connection_type,
@@ -266,7 +257,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
                 hasNextPage=cut.stop <= count,
             ),
         )
-        connection.iterable = iterable
+        connection.iterable = queryset
         connection.length = count
         return connection
 

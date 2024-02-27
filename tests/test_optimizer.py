@@ -538,9 +538,7 @@ def test_optimizer__relay_connection_nested__paginated(client_query):
     # TODO: assert "LIMIT 1" in results.queries[2], results.log
 
 
-@pytest.mark.xfail(reason="Not implemented yet")
 def test_optimizer__relay_connection_nested__filtered(client_query):
-    # TODO: result cache is lost when filtering nested connections.
     name = HousingCompany.objects.values_list("name", flat=True).first()
     query = """
         query {
@@ -1012,7 +1010,7 @@ def test_optimizer__max_complexity_reached(client_query):
     assert len(errors) == 1, errors
     assert "message" in content["errors"][0], errors
     message = content["errors"][0]["message"]
-    assert message == "Query complexity of 11 exceeds the maximum allowed of 10"
+    assert message == "Query complexity exceeds the maximum allowed of 10"
 
     assert "data" in content, content
     assert "allApartments" in content["data"], content["data"]

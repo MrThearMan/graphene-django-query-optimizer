@@ -10,8 +10,7 @@ if TYPE_CHECKING:
     from django.db import models
     from graphene_django import DjangoObjectType
 
-    from .typing import Any
-
+    from .typing import Any, FilterFields, Optional
 
 __all__ = [
     "FilterSet",
@@ -44,3 +43,16 @@ def get_filterset_for_object_type(object_type: type[DjangoObjectType]) -> type[F
         "filterset_base_class": FilterSet,
     }
     return get_filterset_class(object_type._meta.filterset_class, **meta)
+
+
+def get_filterset_for_model(
+    model: type[models.Model],
+    filterset: Optional[type[FilterSet]],
+    fields: Optional[FilterFields],
+) -> type[FilterSet]:
+    meta: dict[str, Any] = {
+        "model": model,
+        "fields": fields,
+        "filterset_base_class": FilterSet,
+    }
+    return get_filterset_class(filterset, **meta)

@@ -7,7 +7,7 @@ import graphene_django
 from django_filters.constants import ALL_FIELDS
 from graphene_django.utils import is_valid_django_model
 
-from . import optimize
+from .compiler import optimize_single
 from .settings import optimizer_settings
 from .typing import PK, OptimizedDjangoOptions
 
@@ -41,7 +41,7 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         max_complexity: Optional[int] = None,
         **options: Any,
     ) -> None:
-        if not is_valid_django_model(model):
+        if not is_valid_django_model(model):  # pragma: no cover
             msg = f"You need to pass a valid Django Model in {cls.__name__}.Meta, received {model}."
             raise TypeError(msg)
 
@@ -66,13 +66,5 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
 
     @classmethod
     def get_node(cls, info: GQLInfo, pk: PK) -> Optional[TModel]:
-        queryset = cls._meta.model._default_manager.filter(pk=pk)
-        queryset = optimize(queryset, info, max_complexity=cls._meta.max_complexity, pk=pk)
-        # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
-        # The optimizer should have just inserted the right model instance based on the given primary key
-        # to the queryset result cache anyway, so we can just pick that out. The only exception
-        # is if the optimization was cancelled due to an error, and the result cache was not set,
-        # in which case we fall back to .first().
-        if queryset._result_cache is None:
-            return queryset.first()  # pragma: no cover
-        return queryset._result_cache[0]
+        queryset = cls._meta.model._default_manager.all()
+        return optimize_single(queryset, info, pk=pk, max_complexity=cls._meta.max_complexity)

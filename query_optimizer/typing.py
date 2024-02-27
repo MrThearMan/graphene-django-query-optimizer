@@ -56,6 +56,7 @@ __all__ = [
     "Collection",
     "ConnectionResolver",
     "FieldNodes",
+    "FilterFields",
     "GQLInfo",
     "Generator",
     "GraphQLFilterInfo",
@@ -71,7 +72,7 @@ __all__ = [
     "ParamSpec",
     "QueryCache",
     "QuerySetResolver",
-    "StoreStr",
+    "OptimizerKey",
     "TableName",
     "ToManyField",
     "ToOneField",
@@ -87,14 +88,15 @@ __all__ = [
 
 TModel = TypeVar("TModel", bound=Model)
 TableName: TypeAlias = str
-StoreStr: TypeAlias = str
+OptimizerKey: TypeAlias = str
 PK: TypeAlias = Any
-QueryCache: TypeAlias = dict[TableName, dict[StoreStr, dict[PK, TModel]]]
+QueryCache: TypeAlias = dict[TableName, dict[OptimizerKey, dict[PK, TModel]]]
 ModelField: TypeAlias = Union[Field, ForeignObjectRel, "GenericForeignKey"]
 ToManyField: TypeAlias = Union["GenericRelation", ManyToManyField, ManyToOneRel, ManyToManyRel]
 ToOneField: TypeAlias = Union["GenericRelation", ForeignObject, ForeignKey, OneToOneField]
 TypeOptions: TypeAlias = Union[DjangoObjectTypeOptions, ConnectionOptions]
 AnyUser: TypeAlias = Union["User", "AnonymousUser"]
+FilterFields: TypeAlias = Union[dict[str, list[str]], list[str]]
 
 QuerySetResolver = Callable[..., Union[QuerySet, Manager, None]]
 ModelResolver = Callable[..., Union[Model, None]]
@@ -117,6 +119,5 @@ class OptimizedDjangoOptions(DjangoObjectTypeOptions):
 class GraphQLFilterInfo(TypedDict):
     name: str
     filters: dict[str, Any]
-    children: list[dict[str, GraphQLFilterInfo]]
-    filter_fields: Optional[dict[str, list[str]]]
+    children: dict[str, GraphQLFilterInfo]
     filterset_class: Optional[type[FilterSet]]
