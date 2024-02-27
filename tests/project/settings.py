@@ -1,4 +1,3 @@
-from contextlib import suppress
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
@@ -27,11 +26,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "debug_toolbar",
+    "graphiql_debug_toolbar",
     "graphene_django",
     "tests.example",
 ]
 
 MIDDLEWARE = [
+    "graphiql_debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -118,19 +120,6 @@ GRAPHENE = {
         "graphene_django.debug.DjangoDebugMiddleware",
     ],
 }
-
-with suppress(ImportError):
-    import debug_toolbar
-
-    INSTALLED_APPS += [debug_toolbar.__name__]
-
-
-with suppress(ImportError):
-    import graphiql_debug_toolbar
-
-    INSTALLED_APPS += [graphiql_debug_toolbar.__name__]
-    MIDDLEWARE.insert(0, "graphiql_debug_toolbar.middleware.DebugToolbarMiddleware")
-
 
 GRAPHQL_QUERY_OPTIMIZER = {
     "MAX_COMPLEXITY": 10,

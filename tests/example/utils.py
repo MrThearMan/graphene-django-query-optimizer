@@ -27,7 +27,7 @@ class QueryData:
         return message
 
 
-def _db_query_logger(
+def db_query_logger(
     execute: Callable[..., Any],
     sql: str,
     params: tuple[Any, ...],
@@ -55,7 +55,7 @@ def _db_query_logger(
 def capture_database_queries() -> Generator[QueryData, None, None]:
     """Capture results of what database queries were executed. `DEBUG` needs to be set to True."""
     results = QueryData(queries=[])
-    query_logger = partial(_db_query_logger, query_cache=results.queries)
+    query_logger = partial(db_query_logger, query_cache=results.queries)
 
     with db.connection.execute_wrapper(query_logger):
         yield results

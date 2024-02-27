@@ -1,3 +1,4 @@
+# ruff: noqa: RUF012, I001
 import graphene
 from django.db.models import F, Model, QuerySet, Value
 from django.db.models.functions import Concat
@@ -7,7 +8,7 @@ from graphene import relay
 from query_optimizer import DjangoObjectType, required_annotations, required_fields
 from query_optimizer.fields import DjangoConnectionField
 from query_optimizer.filter import FilterSet
-from query_optimizer.typing import GQLInfo
+from query_optimizer.typing import GQLInfo, Any
 from tests.example.models import (
     Apartment,
     ApartmentProxy,
@@ -226,12 +227,12 @@ class OwnershipType(DjangoObjectType):
         ]
 
 
-# Relay
+# Relay / Django-filters
 
 
 class IsTypeOfProxyPatch:
     @classmethod
-    def is_type_of(cls, root, info):
+    def is_type_of(cls, root: Any, info: GQLInfo) -> bool:
         if cls._meta.model._meta.proxy:
             return root._meta.model._meta.concrete_model == cls._meta.model._meta.concrete_model
         return super().is_type_of(root, info)
@@ -248,12 +249,21 @@ class ApartmentNode(IsTypeOfProxyPatch, DjangoObjectType):
         interfaces = (relay.Node,)
 
 
+class BuildingFilterSet(FilterSet):
+    order_by = OrderingFilter(fields=["name"])
+
+    class Meta:
+        model = Building
+        fields = ["name", "street_address"]
+
+
 class BuildingNode(IsTypeOfProxyPatch, DjangoObjectType):
     apartments = DjangoConnectionField(ApartmentNode)
 
     class Meta:
         model = BuildingProxy
         interfaces = (relay.Node,)
+        filterset_class = BuildingFilterSet
 
 
 class RealEstateNode(IsTypeOfProxyPatch, DjangoObjectType):
@@ -262,9 +272,6 @@ class RealEstateNode(IsTypeOfProxyPatch, DjangoObjectType):
     class Meta:
         model = RealEstateProxy
         interfaces = (relay.Node,)
-
-
-# Django-filters
 
 
 class HousingCompanyFilterSet(FilterSet):
@@ -312,6 +319,8 @@ class HousingCompanyNode(IsTypeOfProxyPatch, DjangoObjectType):
 
 
 class PropertyManagerFilterSet(FilterSet):
+    order_by = OrderingFilter(fields=["name"])
+
     class Meta:
         model = PropertyManager
         fields = ["name", "email"]
@@ -361,11 +370,11 @@ class ExampleType(DjangoObjectType):
         fields = "__all__"
 
     @required_annotations(foo=F("forward_one_to_one_field__name"))
-    def resolve_foo(self, info):
+    def resolve_foo(self: Example, info: GQLInfo) -> str:
         return self.foo
 
     @required_fields("named_relation__id")
-    def resolve_custom_relation(parent: Example, info):
+    def resolve_custom_relation(parent: Example, info: GQLInfo) -> int:
         return parent.named_relation.id
 
 
@@ -383,7 +392,7 @@ class ForwardManyToOneType(DjangoObjectType):
         fields = "__all__"
 
     @required_annotations(bar=F("name"))
-    def resolve_bar(self, info):
+    def resolve_bar(self: ForwardManyToOne, info: GQLInfo) -> str:
         return self.bar
 
 

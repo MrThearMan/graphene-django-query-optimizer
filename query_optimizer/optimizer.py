@@ -3,13 +3,17 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import FieldDoesNotExist, ValidationError
+from django.db import models
 from django.db.models import Expression, Model, Prefetch, QuerySet
 from django.db.models.constants import LOOKUP_SEP
+from django.db.models.functions import RowNumber
 from graphene_django.registry import get_global_registry
+from graphene_django.settings import graphene_settings
 
 from .settings import optimizer_settings
-from .utils import get_filter_info, mark_optimized
+from .utils import calculate_queryset_slice, get_filter_info, mark_optimized, optimizer_logger
+from .validators import PaginationArgs
 
 if TYPE_CHECKING:
     from .types import DjangoObjectType
@@ -121,13 +125,56 @@ class QueryOptimizer:
         results: CompilationResults,
         filter_info: GraphQLFilterInfo,
     ) -> None:
-        queryset = self.get_prefetch_queryset(optimizer.model)
         filter_info = filter_info.get("children", {}).get(name, {})
+        queryset = self.get_prefetch_queryset(name, optimizer.model, filter_info=filter_info)
         optimized_queryset = optimizer.optimize_queryset(queryset, filter_info=filter_info)
         results.prefetch_related.append(Prefetch(name, optimized_queryset))
 
-    def get_prefetch_queryset(self, model: type[TModel]) -> QuerySet[TModel]:
-        return model._default_manager.all()
+    def get_prefetch_queryset(self, name: str, model: type[TModel], filter_info: GraphQLFilterInfo) -> QuerySet[TModel]:
+        queryset = model._default_manager.all()
+
+        pagination_args = self.get_pagination_args(filter_info=filter_info)
+        # If no pagination arguments are given, then don't limit the nested items (e.g. regular list fields)
+        if all(value is None for value in pagination_args.values()):
+            return queryset
+
+        # Just use the relay pagination max limit (ignore ConnectionField max limit) for limiting nested items.
+        # However, if the limit is se to None, then don't limit the nested items.
+        pagination_args["size"] = graphene_settings.RELAY_CONNECTION_MAX_LIMIT
+        if pagination_args["size"] is None:  # pragma: no cover
+            return queryset
+
+        cut = calculate_queryset_slice(**pagination_args)
+
+        try:
+            # Try to find the prefetch join field from the model to use for partitioning.
+            field = self.model._meta.get_field(name)
+        except FieldDoesNotExist:  # pragma: no cover
+            msg = f"Cannot find field {name!r} on model {self.model.__name__!r}. Cannot optimize nested pagination."
+            optimizer_logger.warning(msg)
+            return queryset
+
+        field_name: str = field.remote_field.attname
+        order_by: Optional[list[str]] = (
+            # Use the `order_by` from the filter info, if available
+            [x for x in filter_info.get("filters", {}).get("order_by", "").split(",") if x]
+            # Use the model's `Meta.ordering` if no `order_by` is given
+            or model._meta.ordering
+            # No ordering if neither is available
+            or None
+        )
+
+        return (
+            # Add a row number to the queryset, and limit the rows for each
+            # partition to based on the given pagination arguments.
+            queryset.alias(
+                _row_number=models.Window(
+                    expression=RowNumber(),
+                    partition_by=models.F(field_name),
+                    order_by=order_by,
+                )
+            ).filter(_row_number__gte=cut.start, _row_number__lte=cut.stop)
+        )
 
     def get_filtered_queryset(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
         object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
@@ -139,6 +186,15 @@ class QueryOptimizer:
         from graphene_django.filter.fields import convert_enum
 
         return {key: convert_enum(value) for key, value in input_data.items()}
+
+    def get_pagination_args(self, filter_info: GraphQLFilterInfo) -> Optional[PaginationArgs]:
+        return PaginationArgs(
+            after=filter_info.get("filters", {}).get("after"),
+            before=filter_info.get("filters", {}).get("before"),
+            first=filter_info.get("filters", {}).get("first"),
+            last=filter_info.get("filters", {}).get("last"),
+            size=None,
+        )
 
     def __add__(self, other: QueryOptimizer) -> QueryOptimizer:
         self.only_fields += other.only_fields

@@ -11,7 +11,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tests.project.settings")
 
 
 @pytest.fixture(scope="session", autouse=True)
-def setup_database(django_db_blocker, request) -> None:
+def setup_database(django_db_blocker, request) -> None:  # noqa: PT004
     """Setup database."""
     from django.core.management import call_command
 
@@ -28,15 +28,15 @@ def setup_database(django_db_blocker, request) -> None:
 
 
 @pytest.fixture(scope="session")
-def django_db_setup():
+def django_db_setup():  # noqa: PT004
     """Setup read-only database."""
 
 
 @pytest.fixture()
-def db_access_without_rollback_and_truncate(request, django_db_setup, django_db_blocker):
+def db_access_without_rollback_and_truncate(request, django_db_setup, django_db_blocker):  # noqa: PT004
     """Setup read-only database."""
     django_db_blocker.unblock()
-    request.addfinalizer(django_db_blocker.restore)
+    request.addfinalizer(django_db_blocker.restore)  # noqa: PT021
 
 
 @pytest.fixture()

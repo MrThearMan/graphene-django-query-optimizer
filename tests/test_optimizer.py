@@ -11,6 +11,7 @@ from tests.example.models import (
     Apartment,
     Building,
     HousingCompany,
+    PropertyManager,
 )
 from tests.example.types import ApartmentNode
 from tests.example.utils import capture_database_queries
@@ -528,14 +529,88 @@ def test_optimizer__relay_connection_nested__paginated(client_query):
 
     # Check that filtering worked for the nested connection
     # (there are buildings with more than 1 apartment in the test data)
-    assert all([len(building["node"]["apartments"]["edges"]) == 1 for building in buildings]), buildings
+    assert all(len(building["node"]["apartments"]["edges"]) == 1 for building in buildings), buildings
 
     queries = len(results.queries)
     # 1 query for counting Buildings
     # 1 query for fetching Buildings
     # 1 query for fetching Apartments
     assert queries == 3, results.log
-    # TODO: assert "LIMIT 1" in results.queries[2], results.log
+    assert "ROW_NUMBER() OVER (PARTITION BY" in results.log, results.log
+
+
+def test_optimizer__relay_connection_nested__paginated__ordering(client_query):
+    manager_second = PropertyManager.objects.order_by("name")[1:].first()
+    apartment_first = manager_second.housing_companies.order_by("street_address").first()
+    apartment_last = manager_second.housing_companies.order_by("street_address").last()
+
+    query_1 = """
+        query {
+          pagedPropertyManagers(first:1 offset:1 orderBy:"name") {
+            edges {
+              node {
+                pk
+                name
+                housingCompanies(first:1 orderBy:"street_address") {
+                  edges {
+                    node {
+                      pk
+                      streetAddress
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query_1)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    manager = content["data"]["pagedPropertyManagers"]["edges"][0]["node"]
+    assert manager["name"] == manager_second.name
+    apartment = manager["housingCompanies"]["edges"][0]["node"]
+    assert apartment["pk"] == apartment_first.pk
+
+    queries = len(results.queries)
+    assert queries == 3, results.log
+
+    query_2 = """
+        query {
+          pagedPropertyManagers(first:1 offset:1 orderBy:"name") {
+            edges {
+              node {
+                pk
+                name
+                housingCompanies(first:1 orderBy:"-street_address") {
+                  edges {
+                    node {
+                      pk
+                      streetAddress
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query_2)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+    manager = content["data"]["pagedPropertyManagers"]["edges"][0]["node"]
+    assert manager["name"] == manager_second.name
+    apartment = manager["housingCompanies"]["edges"][0]["node"]
+    assert apartment["pk"] == apartment_last.pk
+
+    queries = len(results.queries)
+    assert queries == 3, results.log
 
 
 def test_optimizer__relay_connection_nested__filtered(client_query):

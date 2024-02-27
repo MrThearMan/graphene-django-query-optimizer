@@ -116,7 +116,7 @@ class OptimizedDjangoOptions(DjangoObjectTypeOptions):
     max_complexity: int
 
 
-class GraphQLFilterInfo(TypedDict):
+class GraphQLFilterInfo(TypedDict, total=False):
     name: str
     filters: dict[str, Any]
     children: dict[str, GraphQLFilterInfo]

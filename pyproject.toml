@@ -160,6 +160,19 @@ ignore = [
     "W191",     # tab-indentation
 ]
 
+[tool.ruff.lint.extend-per-file-ignores]
+"test_*.py" = [
+    "S101",     # Assert is fine
+    "PLR2004",  # Allow constants
+    "ANN",      # No need to annotate tests
+    "UP",       # No upgrade rules
+]
+"conftest.py" = [
+    "ARG",      # Fixtures can be unused
+    "ANN",      # No need to annotate tests
+    "UP",       # No upgrade rules
+]
+
 [tool.ruff.lint.pylint]
 max-args = 7
 

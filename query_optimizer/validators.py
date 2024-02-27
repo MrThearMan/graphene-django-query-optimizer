@@ -15,7 +15,7 @@ class PaginationArgs(TypedDict):
     before: Optional[int]
     first: Optional[int]
     last: Optional[int]
-    size: int
+    size: Optional[int]
 
 
 def validate_pagination_args(  # noqa: C901, PLR0912
@@ -95,4 +95,4 @@ def validate_pagination_args(  # noqa: C901, PLR0912
         after = after + 1
 
     # Size is added later with `queryset.count()`.
-    return PaginationArgs(after=after, before=before, first=first, last=last, size=0)
+    return PaginationArgs(after=after, before=before, first=first, last=last, size=None)
