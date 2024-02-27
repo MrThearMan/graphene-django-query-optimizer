@@ -249,6 +249,7 @@ deps =
     pytest-django
     faker
     sqlparse
+    django-graphiql-debug-toolbar
 commands =
     coverage run -m pytest -vv -s --log-cli-level=INFO
 """
