@@ -1,5 +1,7 @@
 from django.db import models
 from django.db.models import DecimalField
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 
 __all__ = [
     "Apartment",
@@ -17,6 +19,7 @@ __all__ = [
     "RealEstate",
     "RealEstateProxy",
     "Sale",
+    "TaggedItem",
     #
     "Example",
     "ForwardOneToOne",
@@ -80,9 +83,24 @@ class Developer(models.Model):
         return self.name
 
 
+# Borrowed from https://docs.djangoproject.com/en/5.0/ref/contrib/contenttypes/#generic-relations
+class TaggedItem(models.Model):
+    tag = models.SlugField()
+    confidence = models.FloatField()
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey("content_type", "object_id")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["content_type", "object_id"]),
+        ]
+
 class PropertyManager(models.Model):
     name = models.CharField(max_length=1024)
     email = models.EmailField(blank=True)
+
+    tags = GenericRelation(TaggedItem)
 
     class Meta:
         ordering = ["name"]
@@ -105,6 +123,8 @@ class HousingCompany(models.Model):
 
     developers = models.ManyToManyField(Developer, related_name="housing_companies")
     property_manager = models.ForeignKey(PropertyManager, on_delete=models.PROTECT, related_name="housing_companies")
+
+    tags = GenericRelation(TaggedItem)
 
     class Meta:
         ordering = ["name"]
