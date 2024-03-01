@@ -30,6 +30,8 @@ class DefaultSettings(NamedTuple):
     """Default max number of 'select_related' and 'prefetch related' joins optimizer is allowed to optimize."""
     SKIP_OPTIMIZATION_ON_ERROR: bool = False
     """If there is an unexpected error, should the optimizer skip optimization (True) or throw an error (False)?"""
+    DEFAULT_FILTERSET_CLASS: str = ""
+    """The default filterset class to use."""
 
 
 DEFAULTS: dict[str, Any] = DefaultSettings()._asdict()

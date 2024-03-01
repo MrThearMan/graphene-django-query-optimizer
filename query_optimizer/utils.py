@@ -3,16 +3,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from django.db.models import ForeignKey, Model, QuerySet
+from django.db.models import ForeignKey, QuerySet
 from graphene import Connection
 from graphene.utils.str_converters import to_snake_case
-from graphql import (
-    FieldNode,
-    GraphQLField,
-    GraphQLObjectType,
-    GraphQLSchema,
-    get_argument_values,
-)
+from graphene_django.utils import DJANGO_FILTER_INSTALLED
+from graphql import FieldNode, GraphQLField, GraphQLObjectType, GraphQLSchema, get_argument_values
 from graphql.execution.execute import get_field_def
 
 from .settings import optimizer_settings
@@ -215,14 +210,14 @@ def _get_arguments(
             filterset_class=None,
         )
 
-        if hasattr(new_parent, "graphene_type"):
-            filter_fields = getattr(new_parent.graphene_type._meta, "filter_fields", None)
-            filterset_class = getattr(new_parent.graphene_type._meta, "filterset_class", None)
-            if filterset_class is not None or filter_fields is not None:
-                from .filter import get_filterset_for_model
+        if DJANGO_FILTER_INSTALLED and hasattr(new_parent, "graphene_type"):
+            object_type = new_parent.graphene_type
 
-                model: type[Model] = new_parent.graphene_type._meta.model
-                info["filterset_class"] = get_filterset_for_model(model, filterset_class, filter_fields)
+            from .filter import get_filterset_class_for_object_type
+
+            filterset_class = get_filterset_class_for_object_type(object_type)
+            if filterset_class is not None:
+                info["filterset_class"] = filterset_class
 
         if field_node.selection_set is not None:
             result = _get_arguments(field_node.selection_set.selections, variable_values, new_parent, schema)
