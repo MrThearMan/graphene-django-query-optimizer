@@ -43,7 +43,7 @@ class FilterSet(django_filters.FilterSet):
 
 @cache
 def default_filterset_class() -> type[FilterSet]:
-    if optimizer_settings.DEFAULT_FILTERSET_CLASS:
+    if optimizer_settings.DEFAULT_FILTERSET_CLASS:  # pragma: no cover
         return import_string(optimizer_settings.DEFAULT_FILTERSET_CLASS)
     return FilterSet
 

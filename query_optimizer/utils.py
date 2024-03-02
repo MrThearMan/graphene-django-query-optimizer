@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from types import NoneType
 from typing import TYPE_CHECKING
 
 from django.db.models import ForeignKey, QuerySet
@@ -195,8 +196,9 @@ def _get_arguments(
         filters = get_argument_values(type_def=field_def, node=field_node, variable_values=variable_values)
 
         new_parent = get_underlying_type(field_def.type)
-        if hasattr(new_parent, "graphene_type") and issubclass(new_parent.graphene_type, Connection):
-            # Skip the `edges` and `node` fields
+
+        # If the field is a connection, we need to go deeper to get the actual field
+        if is_connection := issubclass(getattr(new_parent, "graphene_type", NoneType), Connection):
             field_def = new_parent.fields["edges"]
             new_parent = get_underlying_type(field_def.type)
             field_def = new_parent.fields["node"]
@@ -208,6 +210,7 @@ def _get_arguments(
             filters=filters,
             children={},
             filterset_class=None,
+            is_connection=is_connection,
         )
 
         if DJANGO_FILTER_INSTALLED and hasattr(new_parent, "graphene_type"):
@@ -224,4 +227,10 @@ def _get_arguments(
             if result:
                 info["children"] = result
 
-    return {name: field for name, field in arguments.items() if field["filters"] or field["children"]}
+    return {
+        name: field
+        for name, field in arguments.items()
+        # Remove children that do not have filters or children.
+        # Also preserve fields that are connections, so that default limiting can be applied.
+        if field["filters"] or field["children"] or field["is_connection"]
+    }

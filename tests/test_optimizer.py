@@ -94,6 +94,8 @@ def test_optimizer__many_to_one_relations(client_query):
     # 1 query for fetching Sales
     # 1 query for fetching Ownerships and related Owners
     assert queries == 3, results.log
+    # Check that no limiting is applied to the nested fields, since they are list fields
+    assert "ROW_NUMBER() OVER" not in results.log, results.log
 
 
 def test_optimizer__many_to_many_relations(client_query):
@@ -123,6 +125,8 @@ def test_optimizer__many_to_many_relations(client_query):
     # 1 query for fetching HousingCompanies
     # 1 query for fetching Developers
     assert queries == 2, results.log
+    # Check that no limiting is applied to the nested fields, since they are list fields
+    assert "ROW_NUMBER() OVER" not in results.log, results.log
 
 
 def test_optimizer__all_relation_types(client_query):
@@ -454,10 +458,6 @@ def test_optimizer__relay_connection_nested(client_query):
                 }
               }
             }
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
           }
         }
     """
@@ -485,6 +485,14 @@ def test_optimizer__relay_connection_nested(client_query):
     # 1 query for fetching HousingCompanies
     # 1 query for fetching RealEstates
     assert queries == 3, results.log
+    # Check that nested connection is limited even without any pagination args (based on settings)
+    match = (
+        "ROW_NUMBER() OVER "
+        '(PARTITION BY "example_apartment"."building_id" '
+        'ORDER BY "example_apartment"."street_address", "example_apartment"."stair", '
+        '"example_apartment"."apartment_number" DESC)'
+    )
+    assert match in results.queries[2], results.log
 
 
 def test_optimizer__relay_connection_nested__paginated(client_query):
@@ -536,10 +544,17 @@ def test_optimizer__relay_connection_nested__paginated(client_query):
     # 1 query for fetching Buildings
     # 1 query for fetching Apartments
     assert queries == 3, results.log
-    assert "ROW_NUMBER() OVER (PARTITION BY" in results.log, results.log
+    # Check that nested connection is limited with pagination
+    match = (
+        "ROW_NUMBER() OVER "
+        '(PARTITION BY "example_apartment"."building_id" '
+        'ORDER BY "example_apartment"."street_address", "example_apartment"."stair", '
+        '"example_apartment"."apartment_number" DESC)'
+    )
+    assert match in results.queries[2], results.log
 
 
-def test_optimizer__relay_connection_nested__paginated__ordering(client_query):
+def test_optimizer__relay_connection_nested__paginated__custom_ordering(client_query):
     manager_second = PropertyManager.objects.order_by("name")[1:].first()
     apartment_first = manager_second.housing_companies.order_by("street_address").first()
     apartment_last = manager_second.housing_companies.order_by("street_address").last()
@@ -577,6 +592,13 @@ def test_optimizer__relay_connection_nested__paginated__ordering(client_query):
 
     queries = len(results.queries)
     assert queries == 3, results.log
+    # Check that nested connection is limited with pagination
+    match = (
+        "ROW_NUMBER() OVER ("
+        'PARTITION BY "example_housingcompany"."property_manager_id" '
+        'ORDER BY "example_housingcompany"."street_address")'
+    )
+    assert match in results.queries[2], results.log
 
     query_2 = """
         query {
@@ -611,6 +633,13 @@ def test_optimizer__relay_connection_nested__paginated__ordering(client_query):
 
     queries = len(results.queries)
     assert queries == 3, results.log
+    # Check that nested connection is limited with pagination
+    match = (
+        "ROW_NUMBER() OVER "
+        '(PARTITION BY "example_housingcompany"."property_manager_id" '
+        'ORDER BY "example_housingcompany"."street_address" DESC)'
+    )
+    assert match in results.queries[2], results.log
 
 
 def test_optimizer__relay_connection_nested__filtered(client_query):

@@ -94,5 +94,6 @@ def validate_pagination_args(  # noqa: C901, PLR0912
     if after is not None:
         after = after + 1
 
-    # Size is added later with `queryset.count()`.
-    return PaginationArgs(after=after, before=before, first=first, last=last, size=None)
+    # Size is changed later with `queryset.count()`.
+    size = max_limit if isinstance(max_limit, int) else None
+    return PaginationArgs(after=after, before=before, first=first, last=last, size=size)

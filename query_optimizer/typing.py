@@ -121,3 +121,4 @@ class GraphQLFilterInfo(TypedDict, total=False):
     filters: dict[str, Any]
     children: dict[str, GraphQLFilterInfo]
     filterset_class: Optional[type[FilterSet]]
+    is_connection: bool

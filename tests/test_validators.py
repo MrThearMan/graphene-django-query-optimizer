@@ -52,7 +52,7 @@ class Params(NamedTuple):
             ),
             "max limit": Params(
                 pagination_input=PaginationInput(max_limit=1),
-                output=PaginationArgs(after=None, before=None, first=1, last=None, size=None),
+                output=PaginationArgs(after=None, before=None, first=1, last=None, size=1),
                 errors=None,
             ),
             "first zero": Params(
