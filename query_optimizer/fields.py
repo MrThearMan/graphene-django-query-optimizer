@@ -230,7 +230,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
                 raise
 
             # If an error occurs during optimization, we should still return the unoptimized queryset.
-            optimizer_logger.info("Something went wrong during the optimization process.", exc_info=error)
+            optimizer_logger.warning("Something went wrong during the optimization process.", exc_info=error)
             queryset = pre_optimized_queryset
             pagination_args["size"] = count = queryset.count()
             cut = calculate_queryset_slice(**pagination_args)

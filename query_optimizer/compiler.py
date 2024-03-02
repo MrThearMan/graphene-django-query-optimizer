@@ -64,7 +64,7 @@ def optimize(
         if not optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
             raise
 
-        optimizer_logger.info("Something went wrong during the optimization process.", exc_info=error)
+        optimizer_logger.warning("Something went wrong during the optimization process.", exc_info=error)
         return queryset
 
 
@@ -102,12 +102,12 @@ def optimize_single(
         if not optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
             raise
 
-        optimizer_logger.info("Something went wrong during the optimization process.", exc_info=error)
+        optimizer_logger.warning("Something went wrong during the optimization process.", exc_info=error)
         return queryset.first()
 
 
 class OptimizationCompiler:
-    """Class for walking the GraphQL AST and compiling SQL optimizations for based on the given query."""
+    """Class for walking the GraphQL AST and compiling SQL optimizations based on the given query."""
 
     def __init__(self, info: GQLInfo, max_complexity: Optional[int] = None) -> None:
         """
