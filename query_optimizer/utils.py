@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from types import NoneType
 from typing import TYPE_CHECKING
 
 from django.db.models import ForeignKey, QuerySet
@@ -198,7 +197,7 @@ def _get_arguments(
         new_parent = get_underlying_type(field_def.type)
 
         # If the field is a connection, we need to go deeper to get the actual field
-        if is_connection := issubclass(getattr(new_parent, "graphene_type", NoneType), Connection):
+        if is_connection := issubclass(getattr(new_parent, "graphene_type", type(None)), Connection):
             field_def = new_parent.fields["edges"]
             new_parent = get_underlying_type(field_def.type)
             field_def = new_parent.fields["node"]
