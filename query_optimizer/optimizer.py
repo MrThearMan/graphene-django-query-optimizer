@@ -33,6 +33,13 @@ class CompilationResults:
     select_related: list[str] = dataclasses.field(default_factory=list)
     prefetch_related: list[Prefetch] = dataclasses.field(default_factory=list)
 
+    @property
+    def cache_key(self) -> str:
+        only = ",".join(self.only_fields)
+        select = ",".join(self.select_related)
+        prefetch = ",".join(item.prefetch_to for item in self.prefetch_related)
+        return f"{only=}|{select=}|{prefetch=}"
+
 
 class QueryOptimizer:
     """Creates optimized queryset based on the optimization data found by the OptimizationCompiler."""
@@ -45,6 +52,7 @@ class QueryOptimizer:
         self.annotations: dict[str, Expression] = {}
         self.select_related: dict[str, QueryOptimizer] = {}
         self.prefetch_related: dict[str, QueryOptimizer] = {}
+        self._cache_key: Optional[str] = None  # generated during optimization process
 
     def optimize_queryset(
         self,
@@ -101,6 +109,7 @@ class QueryOptimizer:
         for name, optimizer in self.prefetch_related.items():
             self.compile_prefetch(name, optimizer, results, filter_info)
 
+        self._cache_key = results.cache_key
         return results
 
     def compile_select(
@@ -193,6 +202,12 @@ class QueryOptimizer:
 
         return {key: convert_enum(value) for key, value in input_data.items()}
 
+    @property
+    def cache_key(self) -> str:
+        if self._cache_key is None:
+            self.compile(filter_info={})
+        return self._cache_key
+
     def __add__(self, other: QueryOptimizer) -> QueryOptimizer:
         self.only_fields += other.only_fields
         self.related_fields += other.related_fields
@@ -202,9 +217,4 @@ class QueryOptimizer:
         return self
 
     def __str__(self) -> str:
-        filter_info = get_filter_info(self.info)
-        results = self.compile(filter_info=filter_info)
-        only = ",".join(results.only_fields)
-        select = ",".join(results.select_related)
-        prefetch = ",".join(item.prefetch_to for item in results.prefetch_related)
-        return f"{only=}|{select=}|{prefetch=}"
+        return self.cache_key

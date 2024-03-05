@@ -5,21 +5,18 @@ from typing import TYPE_CHECKING
 
 import django_filters
 from django.utils.module_loading import import_string
-from graphene_django.filter.utils import get_filtering_args_from_filterset, get_filterset_class
 from graphene_django.utils import maybe_queryset
 
 from .settings import optimizer_settings
 
 if TYPE_CHECKING:
     from django.db import models
-    from graphene_django import DjangoObjectType
 
-    from .typing import Optional
 
 __all__ = [
     "FilterSet",
-    "get_filtering_args_from_filterset",
-    "get_filterset_class_for_object_type",
+    "create_filterset",
+    "default_filterset_class",
 ]
 
 
@@ -48,13 +45,11 @@ def default_filterset_class() -> type[FilterSet]:
     return FilterSet
 
 
-def get_filterset_class_for_object_type(object_type: type[DjangoObjectType]) -> Optional[type[FilterSet]]:
-    model = getattr(object_type._meta, "model", None)
-    filter_fields = getattr(object_type._meta, "filter_fields", None)
-    filterset_class = getattr(object_type._meta, "filterset_class", None)
-
-    if model is None or (filterset_class is None and filter_fields is None):
-        return None
-
-    meta = {"model": model, "fields": filter_fields, "filterset_base_class": default_filterset_class()}
-    return get_filterset_class(filterset_class, **meta)
+def create_filterset(
+    model: type[models.Model],
+    fields: dict[str, list[str]],
+) -> type[FilterSet]:
+    name = f"{model._meta.object_name}FilterSet"
+    meta = type("Meta", (), {"model": model, "fields": fields})
+    filterset_class = default_filterset_class()
+    return type(name, (filterset_class,), {"Meta": meta})  # type: ignore[return-type]

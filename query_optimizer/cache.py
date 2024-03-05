@@ -62,7 +62,7 @@ def get_from_query_cache(
                   should have been fetched on the model instance.
     :return: The Model instance if it exists in the cache, None if not.
     """
-    optimizer_key = str(optimizer)
+    optimizer_key = optimizer.cache_key
     query_cache = get_query_cache(key, schema)
     return query_cache[model._meta.db_table][optimizer_key].get(pk)
 
@@ -95,7 +95,7 @@ def store_in_query_cache(
 
 
 def _add_item(query_cache: QueryCache, instance: Model, optimizer: QueryOptimizer) -> None:
-    optimizer_key = str(optimizer)
+    optimizer_key = optimizer.cache_key
     table_name: TableName = instance._meta.db_table
     query_cache[table_name][optimizer_key][instance.pk] = instance
     _add_selected(query_cache, instance, optimizer)

@@ -214,12 +214,7 @@ def _get_arguments(
 
         if DJANGO_FILTER_INSTALLED and hasattr(new_parent, "graphene_type"):
             object_type = new_parent.graphene_type
-
-            from .filter import get_filterset_class_for_object_type
-
-            filterset_class = get_filterset_class_for_object_type(object_type)
-            if filterset_class is not None:
-                info["filterset_class"] = filterset_class
+            info["filterset_class"] = getattr(object_type._meta, "filterset_class", None)
 
         if field_node.selection_set is not None:
             result = _get_arguments(field_node.selection_set.selections, variable_values, new_parent, schema)

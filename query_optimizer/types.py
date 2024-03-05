@@ -52,6 +52,14 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
             cls.pk = graphene.Int() if model._meta.pk.name == "id" else graphene.ID()
             cls.resolve_pk = cls.resolve_id
 
+        filterset_class = options.get("filterset_class", None)
+        filter_fields: Optional[dict[str, list[str]]] = options.pop("filter_fields", None)
+
+        if filterset_class is None and filter_fields is not None:
+            from .filter import create_filterset
+
+            options["filterset_class"] = create_filterset(model, filter_fields)
+
         _meta.max_complexity = max_complexity or optimizer_settings.MAX_COMPLEXITY
         super().__init_subclass_with_meta__(_meta=_meta, model=model, fields=fields, **options)
 

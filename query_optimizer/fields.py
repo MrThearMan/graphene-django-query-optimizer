@@ -110,9 +110,9 @@ class FilteringMixin:
         if not DJANGO_FILTER_INSTALLED or self.no_filters:  # pragma: no cover
             return None
 
-        from .filter import get_filtering_args_from_filterset, get_filterset_class_for_object_type
+        from graphene_django.filter.utils import get_filtering_args_from_filterset
 
-        filterset_class = get_filterset_class_for_object_type(self.underlying_type)
+        filterset_class = getattr(self.underlying_type._meta, "filterset_class", None)
         if filterset_class is None:
             return None
         return get_filtering_args_from_filterset(filterset_class, self.underlying_type)
