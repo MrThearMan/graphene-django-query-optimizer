@@ -6,7 +6,7 @@ from django_filters import CharFilter, OrderingFilter
 from graphene import relay
 
 from query_optimizer import DjangoObjectType, required_annotations, required_fields
-from query_optimizer.fields import DjangoConnectionField
+from query_optimizer.fields import DjangoConnectionField, DjangoListField
 from query_optimizer.filter import FilterSet
 from query_optimizer.typing import GQLInfo, Any
 from tests.example.models import (
@@ -86,13 +86,15 @@ class PostalCodeType(DjangoObjectType):
 
 
 class DeveloperType(DjangoObjectType):
+    housingcompany_set = DjangoListField("tests.example.types.HousingCompanyType")
+
     class Meta:
         model = Developer
         fields = [
             "pk",
             "name",
             "description",
-            "housing_companies",
+            "housingcompany_set",
         ]
 
 
@@ -267,7 +269,7 @@ class BuildingNode(IsTypeOfProxyPatch, DjangoObjectType):
 
 
 class RealEstateNode(IsTypeOfProxyPatch, DjangoObjectType):
-    buildings = DjangoConnectionField(BuildingNode)
+    building_set = DjangoConnectionField(BuildingNode)
 
     class Meta:
         model = RealEstateProxy

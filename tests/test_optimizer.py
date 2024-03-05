@@ -129,6 +129,29 @@ def test_optimizer__many_to_many_relations(client_query):
     assert "ROW_NUMBER() OVER" not in results.log, results.log
 
 
+def test_optimizer__many_to_many_relations__no_related_name(client_query):
+    query = """
+        query {
+          allDevelopers {
+            housingcompanySet {
+              name
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for fetching Developers
+    # 1 query for fetching HousingCompanies
+    assert queries == 2, results.log
+
+
 def test_optimizer__all_relation_types(client_query):
     query = """
         query {
@@ -495,6 +518,38 @@ def test_optimizer__relay_connection_nested(client_query):
     assert match in results.queries[2], results.log
 
 
+def test_optimizer__relay_connection__no_related_name(client_query):
+    query = """
+        query {
+          pagedRealEstates {
+            edges {
+              node {
+                buildingSet {
+                  edges {
+                    node {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query to count all real estates
+    # 1 query to fetch real estates
+    # 1 query to fetch buildings
+    assert queries == 3, results.log
+
+
 def test_optimizer__relay_connection_nested__paginated(client_query):
     query = """
         query {
@@ -682,7 +737,7 @@ def test_optimizer__custom_fields(client_query):
     query = """
         query {
           allDevelopers {
-            housingCompanies {
+            housingcompanySet {
               greeting
               manager
             }
@@ -913,7 +968,7 @@ def test_optimizer__inline_fragment(client_query):
           allPeople {
             ... on DeveloperType {
               name
-              housingCompanies {
+              housingcompanySet {
                 name
               }
               __typename

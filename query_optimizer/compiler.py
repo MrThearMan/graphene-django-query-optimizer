@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import TYPE_CHECKING, Iterable, Optional, Union
 
 from django.core.exceptions import FieldDoesNotExist
@@ -211,14 +212,8 @@ class OptimizationCompiler:
         if selection_graphql_field is None:  # pragma: no cover
             return
 
-        model_field_name = to_snake_case(selection_graphql_name)
-        try:
-            if model_field_name == "pk":
-                model_field: ModelField = model._meta.pk
-                model_field_name = model_field.name  # use actual model pk name, e.g. 'id'
-            else:
-                model_field: ModelField = model._meta.get_field(model_field_name)
-        except FieldDoesNotExist:
+        model_field_name, model_field = self.extract_model_field(model, selection_graphql_name)
+        if model_field is None:
             self.check_resolver_hints(selection_graphql_field, model, optimizer)
             return
 
@@ -348,6 +343,29 @@ class OptimizationCompiler:
         selections = selection.selection_set.selections
         nested_optimizer = self.handle_selections(selection_graphql_field, selections, fragment_model)
         optimizer += nested_optimizer
+
+    @staticmethod
+    def extract_model_field(model: type[Model], selection_graphql_name: str) -> tuple[str, Optional[ModelField]]:
+        model_field_name = to_snake_case(selection_graphql_name)
+
+        if model_field_name == "pk":
+            model_field: ModelField = model._meta.pk
+            model_field_name = model_field.name  # use actual model pk name, e.g. 'id'
+            return model_field_name, model_field
+
+        with suppress(FieldDoesNotExist):
+            model_field: ModelField = model._meta.get_field(model_field_name)
+            return model_field_name, model_field
+
+        # Field might be a reverse many-related field without `related_name`, in which case
+        # the `model._meta.fields_map` will store the relation without the "_set" suffix.
+        if model_field_name.endswith("_set"):
+            with suppress(FieldDoesNotExist):
+                model_field: ModelField = model._meta.get_field(model_field_name.removesuffix("_set"))
+                if is_to_many(model_field):
+                    return model_field_name, model_field
+
+        return model_field_name, None
 
     def check_resolver_hints(self, field: GraphQLField, model: type[Model], optimizer: QueryOptimizer) -> None:
         anns: Optional[dict[str, Expression]] = getattr(field.resolve, "annotations", None)

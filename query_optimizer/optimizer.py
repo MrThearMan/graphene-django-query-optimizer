@@ -156,7 +156,7 @@ class QueryOptimizer:
 
         # If no pagination arguments are given, and `RELAY_CONNECTION_MAX_LIMIT` is `None`,
         # then don't limit the queryset.
-        if all(value is None for value in pagination_args.values()):
+        if all(value is None for value in pagination_args.values()):  # pragma: no cover
             return queryset
 
         cut = calculate_queryset_slice(**pagination_args)
@@ -216,5 +216,5 @@ class QueryOptimizer:
         self.prefetch_related.update(other.prefetch_related)
         return self
 
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # pragma: no cover
         return self.cache_key
