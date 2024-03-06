@@ -122,13 +122,20 @@ def create_housing_companies(
     *,
     number: int = 20,
 ) -> list[HousingCompany]:
+    first_choice = property_managers.copy()
+
+    def get_manager() -> PropertyManager:
+        if first_choice:  # make sure each property manager has at least one housing company
+            return first_choice.pop()
+        return random.choice(property_managers)
+
     housing_companies: list[HousingCompany] = [
         HousingCompany(
             name=faker.company(),
             street_address=faker.street_name(),
             postal_code=random.choice(postal_codes),
             city=faker.city(),
-            property_manager=random.choice(property_managers),
+            property_manager=get_manager(),
         )
         for _ in range(number)
     ]
