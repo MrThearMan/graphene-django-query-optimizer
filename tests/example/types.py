@@ -332,6 +332,7 @@ class HousingCompanyNode(IsTypeOfProxyPatch, DjangoObjectType):
     class Meta:
         model = HousingCompanyProxy
         interfaces = (relay.Node,)
+        connection_class = CustomConnection
         filterset_class = HousingCompanyFilterSet
 
 
@@ -349,6 +350,7 @@ class PropertyManagerNode(IsTypeOfProxyPatch, DjangoObjectType):
     class Meta:
         model = PropertyManagerProxy
         interfaces = (relay.Node,)
+        connection_class = CustomConnection
         filterset_class = PropertyManagerFilterSet
 
 

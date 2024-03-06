@@ -6,6 +6,7 @@ from django.db import models
 from django.db.models import Count
 from django.db.models.functions import RowNumber
 from graphql_relay import to_global_id
+from graphql_relay.utils import unbase64
 
 from tests.example.models import (
     Apartment,
@@ -322,6 +323,9 @@ def test_optimizer__relay_connection__no_edges_from_connection_field(client_quer
     content = json.loads(response.content)
     assert "errors" not in content, content["errors"]
 
+    assert content["data"]["pagedApartments"]["totalCount"] == Apartment.objects.count()
+    assert content["data"]["pagedApartments"]["edgeCount"] == min(Apartment.objects.count(), 100)
+
     queries = len(results.queries)
     # 1 query for counting Apartments
     # 1 query for fetching Apartments (still made even if nothing is returned from it)
@@ -351,7 +355,7 @@ def test_optimizer__relay_connection__no_node_from_edges(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer__relay_connection__custom_connection_field_items_before_edges(client_query):
+def test_optimizer__relay_connection__total_count_and_edge_count__before_edges(client_query):
     query = """
         query {
           pagedApartments {
@@ -371,6 +375,9 @@ def test_optimizer__relay_connection__custom_connection_field_items_before_edges
 
     content = json.loads(response.content)
     assert "errors" not in content, content["errors"]
+
+    assert content["data"]["pagedApartments"]["totalCount"] == Apartment.objects.count()
+    assert content["data"]["pagedApartments"]["edgeCount"] == min(Apartment.objects.count(), 100)
 
     queries = len(results.queries)
     # 1 query for counting Apartments
@@ -405,6 +412,63 @@ def test_optimizer__relay_connection__cursor_before_node(client_query):
     # 1 query for counting Apartments
     # 1 query for fetching Apartments and related Buildings
     assert queries == 2, results.log
+
+
+def test_optimizer__relay_connection__total_count_and_edge_count__nested(client_query):
+    query = """
+        query {
+          pagedPropertyManagers(first:2) {
+            totalCount
+            edgeCount
+            edges {
+              node {
+                id
+                housingCompanies(first:1) {
+                  totalCount
+                  edgeCount
+                  edges {
+                    node {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    assert content["data"]["pagedPropertyManagers"]["totalCount"] == PropertyManager.objects.count()
+    assert content["data"]["pagedPropertyManagers"]["edgeCount"] == 2
+
+    assert len(content["data"]["pagedPropertyManagers"]["edges"]) == 2
+
+    node_1 = content["data"]["pagedPropertyManagers"]["edges"][0]["node"]
+    node_2 = content["data"]["pagedPropertyManagers"]["edges"][1]["node"]
+
+    pk_1 = int(unbase64(node_1["id"]).split(":")[-1])
+    pk_2 = int(unbase64(node_2["id"]).split(":")[-1])
+
+    count_1 = PropertyManager.objects.filter(pk=pk_1).first().housing_companies.count()
+    count_2 = PropertyManager.objects.filter(pk=pk_2).first().housing_companies.count()
+
+    assert node_1["housingCompanies"]["totalCount"] == count_1
+    assert node_2["housingCompanies"]["edgeCount"] == 1
+
+    assert node_2["housingCompanies"]["totalCount"] == count_2
+    assert node_2["housingCompanies"]["edgeCount"] == 1
+
+    queries = len(results.queries)
+    # 1 query for counting Property Managers
+    # 1 query for fetching Property Managers
+    # 1 query for fetching Housing Companies (and counting them in a subquery)
+    assert queries == 3, results.log
 
 
 @pytest.mark.skipif(

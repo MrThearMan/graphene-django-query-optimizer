@@ -212,7 +212,15 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
                 queryset = optimizer.optimize_queryset(queryset)
 
             # Queryset optimization contains filtering, so we count after optimization.
-            pagination_args["size"] = count = queryset.count()
+            count: Optional[int] = None
+            if queryset._result_cache:  # not None and not empty
+                # If this is a nested connection field, prefetch queryset models should have been
+                # annotated with the queryset count (just pick it from the first one).
+                count = getattr(queryset._result_cache[0], optimizer_settings.OPTIMIZER_PREFETCH_COUNT_KEY, None)
+            if count is None:
+                count = queryset.count()
+
+            pagination_args["size"] = count
 
             # Slice a queryset using the calculated pagination arguments.
             cut = calculate_queryset_slice(**pagination_args)

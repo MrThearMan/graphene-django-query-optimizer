@@ -12,7 +12,7 @@ from graphene_django.registry import get_global_registry
 from graphene_django.settings import graphene_settings
 
 from .settings import optimizer_settings
-from .utils import calculate_queryset_slice, get_filter_info, mark_optimized, optimizer_logger
+from .utils import SubqueryCount, calculate_queryset_slice, get_filter_info, mark_optimized, optimizer_logger
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
@@ -135,12 +135,14 @@ class QueryOptimizer:
         filter_info: GraphQLFilterInfo,
     ) -> None:
         filter_info = filter_info.get("children", {}).get(name, {})
-        queryset = self.get_prefetch_queryset(name, optimizer.model, filter_info=filter_info)
-        optimized_queryset = optimizer.optimize_queryset(queryset, filter_info=filter_info)
-        results.prefetch_related.append(Prefetch(name, optimized_queryset))
+        queryset = optimizer.model._default_manager.all()
+        queryset = optimizer.optimize_queryset(queryset, filter_info=filter_info)
+        queryset = self.paginate_prefetch_queryset(queryset, name, filter_info=filter_info)
+        results.prefetch_related.append(Prefetch(name, queryset))
 
-    def get_prefetch_queryset(self, name: str, model: type[TModel], filter_info: GraphQLFilterInfo) -> QuerySet[TModel]:
-        queryset = model._default_manager.all()
+    def paginate_prefetch_queryset(self, queryset: QuerySet, name: str, filter_info: GraphQLFilterInfo) -> QuerySet:
+        """Paginate prefetch queryset based on the given filter info after it has been filtered."""
+        # Only paginate nested connection fields.
         if not filter_info.get("is_connection", False):
             return queryset
 
@@ -174,21 +176,32 @@ class QueryOptimizer:
             # Use the `order_by` from the filter info, if available
             [x for x in filter_info.get("filters", {}).get("order_by", "").split(",") if x]
             # Use the model's `Meta.ordering` if no `order_by` is given
-            or model._meta.ordering
+            or queryset.model._meta.ordering
             # No ordering if neither is available
             or None
         )
 
         return (
+            # Annotate the models in the queryset with the total count for each partition.
+            # This needs to happen after the queryset has been filtered, but before
+            # it's paginated with the window function.
+            queryset.annotate(
+                **{
+                    optimizer_settings.OPTIMIZER_PREFETCH_COUNT_KEY: SubqueryCount(
+                        queryset.filter(**{field_name: models.OuterRef(field_name)}),
+                    ),
+                },
+            )
             # Add a row number to the queryset, and limit the rows for each
-            # partition to based on the given pagination arguments.
-            queryset.alias(
+            # partition based on the given pagination arguments.
+            .alias(
                 _row_number=models.Window(
                     expression=RowNumber(),
                     partition_by=models.F(field_name),
                     order_by=order_by,
                 )
-            ).filter(_row_number__gte=cut.start, _row_number__lte=cut.stop)
+            )
+            .filter(_row_number__gte=cut.start, _row_number__lte=cut.stop)
         )
 
     def get_filtered_queryset(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
