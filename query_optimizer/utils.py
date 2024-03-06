@@ -7,19 +7,19 @@ from django.db.models import ForeignKey, QuerySet
 from graphene import Connection
 from graphene.utils.str_converters import to_snake_case
 from graphene_django.utils import DJANGO_FILTER_INSTALLED
-from graphql import FieldNode, GraphQLField, GraphQLObjectType, GraphQLSchema, get_argument_values
+from graphql import FieldNode, FragmentSpreadNode, GraphQLField, InlineFragmentNode, get_argument_values
 from graphql.execution.execute import get_field_def
 
+from .errors import OptimizerError
 from .settings import optimizer_settings
 from .typing import GraphQLFilterInfo, overload
 
 if TYPE_CHECKING:
-    from graphene.types.definitions import GrapheneObjectType
+    from graphene.types.definitions import GrapheneObjectType, GrapheneUnionType
     from graphene_django import DjangoObjectType
     from graphql import GraphQLOutputType, SelectionNode
 
     from .typing import (
-        Any,
         FieldNodes,
         GQLInfo,
         ModelField,
@@ -170,71 +170,31 @@ def calculate_queryset_slice(
 
 def get_filter_info(info: GQLInfo) -> GraphQLFilterInfo:
     """Find filter arguments from the GraphQL query."""
-    args = _get_arguments(info.field_nodes, info.variable_values, info.parent_type, info.schema)
+    args = _find_filtering_arguments(info.field_nodes, info.parent_type, info)  # type: ignore[arg-type]
     if not args:
         return {}
     return args[to_snake_case(info.field_name)]
 
 
-def _get_arguments(
+def _find_filtering_arguments(
     field_nodes: FieldNodes,
-    variable_values: dict[str, Any],
-    parent: GraphQLObjectType,
-    schema: GraphQLSchema,
+    parent: Union[GrapheneObjectType, GrapheneUnionType],
+    info: GQLInfo,
 ) -> dict[str, GraphQLFilterInfo]:
     arguments: dict[str, GraphQLFilterInfo] = {}
-    for field_node in field_nodes:
-        # TODO: Support for fragments
+    for selection in field_nodes:
+        if isinstance(selection, FieldNode):
+            _find_filter_info_from_field_node(selection, parent, arguments, info)
 
-        if not isinstance(field_node, FieldNode):  # pragma: no cover
-            continue
+        elif isinstance(selection, FragmentSpreadNode):
+            _find_filter_info_from_fragment_spread(selection, parent, arguments, info)
 
-        field_def: Optional[GraphQLField] = get_field_def(schema, parent, field_node)
-        if field_def is None:  # pragma: no cover
-            continue
+        elif isinstance(selection, InlineFragmentNode):
+            _find_filter_info_from_inline_fragment(selection, parent, arguments, info)
 
-        name = to_snake_case(field_node.name.value)
-        filters = get_argument_values(type_def=field_def, node=field_node, variable_values=variable_values)
-
-        new_parent = get_underlying_type(field_def.type)
-
-        # If the field is a connection, we need to go deeper to get the actual field
-        if is_connection := issubclass(getattr(new_parent, "graphene_type", type(None)), Connection):
-            # Find the actual parent object type.
-            field_def = new_parent.fields["edges"]
-            new_parent = get_underlying_type(field_def.type)
-            field_def = new_parent.fields["node"]
-            new_parent = get_underlying_type(field_def.type)
-
-            # Find the actual field node.
-            gen = (selection for selection in field_node.selection_set.selections if selection.name.value == "edges")
-            field_node: Optional[FieldNode] = next(gen, None)  # noqa: PLW2901
-            # Edges was not requested, so we can skip this field
-            if field_node is None:
-                continue
-
-            gen = (selection for selection in field_node.selection_set.selections if selection.name.value == "node")
-            field_node: Optional[FieldNode] = next(gen, None)  # noqa: PLW2901
-            # Node was not requested, so we can skip this field
-            if field_node is None:
-                continue
-
-        arguments[name] = info = GraphQLFilterInfo(
-            name=new_parent.name,
-            filters=filters,
-            children={},
-            filterset_class=None,
-            is_connection=is_connection,
-        )
-
-        if DJANGO_FILTER_INSTALLED and hasattr(new_parent, "graphene_type"):
-            object_type = new_parent.graphene_type
-            info["filterset_class"] = getattr(object_type._meta, "filterset_class", None)
-
-        if field_node.selection_set is not None:
-            result = _get_arguments(field_node.selection_set.selections, variable_values, new_parent, schema)
-            if result:
-                info["children"] = result
+        else:  # pragma: no cover
+            msg = f"Unhandled selection node: '{selection}'"
+            raise OptimizerError(msg)
 
     return {
         name: field
@@ -243,3 +203,85 @@ def _get_arguments(
         # Also preserve fields that are connections, so that default limiting can be applied.
         if field["filters"] or field["children"] or field["is_connection"]
     }
+
+
+def _find_filter_info_from_field_node(
+    selection: FieldNode,
+    parent: GrapheneObjectType,
+    arguments: dict[str, GraphQLFilterInfo],
+    info: GQLInfo,
+) -> None:
+    field_def: Optional[GraphQLField] = get_field_def(info.schema, parent, selection)
+    if field_def is None:  # pragma: no cover
+        return
+
+    name = to_snake_case(selection.name.value)
+    filters = get_argument_values(type_def=field_def, node=selection, variable_values=info.variable_values)
+
+    new_parent = get_underlying_type(field_def.type)
+
+    # If the field is a connection, we need to go deeper to get the actual field
+    if is_connection := issubclass(getattr(new_parent, "graphene_type", type(None)), Connection):
+        # Find the actual parent object type.
+        field_def = new_parent.fields["edges"]
+        new_parent = get_underlying_type(field_def.type)
+        field_def = new_parent.fields["node"]
+        new_parent = get_underlying_type(field_def.type)
+
+        # Find the actual field node.
+        gen = (selection for selection in selection.selection_set.selections if selection.name.value == "edges")
+        selection: Optional[FieldNode] = next(gen, None)
+        # Edges was not requested, so we can skip this field
+        if selection is None:
+            return
+
+        gen = (selection for selection in selection.selection_set.selections if selection.name.value == "node")
+        selection: Optional[FieldNode] = next(gen, None)
+        # Node was not requested, so we can skip this field
+        if selection is None:
+            return
+
+    arguments[name] = filter_info = GraphQLFilterInfo(
+        name=new_parent.name,
+        filters=filters,
+        children={},
+        filterset_class=None,
+        is_connection=is_connection,
+    )
+
+    if DJANGO_FILTER_INSTALLED and hasattr(new_parent, "graphene_type"):
+        object_type = new_parent.graphene_type
+        filter_info["filterset_class"] = getattr(object_type._meta, "filterset_class", None)
+
+    if selection.selection_set is not None:
+        result = _find_filtering_arguments(selection.selection_set.selections, new_parent, info)
+        if result:
+            filter_info["children"] = result
+
+
+def _find_filter_info_from_fragment_spread(
+    selection: FragmentSpreadNode,
+    parent: GrapheneObjectType,
+    arguments: dict[str, GraphQLFilterInfo],
+    info: GQLInfo,
+) -> None:
+    graphql_name = selection.name.value
+    field_node = info.fragments[graphql_name]
+    selections = field_node.selection_set.selections
+    arguments.update(_find_filtering_arguments(selections, parent, info))
+
+
+def _find_filter_info_from_inline_fragment(
+    selection: InlineFragmentNode,
+    parent: GrapheneUnionType,
+    arguments: dict[str, GraphQLFilterInfo],
+    info: GQLInfo,
+) -> None:
+    fragment_type_name = selection.type_condition.name.value
+    gen = (t for t in parent.types if t.name == fragment_type_name)
+    selection_graphql_field: Optional[GrapheneObjectType] = next(gen, None)
+    if selection_graphql_field is None:  # pragma: no cover
+        return
+
+    selections = selection.selection_set.selections
+    arguments.update(_find_filtering_arguments(selections, selection_graphql_field, info))

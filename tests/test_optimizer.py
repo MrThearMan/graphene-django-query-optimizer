@@ -806,9 +806,7 @@ def test_optimizer__relay_connection_nested__filtered(client_query):
             edges {
               node {
                 id
-                housingCompanies(
-                  name_Iexact: "%s"
-                ) {
+                housingCompanies(name_Iexact: "%s") {
                   edges {
                     node {
                       name
@@ -832,6 +830,47 @@ def test_optimizer__relay_connection_nested__filtered(client_query):
     # 1 query for fetching Property Managers
     # 1 query for fetching Housing Companies
     assert queries == 3, results.log
+    # Check that the filter is actually applied
+    assert '"example_housingcompany"."name" LIKE' in results.queries[2], results.log
+
+
+def test_optimizer__relay_connection_nested__filtered_fragment_spread(client_query):
+    name = HousingCompany.objects.values_list("name", flat=True).first()
+    query = """
+        fragment Companies on PropertyManagerNode {
+          housingCompanies(name_Iexact: "%s") {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+        query {
+          pagedPropertyManagers {
+            edges {
+              node {
+                id
+                ...Companies
+              }
+            }
+          }
+        }
+    """ % (name,)
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting Property Managers
+    # 1 query for fetching Property Managers
+    # 1 query for fetching Housing Companies
+    assert queries == 3, results.log
+    # Check that the filter is actually applied
+    assert '"example_housingcompany"."name" LIKE' in results.queries[2], results.log
 
 
 def test_optimizer__custom_fields(client_query):
