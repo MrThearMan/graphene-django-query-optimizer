@@ -198,11 +198,28 @@ def _get_arguments(
 
         # If the field is a connection, we need to go deeper to get the actual field
         if is_connection := issubclass(getattr(new_parent, "graphene_type", type(None)), Connection):
+            # Find the actual parent object type.
             field_def = new_parent.fields["edges"]
             new_parent = get_underlying_type(field_def.type)
             field_def = new_parent.fields["node"]
             new_parent = get_underlying_type(field_def.type)
-            field_node = field_node.selection_set.selections[0].selection_set.selections[0]  # noqa: PLW2901
+
+            # Find the actual field node.
+            selections = field_node.selection_set.selections
+            field_node: Optional[FieldNode] = next(  # noqa: PLW2901
+                (selection for selection in selections if selection.name.value == "edges"), None
+            )
+            # Edges was not requested, so we can skip this field
+            if field_node is None:
+                continue
+
+            selections = field_node.selection_set.selections
+            field_node: Optional[FieldNode] = next(  # noqa: PLW2901
+                (selection for selection in selections if selection.name.value == "node"), None
+            )
+            # Node was not requested, so we can skip this field
+            if field_node is None:
+                continue
 
         arguments[name] = info = GraphQLFilterInfo(
             name=new_parent.name,
