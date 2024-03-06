@@ -122,15 +122,13 @@ def create_housing_companies(
     *,
     number: int = 20,
 ) -> list[HousingCompany]:
-    property_managers_loop = cycle(property_managers)
-
     housing_companies: list[HousingCompany] = [
         HousingCompany(
             name=faker.company(),
             street_address=faker.street_name(),
             postal_code=random.choice(postal_codes),
             city=faker.city(),
-            property_manager=next(property_managers_loop),
+            property_manager=random.choice(property_managers),
         )
         for _ in range(number)
     ]
