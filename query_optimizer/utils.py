@@ -184,6 +184,8 @@ def _get_arguments(
 ) -> dict[str, GraphQLFilterInfo]:
     arguments: dict[str, GraphQLFilterInfo] = {}
     for field_node in field_nodes:
+        # TODO: Support for fragments
+
         if not isinstance(field_node, FieldNode):  # pragma: no cover
             continue
 
@@ -205,18 +207,14 @@ def _get_arguments(
             new_parent = get_underlying_type(field_def.type)
 
             # Find the actual field node.
-            selections = field_node.selection_set.selections
-            field_node: Optional[FieldNode] = next(  # noqa: PLW2901
-                (selection for selection in selections if selection.name.value == "edges"), None
-            )
+            gen = (selection for selection in field_node.selection_set.selections if selection.name.value == "edges")
+            field_node: Optional[FieldNode] = next(gen, None)  # noqa: PLW2901
             # Edges was not requested, so we can skip this field
             if field_node is None:
                 continue
 
-            selections = field_node.selection_set.selections
-            field_node: Optional[FieldNode] = next(  # noqa: PLW2901
-                (selection for selection in selections if selection.name.value == "node"), None
-            )
+            gen = (selection for selection in field_node.selection_set.selections if selection.name.value == "node")
+            field_node: Optional[FieldNode] = next(gen, None)  # noqa: PLW2901
             # Node was not requested, so we can skip this field
             if field_node is None:
                 continue

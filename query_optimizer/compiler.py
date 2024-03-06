@@ -239,8 +239,10 @@ class OptimizationCompiler:
         if selection.selection_set is None:  # pragma: no cover
             return
 
-        node: FieldNode = selection.selection_set.selections[0]  # type: ignore[assignment]
-        if node.selection_set is None:  # page info
+        gen = (selection for selection in selection.selection_set.selections if selection.name.value == "node")
+        node: Optional[FieldNode] = next(gen, None)
+        # Node was not requested, or nothing was requested from it, so we can skip this field
+        if node is None or node.selection_set is None:
             return
 
         edges_field = field_type.fields[selection.name.value]

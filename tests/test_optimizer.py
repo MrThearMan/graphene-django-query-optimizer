@@ -378,6 +378,35 @@ def test_optimizer__relay_connection__custom_connection_field_items_before_edges
     assert queries == 2, results.log
 
 
+def test_optimizer__relay_connection__cursor_before_node(client_query):
+    query = """
+        query {
+          pagedApartments {
+            edges {
+              cursor
+              node {
+                id
+                building {
+                  name
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting Apartments
+    # 1 query for fetching Apartments and related Buildings
+    assert queries == 2, results.log
+
+
 @pytest.mark.skipif(
     condition=graphene_django.__version__.startswith("3.0."),
     reason="Issues in 'graphene_django' <3.1 with two GraphQLObjectTypes for one Model",
