@@ -53,6 +53,7 @@ from tests.example.models import (
     ReverseOneToOneToReverseOneToMany,
     ReverseOneToOneToReverseOneToOne,
     Sale,
+    DeveloperProxy,
 )
 
 __all__ = [
@@ -254,7 +255,16 @@ class IsTypeOfProxyPatch:
         return super().is_type_of(root, info)
 
 
+class DeveloperNode(IsTypeOfProxyPatch, DjangoObjectType):
+    class Meta:
+        model = DeveloperProxy
+        interfaces = (relay.Node,)
+        connection_class = CustomConnection
+
+
 class ApartmentNode(IsTypeOfProxyPatch, DjangoObjectType):
+    sales = DjangoListField(SaleType)
+
     class Meta:
         model = ApartmentProxy
         max_complexity = 10
@@ -328,6 +338,7 @@ class HousingCompanyFilterSet(FilterSet):
 
 class HousingCompanyNode(IsTypeOfProxyPatch, DjangoObjectType):
     real_estates = DjangoConnectionField(RealEstateNode)
+    developers = DjangoConnectionField(DeveloperNode)
 
     class Meta:
         model = HousingCompanyProxy

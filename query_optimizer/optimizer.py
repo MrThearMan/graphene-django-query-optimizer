@@ -171,7 +171,9 @@ class QueryOptimizer:
             optimizer_logger.warning(msg)
             return queryset
 
-        field_name: str = field.remote_field.attname
+        field_name: str = (
+            field.remote_field.name if isinstance(field, models.ManyToManyField) else field.remote_field.attname
+        )
         order_by: Optional[list[str]] = (
             # Use the `order_by` from the filter info, if available
             [x for x in filter_info.get("filters", {}).get("order_by", "").split(",") if x]
