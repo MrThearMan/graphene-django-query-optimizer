@@ -281,7 +281,7 @@ class BuildingFilterSet(FilterSet):
 
     class Meta:
         model = Building
-        fields = ["name", "street_address"]
+        fields = ["id", "name", "street_address"]
 
 
 class BuildingNode(IsTypeOfProxyPatch, DjangoObjectType):

@@ -6,7 +6,7 @@ from graphql_relay import to_global_id
 from graphql_relay.utils import unbase64
 
 from tests.example.models import Apartment, Building, HousingCompany, PropertyManager
-from tests.example.types import ApartmentNode
+from tests.example.types import ApartmentNode, BuildingNode
 from tests.example.utils import capture_database_queries
 
 pytestmark = pytest.mark.django_db
@@ -74,6 +74,74 @@ def test_optimizer__relay_node__deep(client_query):
     # 1 query for fetching Sales
     # 1 query for fetching Ownerships and related Owners
     assert queries == 3, results.log
+
+
+def test_optimizer__relay_node__object_type_has_id_filter(client_query):
+    building_id: int = Building.objects.values_list("id", flat=True).first()
+    global_id = to_global_id(str(BuildingNode), building_id)
+
+    # Test that for nodes, we don't run the `filterset_class` filters.
+    # This would result in an error, since the ID for nodes is a global ID, and not a primary key.
+    query = """
+        query {
+          building(id: "%s") {
+            id
+          }
+        }
+    """ % (global_id,)
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for fetching Buildings
+    assert queries == 1, results.log
+
+
+def test_optimizer__relay_node__object_type_has_id_filter__nested_filtering(client_query):
+    buildings = Building.objects.alias(count=Count("apartments")).filter(count__gte=2)
+    building_id: int = buildings.values_list("id", flat=True).first()
+
+    apartments = list(Apartment.objects.filter(building_id=building_id))
+    assert len(apartments) >= 2
+
+    global_id = to_global_id(str(BuildingNode), building_id)
+
+    # Check that for nested connections in relay nodes, we still run the filters.
+    query = """
+        query {
+          building(id: "%s") {
+            id
+            apartments(streetAddress:"%s") {
+              edges {
+                node {
+                  id
+                  streetAddress
+                }
+              }
+            }
+          }
+        }
+    """ % (global_id, apartments[0].street_address)
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for fetching Buildings
+    # 1 query for fetching Apartments
+    assert queries == 2, results.log
+
+    # Check that the nested filter is actually applied
+    edges = content["data"]["building"]["apartments"]["edges"]
+    assert len(edges) == 1
+    assert edges[0]["node"]["streetAddress"] == apartments[0].street_address
 
 
 def test_optimizer__relay_connection(client_query):

@@ -122,3 +122,4 @@ class GraphQLFilterInfo(TypedDict, total=False):
     children: dict[str, GraphQLFilterInfo]
     filterset_class: Optional[type[FilterSet]]
     is_connection: bool
+    is_node: bool

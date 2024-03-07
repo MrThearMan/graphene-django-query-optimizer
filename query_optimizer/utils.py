@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from django.db import models
 from django.db.models import ForeignKey, QuerySet
 from graphene import Connection
+from graphene.relay.node import AbstractNode
 from graphene.utils.str_converters import to_snake_case
 from graphene_django.utils import DJANGO_FILTER_INSTALLED
 from graphql import FieldNode, FragmentSpreadNode, GraphQLField, InlineFragmentNode, get_argument_values
@@ -222,6 +223,9 @@ def _find_filter_info_from_field_node(
 
     new_parent = get_underlying_type(field_def.type)
 
+    # If the field is a relay node field, its `id` field should not be counted as a filter.
+    is_node = issubclass(getattr(getattr(field_def.resolve, "func", None), "__self__", type(None)), AbstractNode)
+
     # If the field is a connection, we need to go deeper to get the actual field
     if is_connection := issubclass(getattr(new_parent, "graphene_type", type(None)), Connection):
         # Find the actual parent object type.
@@ -233,7 +237,7 @@ def _find_filter_info_from_field_node(
         # Find the actual field node.
         gen = (selection for selection in selection.selection_set.selections if selection.name.value == "edges")
         selection: Optional[FieldNode] = next(gen, None)
-        # Edges was not requested, so we can skip this field
+        # Edges were not requested, so we can skip this field
         if selection is None:
             return
 
@@ -245,10 +249,11 @@ def _find_filter_info_from_field_node(
 
     arguments[name] = filter_info = GraphQLFilterInfo(
         name=new_parent.name,
-        filters=filters,
+        filters={} if is_node else filters,
         children={},
         filterset_class=None,
         is_connection=is_connection,
+        is_node=is_node,
     )
 
     if DJANGO_FILTER_INSTALLED and hasattr(new_parent, "graphene_type"):
