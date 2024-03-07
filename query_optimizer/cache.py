@@ -87,7 +87,7 @@ def store_in_query_cache(
     """
     query_cache = get_query_cache(key, schema)
     queryset = list(queryset)  # the database query will occur here
-    if not queryset:  # pragma: no cover
+    if not queryset:
         return
 
     for item in queryset:

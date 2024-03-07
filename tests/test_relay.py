@@ -224,36 +224,6 @@ def test_optimizer__relay_connection__no_node_from_edges(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer__relay_connection__total_count_and_edge_count__before_edges(client_query):
-    query = """
-        query {
-          pagedApartments {
-            totalCount
-            edgeCount
-            edges {
-              node {
-                id
-              }
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    assert content["data"]["pagedApartments"]["totalCount"] == Apartment.objects.count()
-    assert content["data"]["pagedApartments"]["edgeCount"] == min(Apartment.objects.count(), 100)
-
-    queries = len(results.queries)
-    # 1 query for counting Apartments
-    # 1 query for fetching Apartments
-    assert queries == 2, results.log
-
-
 def test_optimizer__relay_connection__cursor_before_node(client_query):
     query = """
         query {
@@ -283,12 +253,51 @@ def test_optimizer__relay_connection__cursor_before_node(client_query):
     assert queries == 2, results.log
 
 
-def test_optimizer__relay_connection__total_count_and_edge_count__nested(client_query):
+def test_optimizer__relay_connection__total_count_and_edge_count_before_edges(client_query):
+    query = """
+        query {
+          pagedPropertyManagers {
+            totalCount
+            edgeCount
+            edges {
+              node {
+                id
+                housingCompanies {
+                  edges {
+                    node {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    assert content["data"]["pagedPropertyManagers"]["totalCount"] == PropertyManager.objects.count()
+    assert content["data"]["pagedPropertyManagers"]["edgeCount"] == min(PropertyManager.objects.count(), 100)
+
+    queries = len(results.queries)
+    # 1 query for counting Property Managers
+    # 1 query for fetching Property Managers
+    # 1 query for fetching Housing Companies
+    assert queries == 3, results.log
+
+    # Check that nested connection does not fetch the total count when not selected
+    assert "SELECT COUNT(*) FROM" not in results.queries[2], results.log
+
+
+def test_optimizer__relay_connection__total_count_and_edge_count_before_edges__nested(client_query):
     query = """
         query {
           pagedPropertyManagers(first:2) {
-            totalCount
-            edgeCount
             edges {
               node {
                 id
@@ -313,9 +322,6 @@ def test_optimizer__relay_connection__total_count_and_edge_count__nested(client_
     content = json.loads(response.content)
     assert "errors" not in content, content["errors"]
 
-    assert content["data"]["pagedPropertyManagers"]["totalCount"] == PropertyManager.objects.count()
-    assert content["data"]["pagedPropertyManagers"]["edgeCount"] == 2
-
     assert len(content["data"]["pagedPropertyManagers"]["edges"]) == 2
 
     node_1 = content["data"]["pagedPropertyManagers"]["edges"][0]["node"]
@@ -338,6 +344,9 @@ def test_optimizer__relay_connection__total_count_and_edge_count__nested(client_
     # 1 query for fetching Property Managers
     # 1 query for fetching Housing Companies (and counting them in a subquery)
     assert queries == 3, results.log
+
+    # Check that nested connection fetches the total count when selected
+    assert "SELECT COUNT(*) FROM" in results.queries[2], results.log
 
 
 def test_optimizer__relay_connection__filtering(client_query):

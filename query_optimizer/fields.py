@@ -80,7 +80,7 @@ class RelatedField(graphene.Field):
         field_name = to_snake_case(info.field_name)
         # Reverse object should be optimized to the root model.
         reverse_object: Optional[models.Model] = getattr(root, field_name, None)
-        if reverse_object is None:  # pragma: no cover
+        if reverse_object is None:
             return None
         return self.underlying_type.get_node(info, reverse_object.pk)
 
@@ -233,7 +233,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         except OptimizerError:  # pragma: no cover
             raise
 
-        except Exception as error:  # pragma: no cover  # noqa: BLE001
+        except Exception as error:  # noqa: BLE001  # pragma: no cover
             if not optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
                 raise
 
@@ -270,25 +270,25 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         return maybe_queryset(iterable)
 
     @cached_property
-    def type(self) -> Union[Type[Connection], graphene.NonNull]:
+    def type(self) -> Union[Type[Connection], graphene.NonNull]:  # pragma: no cover
         type_ = super().type
         non_null = isinstance(type_, graphene.NonNull)
-        if non_null:  # pragma: no cover
+        if non_null:
             type_ = type_.of_type
 
         connection_type: Optional[Type[Connection]] = type_._meta.connection
-        if connection_type is None:  # pragma: no cover
+        if connection_type is None:
             msg = f"The type {type_.__name__} doesn't have a connection"
             raise ValueError(msg)
 
-        if non_null:  # pragma: no cover
+        if non_null:
             return graphene.NonNull(connection_type)
         return connection_type
 
     @cached_property
-    def connection_type(self) -> Type[Connection]:
+    def connection_type(self) -> Type[Connection]:  # pragma: no cover
         type_ = self.type
-        if isinstance(type_, graphene.NonNull):  # pragma: no cover
+        if isinstance(type_, graphene.NonNull):
             return type_.of_type
         return type_
 

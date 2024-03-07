@@ -46,7 +46,7 @@ def db_query_logger(
     if not sql.startswith("SAVEPOINT") and not sql.startswith("RELEASE SAVEPOINT"):
         try:
             query_cache.append(sql % params)
-        except TypeError:  # pragma: no cover
+        except TypeError:
             query_cache.append(sql)
     return execute(sql, params, many, context)
 

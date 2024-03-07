@@ -24,6 +24,6 @@ def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
             argvalues=values,
             ids=list(__tests),
         )
-    except AttributeError as error:  # pragma: no cover
+    except AttributeError as error:
         msg = "Improper configuration. Did you use a NamedTuple for TNamedTuple?"
         raise RuntimeError(msg) from error

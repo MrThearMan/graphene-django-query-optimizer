@@ -34,6 +34,8 @@ class DefaultSettings(NamedTuple):
     """If there is an unexpected error, should the optimizer skip optimization (True) or throw an error (False)?"""
     DEFAULT_FILTERSET_CLASS: str = ""
     """The default filterset class to use."""
+    TOTAL_COUNT_FIELD: str = "totalCount"
+    """The field name to use for fetching total count in connection fields."""
 
 
 DEFAULTS: dict[str, Any] = DefaultSettings()._asdict()

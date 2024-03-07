@@ -53,6 +53,7 @@ class QueryOptimizer:
         self.select_related: dict[str, QueryOptimizer] = {}
         self.prefetch_related: dict[str, QueryOptimizer] = {}
         self._cache_key: Optional[str] = None  # generated during optimization process
+        self.total_count: bool = False
 
     def optimize_queryset(
         self,
@@ -137,10 +138,16 @@ class QueryOptimizer:
         filter_info = filter_info.get("children", {}).get(name, {})
         queryset = optimizer.model._default_manager.all()
         queryset = optimizer.optimize_queryset(queryset, filter_info=filter_info)
-        queryset = self.paginate_prefetch_queryset(queryset, name, filter_info=filter_info)
+        queryset = optimizer.paginate_prefetch_queryset(self.model, queryset, name, filter_info=filter_info)
         results.prefetch_related.append(Prefetch(name, queryset))
 
-    def paginate_prefetch_queryset(self, queryset: QuerySet, name: str, filter_info: GraphQLFilterInfo) -> QuerySet:
+    def paginate_prefetch_queryset(
+        self,
+        parent_model: type[Model],
+        queryset: QuerySet[TModel],
+        name: str,
+        filter_info: GraphQLFilterInfo,
+    ) -> QuerySet[TModel]:
         """Paginate prefetch queryset based on the given filter info after it has been filtered."""
         # Only paginate nested connection fields.
         if not filter_info.get("is_connection", False):
@@ -165,9 +172,9 @@ class QueryOptimizer:
 
         try:
             # Try to find the prefetch join field from the model to use for partitioning.
-            field = self.model._meta.get_field(name)
-        except FieldDoesNotExist:  # pragma: no cover
-            msg = f"Cannot find field {name!r} on model {self.model.__name__!r}. Cannot optimize nested pagination."
+            field = parent_model._meta.get_field(name)
+        except FieldDoesNotExist:
+            msg = f"Cannot find field {name!r} on model {parent_model.__name__!r}. Cannot optimize nested pagination."
             optimizer_logger.warning(msg)
             return queryset
 
@@ -183,17 +190,21 @@ class QueryOptimizer:
             or None
         )
 
-        return (
-            # Annotate the models in the queryset with the total count for each partition.
-            # This needs to happen after the queryset has been filtered, but before
-            # it's paginated with the window function.
-            queryset.annotate(
+        if self.total_count:
+            # If user needs to know the total count for a nested connection field,
+            # annotate the models in the queryset with the total count for each partition.
+            # This is optional, since there is a performance impact due to needing
+            # to use a subquery for each partition.
+            queryset = queryset.annotate(
                 **{
                     optimizer_settings.OPTIMIZER_PREFETCH_COUNT_KEY: SubqueryCount(
                         queryset.filter(**{field_name: models.OuterRef(field_name)}),
                     ),
                 },
             )
+
+        return (
+            queryset
             # Add a row number to the queryset, and limit the rows for each
             # partition based on the given pagination arguments.
             .alias(
@@ -202,8 +213,7 @@ class QueryOptimizer:
                     partition_by=models.F(field_name),
                     order_by=order_by,
                 )
-            )
-            .filter(_row_number__gte=cut.start, _row_number__lte=cut.stop)
+            ).filter(_row_number__gte=cut.start, _row_number__lte=cut.stop)
         )
 
     def get_filtered_queryset(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
