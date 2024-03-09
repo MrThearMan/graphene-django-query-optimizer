@@ -16,7 +16,7 @@ from .cache import store_in_query_cache
 from .compiler import OptimizationCompiler, optimize
 from .errors import OptimizerError
 from .settings import optimizer_settings
-from .utils import calculate_queryset_slice, get_underlying_type, optimizer_logger
+from .utils import calculate_queryset_slice, get_underlying_type, is_optimized, optimizer_logger
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
@@ -207,24 +207,30 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         max_complexity: Optional[int] = getattr(self.underlying_type._meta, "max_complexity", None)
 
         try:
+            # Note if the queryset has already been optimized.
+            already_optimized = is_optimized(queryset)
+
             optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
             if optimizer is not None:
                 queryset = optimizer.optimize_queryset(queryset)
 
             # Queryset optimization contains filtering, so we count after optimization.
-            count: Optional[int] = None
-            if queryset._result_cache:  # not None and not empty
+            pagination_args["size"] = count = (
+                queryset.count()
+                if not already_optimized
                 # If this is a nested connection field, prefetch queryset models should have been
-                # annotated with the queryset count (just pick it from the first one).
-                count = getattr(queryset._result_cache[0], optimizer_settings.OPTIMIZER_PREFETCH_COUNT_KEY, None)
-            if count is None:
-                count = queryset.count()
-
-            pagination_args["size"] = count
-
-            # Slice a queryset using the calculated pagination arguments.
+                # annotated with the queryset count (pick it from the first one).
+                else getattr(
+                    next(iter(queryset._result_cache), None),
+                    optimizer_settings.PREFETCH_COUNT_KEY,
+                    0,  # QuerySet result cache is empty -> count is 0.
+                )
+            )
             cut = calculate_queryset_slice(**pagination_args)
-            queryset = queryset[cut]
+
+            # Prefetch queryset has already been sliced.
+            if not already_optimized:
+                queryset = queryset[cut]
 
             # Store data in cache after pagination
             if optimizer:
@@ -256,7 +262,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
                 startCursor=edges[0].cursor if edges else None,
                 endCursor=edges[-1].cursor if edges else None,
                 hasPreviousPage=cut.start > 0,
-                hasNextPage=cut.stop <= count,
+                hasNextPage=cut.stop < count,
             ),
         )
         connection.iterable = queryset

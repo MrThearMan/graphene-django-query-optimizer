@@ -402,7 +402,7 @@ def test_optimizer__relay_connection__total_count_and_edge_count_before_edges__n
     count_2 = PropertyManager.objects.filter(pk=pk_2).first().housing_companies.count()
 
     assert node_1["housingCompanies"]["totalCount"] == count_1
-    assert node_2["housingCompanies"]["edgeCount"] == 1
+    assert node_1["housingCompanies"]["edgeCount"] == 1
 
     assert node_2["housingCompanies"]["totalCount"] == count_2
     assert node_2["housingCompanies"]["edgeCount"] == 1
@@ -587,7 +587,7 @@ def test_optimizer__relay_connection__nested__many_to_many(client_query):
 def test_optimizer__relay_connection__nested__paginated(client_query):
     query = """
         query {
-          pagedBuildings(first: 10) {
+          pagedBuildings(first: 5) {
             edges {
               node {
                 id
@@ -613,7 +613,7 @@ def test_optimizer__relay_connection__nested__paginated(client_query):
     buildings = content["data"]["pagedBuildings"]["edges"]
 
     # Check that filtering worked
-    assert len(buildings) == 10
+    assert len(buildings) == 5
     assert all(len(building["node"]["apartments"]["edges"]) == 1 for building in buildings), buildings
 
     queries = len(results.queries)
@@ -715,6 +715,53 @@ def test_optimizer__relay_connection__nested__paginated__custom_ordering(client_
         "ROW_NUMBER() OVER "
         '(PARTITION BY "example_housingcompany"."property_manager_id" '
         'ORDER BY "example_housingcompany"."street_address" DESC)'
+    )
+    assert match in results.queries[2], results.log
+
+
+def test_optimizer__relay_connection__nested__paginated__last(client_query):
+    query = """
+        query {
+          pagedBuildings(last: 5) {
+            edges {
+              node {
+                pk
+                apartments(last: 1) {
+                  edges {
+                    node {
+                      pk
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    buildings = content["data"]["pagedBuildings"]["edges"]
+
+    # Check that filtering worked
+    assert len(buildings) == 5
+    assert all(len(building["node"]["apartments"]["edges"]) == 1 for building in buildings), buildings
+
+    queries = len(results.queries)
+    # 1 query for counting Buildings
+    # 1 query for fetching Buildings
+    # 1 query for fetching Apartments
+    assert queries == 3, results.log
+    # Check that nested connection is limited with pagination
+    match = (
+        "ROW_NUMBER() OVER "
+        '(PARTITION BY "example_apartment"."building_id" '
+        'ORDER BY "example_apartment"."street_address", "example_apartment"."stair", '
+        '"example_apartment"."apartment_number" DESC)'
     )
     assert match in results.queries[2], results.log
 

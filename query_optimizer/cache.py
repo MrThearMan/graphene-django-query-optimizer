@@ -86,11 +86,11 @@ def store_in_query_cache(
                       are fetched on the model instances.
     """
     query_cache = get_query_cache(key, schema)
-    queryset = list(queryset)  # the database query will occur here
-    if not queryset:
+    items = list(queryset)  # the database query will occur here
+    if not items:
         return
 
-    for item in queryset:
+    for item in items:
         _add_item(query_cache, item, optimizer)
 
 

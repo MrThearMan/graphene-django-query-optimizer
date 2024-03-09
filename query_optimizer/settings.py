@@ -24,8 +24,14 @@ class DefaultSettings(NamedTuple):
     """Key to store fetched model instances under in the GraphQL schema extensions."""
     OPTIMIZER_MARK: str = "_optimized"
     """Key used mark if a queryset has been optimized by the query optimizer."""
-    OPTIMIZER_PREFETCH_COUNT_KEY: str = "_optimizer_count"
-    """Name used for annotating prefetched queryset total count."""
+    PREFETCH_COUNT_KEY: str = "_optimizer_count"
+    """Name used for annotating the prefetched queryset total count."""
+    PREFETCH_SLICE_START: str = "_optimizer_slice_start"
+    """Name used for aliasing the prefetched queryset slice start."""
+    PREFETCH_SLICE_STOP: str = "_optimizer_slice_stop"
+    """Name used for aliasing the prefetched queryset slice end."""
+    PREFETCH_PARTITION_INDEX: str = "_optimizer_partition_index"
+    """Name used for aliasing the prefetched queryset partition index."""
     DISABLE_ONLY_FIELDS_OPTIMIZATION: bool = False
     """Disable optimizing fetched fields with `queryset.only()`."""
     MAX_COMPLEXITY: int = 10

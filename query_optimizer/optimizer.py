@@ -12,7 +12,15 @@ from graphene_django.registry import get_global_registry
 from graphene_django.settings import graphene_settings
 
 from .settings import optimizer_settings
-from .utils import SubqueryCount, calculate_queryset_slice, get_filter_info, mark_optimized, optimizer_logger
+from .utils import (
+    SubqueryCount,
+    add_slice_to_queryset,
+    calculate_queryset_slice,
+    calculate_slice_for_queryset,
+    get_filter_info,
+    mark_optimized,
+    optimizer_logger,
+)
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
@@ -168,8 +176,6 @@ class QueryOptimizer:
         if all(value is None for value in pagination_args.values()):  # pragma: no cover
             return queryset
 
-        cut = calculate_queryset_slice(**pagination_args)
-
         try:
             # Try to find the prefetch join field from the model to use for partitioning.
             field = parent_model._meta.get_field(name)
@@ -190,30 +196,51 @@ class QueryOptimizer:
             or None
         )
 
-        if self.total_count:
+        if self.total_count or pagination_args.get("last") is not None:
             # If the query asks for total count for a nested connection field,
+            # or is trying to limit the number of items from the end of the list,
             # annotate the models in the queryset with the total count for each partition.
             # This is optional, since there is a performance impact due to needing
             # to use a subquery for each partition.
             queryset = queryset.annotate(
                 **{
-                    optimizer_settings.OPTIMIZER_PREFETCH_COUNT_KEY: SubqueryCount(
+                    optimizer_settings.PREFETCH_COUNT_KEY: SubqueryCount(
                         queryset.filter(**{field_name: models.OuterRef(field_name)}),
                     ),
                 },
             )
+
+        if pagination_args.get("last") is not None:
+            queryset = calculate_slice_for_queryset(queryset, **pagination_args)
+        else:
+            cut = calculate_queryset_slice(**pagination_args)
+            queryset = add_slice_to_queryset(queryset, start=models.Value(cut.start), stop=models.Value(cut.stop))
 
         return (
             queryset
             # Add a row number to the queryset, and limit the rows for each
             # partition based on the given pagination arguments.
             .alias(
-                _row_number=models.Window(
-                    expression=RowNumber(),
-                    partition_by=models.F(field_name),
-                    order_by=order_by,
-                )
-            ).filter(_row_number__gte=cut.start, _row_number__lte=cut.stop)
+                **{
+                    optimizer_settings.PREFETCH_PARTITION_INDEX: (
+                        models.Window(
+                            expression=RowNumber(),
+                            partition_by=models.F(field_name),
+                            order_by=order_by,
+                        )
+                        - models.Value(1)  # Start from zero.
+                    )
+                },
+            ).filter(
+                **{
+                    f"{optimizer_settings.PREFETCH_PARTITION_INDEX}__gte": models.F(
+                        optimizer_settings.PREFETCH_SLICE_START
+                    ),
+                    f"{optimizer_settings.PREFETCH_PARTITION_INDEX}__lt": models.F(
+                        optimizer_settings.PREFETCH_SLICE_STOP
+                    ),
+                }
+            )
         )
 
     def get_filtered_queryset(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:

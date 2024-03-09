@@ -40,6 +40,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     "SubqueryCount",
+    "add_slice_to_queryset",
+    "calculate_slice_for_queryset",
     "get_field_type",
     "get_filter_info",
     "get_selections",
@@ -169,6 +171,82 @@ def calculate_queryset_slice(
         start = stop - last
 
     return slice(start, stop)
+
+
+def calculate_slice_for_queryset(
+    queryset: QuerySet,
+    *,
+    after: Optional[int],
+    before: Optional[int],
+    first: Optional[int],
+    last: Optional[int],
+    size: int,
+) -> QuerySet:
+    """
+    Annotate queryset with pagination slice start and stop indexes.
+    This is the Django ORM equivalent of the `calculate_queryset_slice` function.
+    """
+    size_key = optimizer_settings.PREFETCH_COUNT_KEY
+    # If the queryset has not been annotated with the total count, add an alias with the provided size.
+    # (Since this is used in prefetch QuerySets, the provided size is likely wrong though.)
+    if size_key not in queryset.query.annotations:  # pragma: no cover
+        queryset = queryset.alias(**{size_key: models.Value(size)})
+
+    start = models.Value(0)
+    stop = models.F(optimizer_settings.PREFETCH_COUNT_KEY)
+
+    if after is not None:
+        start = models.Case(
+            models.When(
+                models.Q(**{f"{size_key}__lt": after}),
+                then=stop,
+            ),
+            default=models.Value(after),
+            output_field=models.IntegerField(),
+        )
+
+    if before is not None:
+        stop = models.Case(
+            models.When(
+                models.Q(**{f"{size_key}__lt": before}),
+                then=stop,
+            ),
+            default=models.Value(before),
+            output_field=models.IntegerField(),
+        )
+
+    if first is not None:
+        queryset = queryset.alias(**{f"{size_key}_size_1": stop - start})
+        stop = models.Case(
+            models.When(
+                models.Q(**{f"{size_key}_size_1__lt": first}),
+                then=stop,
+            ),
+            default=start + models.Value(first),
+            output_field=models.IntegerField(),
+        )
+
+    if last is not None:
+        queryset = queryset.alias(**{f"{size_key}_size_2": stop - start})
+        start = models.Case(
+            models.When(
+                models.Q(**{f"{size_key}_size_2__lt": last}),
+                then=start,
+            ),
+            default=stop - models.Value(last),
+            output_field=models.IntegerField(),
+        )
+
+    return add_slice_to_queryset(queryset, start=start, stop=stop)
+
+
+def add_slice_to_queryset(queryset: QuerySet, *, start: models.Expression, stop: models.Expression) -> QuerySet:
+    return queryset.alias(
+        **{
+            optimizer_settings.PREFETCH_SLICE_START: start,
+            optimizer_settings.PREFETCH_SLICE_STOP: stop,
+        },
+    )
 
 
 def get_filter_info(info: GQLInfo) -> GraphQLFilterInfo:
