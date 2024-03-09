@@ -8,6 +8,7 @@ from django.db.models import ForeignKey, QuerySet
 from graphene import Connection
 from graphene.relay.node import AbstractNode
 from graphene.utils.str_converters import to_snake_case
+from graphene_django.settings import graphene_settings
 from graphene_django.utils import DJANGO_FILTER_INSTALLED
 from graphql import FieldNode, FragmentSpreadNode, GraphQLField, InlineFragmentNode, get_argument_values
 from graphql.execution.execute import get_field_def
@@ -301,11 +302,18 @@ def _find_filter_info_from_field_node(
 
     new_parent = get_underlying_type(field_def.type)
 
-    # If the field is a relay node field, its `id` field should not be counted as a filter.
     is_node = issubclass(getattr(getattr(field_def.resolve, "func", None), "__self__", type(None)), AbstractNode)
+    is_connection = issubclass(getattr(new_parent, "graphene_type", type(None)), Connection)
+
+    # Find the field-specific limit, or use the default limit.
+    max_limit: Optional[int] = getattr(
+        getattr(parent.graphene_type, name, None),
+        "max_limit",
+        graphene_settings.RELAY_CONNECTION_MAX_LIMIT,
+    )
 
     # If the field is a connection, we need to go deeper to get the actual field
-    if is_connection := issubclass(getattr(new_parent, "graphene_type", type(None)), Connection):
+    if is_connection:
         # Find the actual parent object type.
         field_def = new_parent.fields["edges"]
         new_parent = get_underlying_type(field_def.type)
@@ -327,11 +335,13 @@ def _find_filter_info_from_field_node(
 
     arguments[name] = filter_info = GraphQLFilterInfo(
         name=new_parent.name,
+        # If the field is a relay node field, its `id` field should not be counted as a filter.
         filters={} if is_node else filters,
         children={},
         filterset_class=None,
         is_connection=is_connection,
         is_node=is_node,
+        max_limit=max_limit,
     )
 
     if DJANGO_FILTER_INSTALLED and hasattr(new_parent, "graphene_type"):

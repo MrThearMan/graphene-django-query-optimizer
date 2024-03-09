@@ -60,7 +60,7 @@ class QueryOptimizer:
         self.annotations: dict[str, Expression] = {}
         self.select_related: dict[str, QueryOptimizer] = {}
         self.prefetch_related: dict[str, QueryOptimizer] = {}
-        self._cache_key: Optional[str] = None  # generated during optimization process
+        self._cache_key: Optional[str] = None  # generated during the optimization process
         self.total_count: bool = False
 
     def optimize_queryset(
@@ -167,8 +167,7 @@ class QueryOptimizer:
             offset=filter_info.get("filters", {}).get("offset"),
             first=filter_info.get("filters", {}).get("first"),
             last=filter_info.get("filters", {}).get("last"),
-            # Just use `RELAY_CONNECTION_MAX_LIMIT` (ignore DjangoConnectionField.max_limit).
-            max_limit=graphene_settings.RELAY_CONNECTION_MAX_LIMIT,
+            max_limit=filter_info.get("max_limit", graphene_settings.RELAY_CONNECTION_MAX_LIMIT),
         )
 
         # If no pagination arguments are given, and `RELAY_CONNECTION_MAX_LIMIT` is `None`,

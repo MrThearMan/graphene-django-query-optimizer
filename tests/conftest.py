@@ -6,6 +6,7 @@ from django.test.client import Client
 from graphene_django.utils.testing import graphql_query
 
 from query_optimizer.typing import Callable
+from tests.example.types import BuildingNode
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tests.project.settings")
 
@@ -45,3 +46,13 @@ def client_query(client: Client) -> Callable[..., HttpResponse]:
         return graphql_query(*args, **kwargs, client=client)
 
     return func
+
+
+@pytest.fixture()
+def _set_building_node_apartments_max_limit() -> int:
+    limit = BuildingNode.apartments.max_limit
+    try:
+        BuildingNode.apartments.max_limit = 1
+        yield
+    finally:
+        BuildingNode.apartments.max_limit = limit

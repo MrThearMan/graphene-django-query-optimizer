@@ -123,3 +123,4 @@ class GraphQLFilterInfo(TypedDict, total=False):
     filterset_class: Optional[type[FilterSet]]
     is_connection: bool
     is_node: bool
+    max_limit: Optional[int]

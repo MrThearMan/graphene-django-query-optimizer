@@ -144,6 +144,9 @@ def test_optimizer__relay_node__object_type_has_id_filter__nested_filtering(clie
     assert edges[0]["node"]["streetAddress"] == apartments[0].street_address
 
 
+# Connection
+
+
 def test_optimizer__relay_connection(client_query):
     query = """
         query {
@@ -509,6 +512,9 @@ def test_optimizer__relay_connection__filtering_empty(client_query):
     assert queries == 1, results.log
 
 
+# Nested
+
+
 def test_optimizer__relay_connection__nested(client_query):
     query = """
         query {
@@ -839,3 +845,43 @@ def test_optimizer__relay_connection__nested__filtered_fragment_spread(client_qu
     assert queries == 3, results.log
     # Check that the filter is actually applied
     assert '"example_housingcompany"."name" LIKE' in results.queries[2], results.log
+
+
+@pytest.mark.usefixtures("_set_building_node_apartments_max_limit")
+def test_optimizer__relay_connection__nested__max_limit(client_query):
+    query = """
+        query {
+          pagedBuildings {
+            edges {
+              node {
+                id
+                apartments {
+                  edges {
+                    node {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    buildings = content["data"]["pagedBuildings"]["edges"]
+
+    print(json.dumps(buildings, indent=2))
+
+    assert all(len(building["node"]["apartments"]["edges"]) == 1 for building in buildings)
+
+    queries = len(results.queries)
+    # 1 query for counting Buildings
+    # 1 query for fetching Buildings
+    # 1 query for fetching nested Apartments
+    assert queries == 3, results.log
