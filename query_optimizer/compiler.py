@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import TYPE_CHECKING, Iterable, Optional, Union
 
+import graphene
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Expression, ForeignKey, Manager, ManyToOneRel, Model, QuerySet
 from django.db.models.constants import LOOKUP_SEP
@@ -214,7 +215,8 @@ class OptimizationCompiler:
 
         model_field_name, model_field = self.extract_model_field(model, selection_graphql_name)
         if model_field is None:
-            self.check_resolver_hints(selection_graphql_field, model, optimizer)
+            selection_field = getattr(field_type.graphene_type, to_snake_case(selection_graphql_name), None)
+            self.check_resolver_hints(selection_graphql_field, selection_field, model, optimizer)
             return
 
         if not model_field.is_relation or is_foreign_key_id(model_field, model_field_name):
@@ -371,16 +373,43 @@ class OptimizationCompiler:
 
         return model_field_name, None
 
-    def check_resolver_hints(self, field: GraphQLField, model: type[Model], optimizer: QueryOptimizer) -> None:
-        anns: Optional[dict[str, Expression]] = getattr(field.resolve, "annotations", None)
-        fields: Optional[tuple[str, ...]] = getattr(field.resolve, "fields", None)
+    def check_resolver_hints(
+        self,
+        graphql_field: GraphQLField,
+        graphene_field: Union[graphene.Field, graphene.Scalar, None],
+        model: type[Model],
+        optimizer: QueryOptimizer,
+    ) -> None:
+        if isinstance(graphene_field, graphene.Scalar):
+            resolver = graphql_field.resolve
+        elif isinstance(graphene_field, graphene.Field):
+            resolver = graphene_field.resolver
+        else:  # pragma: no cover
+            msg = f"Unhandled graphene field type: {graphene_field}"
+            raise OptimizerError(msg)
 
+        anns: dict[str, Expression] = getattr(resolver, "annotations", ())
         if anns:
             optimizer.annotations.update(anns)
-        if fields is None:
-            return
 
         model_fields: list[ModelField] = model._meta.get_fields()
+
+        relations: tuple[str, ...] = getattr(resolver, "relations", ())
+        if relations:
+            for relation in relations:
+                with suppress(FieldDoesNotExist):
+                    related_field = model._meta.get_field(relation)
+                    if is_to_one(related_field):
+                        hint_optimizer = QueryOptimizer(model=related_field.related_model, info=self.info)
+                        optimizer.select_related[relation] = hint_optimizer
+                    elif is_to_many(related_field):
+                        hint_optimizer = QueryOptimizer(model=related_field.related_model, info=self.info)
+                        optimizer.prefetch_related[relation] = hint_optimizer
+                    else:
+                        msg = f"Hinted related field {relation} is not a related field."
+                        raise OptimizerError(msg)
+
+        fields: tuple[str, ...] = getattr(resolver, "fields", ())
         for field_name in fields:
             hint_optimizer = QueryOptimizer(model=model, info=self.info)
             self.find_field_from_model(field_name, model_fields, hint_optimizer)

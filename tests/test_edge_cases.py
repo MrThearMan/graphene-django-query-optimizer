@@ -247,3 +247,36 @@ def test_optimizer__required_fields__backtracking(client_query):
     # 1 query for fetching RealEstates and related HousingCompanies
     # 1 query for fetching primary RealEstate
     assert queries == 2, results.log
+
+
+def test_optimizer__required_relations(client_query):
+    query = """
+        query {
+          pagedPropertyManagers {
+            edges {
+              node {
+                name
+                housingCompaniesAlt {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting PropertyManagers
+    # 1 query for fetching PropertyManagers
+    # 1 query for fetching nested HousingCompanies
+    assert queries == 3, results.log

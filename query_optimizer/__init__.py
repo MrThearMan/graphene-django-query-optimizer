@@ -2,7 +2,7 @@
 from .converters import *  # noqa: F403, I001
 
 from .compiler import optimize, optimize_single
-from .decorators import required_annotations, required_fields
+from .decorators import required_annotations, required_fields, required_relations
 from .fields import DjangoConnectionField, DjangoListField, RelatedField
 from .types import DjangoObjectType
 
@@ -15,4 +15,5 @@ __all__ = [
     "optimize_single",
     "required_annotations",
     "required_fields",
+    "required_relations",
 ]
