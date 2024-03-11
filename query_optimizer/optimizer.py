@@ -11,13 +11,13 @@ from django.db.models.functions import RowNumber
 from graphene_django.registry import get_global_registry
 from graphene_django.settings import graphene_settings
 
+from .filter_info import get_filter_info
 from .settings import optimizer_settings
 from .utils import (
     SubqueryCount,
     add_slice_to_queryset,
     calculate_queryset_slice,
     calculate_slice_for_queryset,
-    get_filter_info,
     mark_optimized,
     optimizer_logger,
 )
@@ -76,7 +76,7 @@ class QueryOptimizer:
         :param filter_info: Additional filtering info to use for the optimization.
         """
         if filter_info is None:
-            filter_info = get_filter_info(self.info)
+            filter_info = get_filter_info(self.info, queryset.model)
 
         results = self.compile(filter_info=filter_info)
 

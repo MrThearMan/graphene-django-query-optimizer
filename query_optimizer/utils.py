@@ -4,36 +4,11 @@ import logging
 from typing import TYPE_CHECKING
 
 from django.db import models
-from django.db.models import ForeignKey, QuerySet
-from graphene import Connection
-from graphene.relay.node import AbstractNode
-from graphene.utils.str_converters import to_snake_case
-from graphene_django.settings import graphene_settings
-from graphene_django.utils import DJANGO_FILTER_INSTALLED
-from graphql import FieldNode, FragmentSpreadNode, GraphQLField, InlineFragmentNode, get_argument_values
-from graphql.execution.execute import get_field_def
 
-from .errors import OptimizerError
 from .settings import optimizer_settings
-from .typing import GraphQLFilterInfo, overload
 
 if TYPE_CHECKING:
-    from graphene.types.definitions import GrapheneObjectType, GrapheneUnionType
-    from graphene_django import DjangoObjectType
-    from graphql import GraphQLOutputType, SelectionNode
-
-    from .typing import (
-        FieldNodes,
-        GQLInfo,
-        ModelField,
-        Optional,
-        ParamSpec,
-        ToManyField,
-        ToOneField,
-        TypeGuard,
-        TypeVar,
-        Union,
-    )
+    from .typing import Optional, ParamSpec, TypeVar
 
     T = TypeVar("T")
     P = ParamSpec("P")
@@ -43,14 +18,7 @@ __all__ = [
     "SubqueryCount",
     "add_slice_to_queryset",
     "calculate_slice_for_queryset",
-    "get_field_type",
-    "get_filter_info",
-    "get_selections",
-    "get_underlying_type",
-    "is_foreign_key_id",
     "is_optimized",
-    "is_to_many",
-    "is_to_one",
     "mark_optimized",
     "mark_unoptimized",
     "optimizer_logger",
@@ -60,58 +28,18 @@ __all__ = [
 optimizer_logger = logging.getLogger("query_optimizer")
 
 
-def is_foreign_key_id(model_field: ModelField, name: str) -> bool:
-    return isinstance(model_field, ForeignKey) and model_field.name != name and model_field.get_attname() == name
-
-
-@overload
-def get_underlying_type(field_type: type[GraphQLOutputType]) -> type[Union[DjangoObjectType, GrapheneObjectType]]:
-    ...  # pragma: no cover
-
-
-@overload
-def get_underlying_type(field_type: GraphQLOutputType) -> Union[DjangoObjectType, GrapheneObjectType]:
-    ...  # pragma: no cover
-
-
-def get_underlying_type(field_type):
-    while hasattr(field_type, "of_type"):
-        field_type = field_type.of_type
-    return field_type
-
-
-def is_to_many(model_field: ModelField) -> TypeGuard[ToManyField]:
-    return bool(model_field.one_to_many or model_field.many_to_many)
-
-
-def is_to_one(model_field: ModelField) -> TypeGuard[ToOneField]:
-    return bool(model_field.many_to_one or model_field.one_to_one)
-
-
-def get_field_type(info: GQLInfo) -> GrapheneObjectType:
-    field_node = info.field_nodes[0]
-    field_def = get_field_def(info.schema, info.parent_type, field_node)
-    return get_underlying_type(field_def.type)
-
-
-def get_selections(info: GQLInfo) -> tuple[SelectionNode, ...]:
-    field_node = info.field_nodes[0]
-    selection_set = field_node.selection_set
-    return () if selection_set is None else selection_set.selections
-
-
-def mark_optimized(queryset: QuerySet) -> None:
+def mark_optimized(queryset: models.QuerySet) -> None:
     """Mark queryset as optimized so that later optimizers know to skip optimization"""
     queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True  # type: ignore[attr-defined]
 
 
-def mark_unoptimized(queryset: QuerySet) -> None:  # pragma: no cover
+def mark_unoptimized(queryset: models.QuerySet) -> None:  # pragma: no cover
     """Mark queryset as unoptimized so that later optimizers will run optimization"""
     queryset._hints.pop(optimizer_settings.OPTIMIZER_MARK, None)  # type: ignore[attr-defined]
 
 
-def is_optimized(queryset: QuerySet) -> bool:
-    """Has the queryset be optimized?"""
+def is_optimized(queryset: models.QuerySet) -> bool:
+    """Has the queryset been optimized?"""
     return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)  # type: ignore[no-any-return, attr-defined]
 
 
@@ -175,14 +103,14 @@ def calculate_queryset_slice(
 
 
 def calculate_slice_for_queryset(
-    queryset: QuerySet,
+    queryset: models.QuerySet,
     *,
     after: Optional[int],
     before: Optional[int],
     first: Optional[int],
     last: Optional[int],
     size: int,
-) -> QuerySet:
+) -> models.QuerySet:
     """
     Annotate queryset with pagination slice start and stop indexes.
     This is the Django ORM equivalent of the `calculate_queryset_slice` function.
@@ -241,145 +169,18 @@ def calculate_slice_for_queryset(
     return add_slice_to_queryset(queryset, start=start, stop=stop)
 
 
-def add_slice_to_queryset(queryset: QuerySet, *, start: models.Expression, stop: models.Expression) -> QuerySet:
+def add_slice_to_queryset(
+    queryset: models.QuerySet,
+    *,
+    start: models.Expression,
+    stop: models.Expression,
+) -> models.QuerySet:
     return queryset.alias(
         **{
             optimizer_settings.PREFETCH_SLICE_START: start,
             optimizer_settings.PREFETCH_SLICE_STOP: stop,
         },
     )
-
-
-def get_filter_info(info: GQLInfo) -> GraphQLFilterInfo:
-    """Find filter arguments from the GraphQL query."""
-    args = _find_filtering_arguments(info.field_nodes, info.parent_type, info)  # type: ignore[arg-type]
-    if not args:
-        return {}
-    return args[to_snake_case(info.field_name)]
-
-
-def _find_filtering_arguments(
-    field_nodes: FieldNodes,
-    parent: Union[GrapheneObjectType, GrapheneUnionType],
-    info: GQLInfo,
-) -> dict[str, GraphQLFilterInfo]:
-    arguments: dict[str, GraphQLFilterInfo] = {}
-    for selection in field_nodes:
-        if isinstance(selection, FieldNode):
-            _find_filter_info_from_field_node(selection, parent, arguments, info)
-
-        elif isinstance(selection, FragmentSpreadNode):
-            _find_filter_info_from_fragment_spread(selection, parent, arguments, info)
-
-        elif isinstance(selection, InlineFragmentNode):
-            _find_filter_info_from_inline_fragment(selection, parent, arguments, info)
-
-        else:  # pragma: no cover
-            msg = f"Unhandled selection node: '{selection}'"
-            raise OptimizerError(msg)
-
-    return {
-        name: field
-        for name, field in arguments.items()
-        # Remove children that do not have filters or children.
-        # Also preserve fields that are connections, so that default limiting can be applied.
-        if field["filters"] or field["children"] or field["is_connection"]
-    }
-
-
-def _find_filter_info_from_field_node(
-    selection: FieldNode,
-    parent: GrapheneObjectType,
-    arguments: dict[str, GraphQLFilterInfo],
-    info: GQLInfo,
-) -> None:
-    field_def: Optional[GraphQLField] = get_field_def(info.schema, parent, selection)
-    if field_def is None:  # pragma: no cover
-        return
-
-    name = to_snake_case(selection.name.value)
-    filters = get_argument_values(type_def=field_def, node=selection, variable_values=info.variable_values)
-
-    new_parent = get_underlying_type(field_def.type)
-
-    is_node = issubclass(getattr(getattr(field_def.resolve, "func", None), "__self__", type(None)), AbstractNode)
-    is_connection = issubclass(getattr(new_parent, "graphene_type", type(None)), Connection)
-
-    # Find the field-specific limit, or use the default limit.
-    max_limit: Optional[int] = getattr(
-        getattr(parent.graphene_type, name, None),
-        "max_limit",
-        graphene_settings.RELAY_CONNECTION_MAX_LIMIT,
-    )
-
-    # If the field is a connection, we need to go deeper to get the actual field
-    if is_connection:
-        # Find the actual parent object type.
-        field_def = new_parent.fields["edges"]
-        new_parent = get_underlying_type(field_def.type)
-        field_def = new_parent.fields["node"]
-        new_parent = get_underlying_type(field_def.type)
-
-        # Find the actual field node.
-        gen = (selection for selection in selection.selection_set.selections if selection.name.value == "edges")
-        selection: Optional[FieldNode] = next(gen, None)
-        # Edges were not requested, so we can skip this field
-        if selection is None:
-            return
-
-        gen = (selection for selection in selection.selection_set.selections if selection.name.value == "node")
-        selection: Optional[FieldNode] = next(gen, None)
-        # Node was not requested, so we can skip this field
-        if selection is None:
-            return
-
-    arguments[name] = filter_info = GraphQLFilterInfo(
-        name=new_parent.name,
-        # If the field is a relay node field, its `id` field should not be counted as a filter.
-        filters={} if is_node else filters,
-        children={},
-        filterset_class=None,
-        is_connection=is_connection,
-        is_node=is_node,
-        max_limit=max_limit,
-    )
-
-    if DJANGO_FILTER_INSTALLED and hasattr(new_parent, "graphene_type"):
-        object_type = new_parent.graphene_type
-        filter_info["filterset_class"] = getattr(object_type._meta, "filterset_class", None)
-
-    if selection.selection_set is not None:
-        result = _find_filtering_arguments(selection.selection_set.selections, new_parent, info)
-        if result:
-            filter_info["children"] = result
-
-
-def _find_filter_info_from_fragment_spread(
-    selection: FragmentSpreadNode,
-    parent: GrapheneObjectType,
-    arguments: dict[str, GraphQLFilterInfo],
-    info: GQLInfo,
-) -> None:
-    graphql_name = selection.name.value
-    field_node = info.fragments[graphql_name]
-    selections = field_node.selection_set.selections
-    arguments.update(_find_filtering_arguments(selections, parent, info))
-
-
-def _find_filter_info_from_inline_fragment(
-    selection: InlineFragmentNode,
-    parent: GrapheneUnionType,
-    arguments: dict[str, GraphQLFilterInfo],
-    info: GQLInfo,
-) -> None:
-    fragment_type_name = selection.type_condition.name.value
-    gen = (t for t in parent.types if t.name == fragment_type_name)
-    selection_graphql_field: Optional[GrapheneObjectType] = next(gen, None)
-    if selection_graphql_field is None:  # pragma: no cover
-        return
-
-    selections = selection.selection_set.selections
-    arguments.update(_find_filtering_arguments(selections, selection_graphql_field, info))
 
 
 class SubqueryCount(models.Subquery):

@@ -184,6 +184,10 @@ class ApartmentType(DjangoObjectType):
             "building",
             "sales",
         ]
+        filter_fields = {
+            "street_address": ["exact"],
+            "building__name": ["exact"],
+        }
         max_complexity = 10
 
     @classmethod

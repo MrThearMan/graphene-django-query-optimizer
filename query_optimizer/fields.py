@@ -12,11 +12,12 @@ from graphene_django.settings import graphene_settings
 from graphene_django.utils.utils import DJANGO_FILTER_INSTALLED, maybe_queryset
 from graphql_relay.connection.array_connection import offset_to_cursor
 
+from .ast import get_underlying_type
 from .cache import store_in_query_cache
 from .compiler import OptimizationCompiler, optimize
 from .errors import OptimizerError
 from .settings import optimizer_settings
-from .utils import calculate_queryset_slice, get_underlying_type, is_optimized, optimizer_logger
+from .utils import calculate_queryset_slice, is_optimized, optimizer_logger
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:

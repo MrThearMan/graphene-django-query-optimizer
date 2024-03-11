@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from tests.example.models import HousingCompany
+from tests.example.models import Apartment, HousingCompany
 from tests.example.utils import capture_database_queries
 
 pytestmark = pytest.mark.django_db
@@ -103,3 +103,29 @@ def test_optimizer__filter__order_by(client_query):
     # 1 query for counting HousingCompanies
     # 1 query for fetching HousingCompanies
     assert queries == 2, results.log
+
+
+def test_optimizer__filter__list_field(client_query):
+    apartment = Apartment.objects.values_list("street_address", flat=True).first()
+    query = """
+        query {
+          allBuildings {
+            apartments(streetAddress:"%s") {
+              streetAddress
+            }
+          }
+        }
+    """ % (apartment,)
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for fetching Buildings
+    # 1 query for fetching Apartments
+    assert queries == 2, results.log
+
+    assert all(len(building["apartments"]) <= 1 for building in content["data"]["allBuildings"])

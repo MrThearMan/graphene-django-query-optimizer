@@ -15,6 +15,7 @@ from typing import (
     TypedDict,
     TypeVar,
     Union,
+    cast,
     overload,
 )
 
@@ -58,6 +59,7 @@ __all__ = [
     "FieldNodes",
     "FilterFields",
     "GQLInfo",
+    "GRAPHQL_BUILTIN",
     "Generator",
     "GraphQLFilterInfo",
     "Hashable",
@@ -67,12 +69,12 @@ __all__ = [
     "ModelResolver",
     "NamedTuple",
     "OptimizedDjangoOptions",
+    "OptimizerKey",
     "Optional",
     "PK",
     "ParamSpec",
     "QueryCache",
     "QuerySetResolver",
-    "OptimizerKey",
     "TableName",
     "ToManyField",
     "ToOneField",
@@ -83,6 +85,7 @@ __all__ = [
     "TypedDict",
     "Union",
     "overload",
+    "cast",
 ]
 
 
@@ -102,6 +105,17 @@ QuerySetResolver = Callable[..., Union[QuerySet, Manager, None]]
 ModelResolver = Callable[..., Union[Model, None]]
 ConnectionResolver = Callable[..., ConnectionType]
 FieldNodes = Iterable[Union[FieldNode, SelectionNode]]
+
+GRAPHQL_BUILTIN = (
+    "__typename",
+    "__schema",
+    "__type",
+    "__typekind",
+    "__field",
+    "__inputvalue",
+    "__enumvalue",
+    "__directive",
+)
 
 
 class UserHintedWSGIRequest(WSGIRequest):

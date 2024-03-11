@@ -808,6 +808,50 @@ def test_optimizer__relay_connection__nested__filtered(client_query):
     assert '"example_housingcompany"."name" LIKE' in results.queries[2], results.log
 
 
+def test_optimizer__relay_connection__nested__filtered__deep(client_query):
+    name = HousingCompany.objects.values_list("name", flat=True).first()
+    query = """
+        query {
+          pagedPropertyManagers {
+            edges {
+              node {
+                id
+                housingCompanies(name_Iexact: "%s") {
+                  edges {
+                    node {
+                      realEstates(first:1) {
+                        edges {
+                          node {
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """ % (name,)
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting Property Managers
+    # 1 query for fetching Property Managers
+    # 1 query for fetching Housing Companies
+    # 1 query for fetching Real Estates
+    assert queries == 4, results.log
+
+    # Check that the filter/pagination is actually applied to the last nested connection
+    assert "ROW_NUMBER() OVER (PARTITION BY" in results.queries[3], results.log
+
+
 def test_optimizer__relay_connection__nested__filtered_fragment_spread(client_query):
     name = HousingCompany.objects.values_list("name", flat=True).first()
     query = """

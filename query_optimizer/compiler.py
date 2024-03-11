@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from contextlib import suppress
 from typing import TYPE_CHECKING, Iterable, Optional, Union
 
@@ -7,31 +8,22 @@ import graphene
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Expression, ForeignKey, Manager, ManyToOneRel, Model, QuerySet
 from django.db.models.constants import LOOKUP_SEP
-from graphene.relay.connection import ConnectionOptions
 from graphene.utils.str_converters import to_snake_case
-from graphene_django.types import DjangoObjectTypeOptions
 from graphene_django.utils import maybe_queryset
-from graphql import FieldNode, FragmentSpreadNode, GraphQLField, GraphQLOutputType, InlineFragmentNode, SelectionNode
 
+from .ast import GraphQLASTWalker, get_related_model, is_to_many, is_to_one
 from .cache import get_from_query_cache, store_in_query_cache
 from .errors import OptimizerError
 from .optimizer import QueryOptimizer
 from .settings import optimizer_settings
-from .utils import (
-    get_field_type,
-    get_selections,
-    get_underlying_type,
-    is_foreign_key_id,
-    is_optimized,
-    is_to_many,
-    is_to_one,
-    optimizer_logger,
-)
+from .utils import is_optimized, optimizer_logger
 
 if TYPE_CHECKING:
-    from graphene.types.definitions import GrapheneObjectType, GrapheneUnionType
+    from django.db import models
+    from graphene.types.definitions import GrapheneObjectType
+    from graphql import FieldNode
 
-    from .typing import PK, GQLInfo, ModelField, ToManyField, ToOneField, TypeOptions, TypeVar
+    from .typing import PK, GQLInfo, ModelField, ToManyField, ToOneField, TypeVar
 
     TModel = TypeVar("TModel", bound=Model)
 
@@ -108,8 +100,8 @@ def optimize_single(
         return queryset.first()
 
 
-class OptimizationCompiler:
-    """Class for walking the GraphQL AST and compiling SQL optimizations based on the given query."""
+class OptimizationCompiler(GraphQLASTWalker):
+    """Class for compiling SQL optimizations based on the given query."""
 
     def __init__(self, info: GQLInfo, max_complexity: Optional[int] = None) -> None:
         """
@@ -119,269 +111,81 @@ class OptimizationCompiler:
         :param max_complexity: How many 'select_related' and 'prefetch_related' table joins are allowed.
                                Used to protect from malicious queries.
         """
-        self.info = info
         self.max_complexity = max_complexity or optimizer_settings.MAX_COMPLEXITY
-        self.current_complexity = 0
-
-    def increase_complexity(self) -> None:
-        """Increase the current complexity, and check if it exceeds the maximum allowed."""
-        self.current_complexity += 1
-        if self.current_complexity > self.max_complexity:
-            msg = f"Query complexity exceeds the maximum allowed of {self.max_complexity}"
-            raise OptimizerError(msg)
+        self.optimizer: QueryOptimizer = None  # type: ignore[assignment]
+        super().__init__(info)
 
     def compile(self, queryset: Union[QuerySet, Manager]) -> Optional[QueryOptimizer]:
         """
         Compile optimizations for the given queryset.
 
         :return: QueryOptimizer instance that can perform any needed optimization,
-                                or None if queryset is already optimized.
+                 or None if queryset is already optimized.
         :raises OptimizerError: Something went wrong during the optimization process.
         """
         queryset = maybe_queryset(queryset)
-
         # If prior optimization has been done already, return early.
         if is_optimized(queryset):
             return None
 
-        field_type = get_field_type(self.info)
-        selections = get_selections(self.info)
-        if not selections:  # pragma: no cover
-            return None
+        # Setup initial state.
+        self.model = queryset.model
+        self.optimizer = QueryOptimizer(model=queryset.model, info=self.info)
 
-        # Run the optimization compilation.
-        optimizer = self.handle_selections(field_type, selections, queryset.model)
+        # Walk the query AST to compile the optimizations.
+        self.run()
+        return self.optimizer
 
-        # When resolving reverse one-to-many relations (other model has foreign key to this model),
-        # if `known_related_fields` exist, they should be added to the optimizer, since they are used to linked
-        # to the original model based on that field.
-        if queryset._known_related_objects:  # pragma: no cover
-            optimizer.related_fields += [row.attname for row in queryset._known_related_objects]
-
-        return optimizer
-
-    def handle_selections(
-        self,
-        field_type: Union[GrapheneObjectType, GrapheneUnionType],
-        selections: tuple[SelectionNode, ...],
-        model: type[Model],
-    ) -> QueryOptimizer:
-        optimizer = QueryOptimizer(model=model, info=self.info)
-
-        for selection in selections:
-            if isinstance(selection, FieldNode):
-                self.handle_field_node(field_type, selection, optimizer)
-
-            elif isinstance(selection, FragmentSpreadNode):
-                self.handle_fragment_spread(field_type, selection, model, optimizer)
-
-            elif isinstance(selection, InlineFragmentNode):
-                self.handle_inline_fragment(field_type, selection, model, optimizer)
-
-            else:  # pragma: no cover
-                msg = f"Unhandled selection node: '{selection}'"
-                raise OptimizerError(msg)
-
-        return optimizer
-
-    def handle_field_node(
-        self,
-        field_type: GrapheneObjectType,
-        selection: FieldNode,
-        optimizer: QueryOptimizer,
-    ) -> None:
-        options: TypeOptions = field_type.graphene_type._meta
-
-        if isinstance(options, ConnectionOptions):
-            return self.handle_connection_node(field_type, selection, optimizer)
-
-        if isinstance(options, DjangoObjectTypeOptions):
-            return self.handle_regular_node(field_type, selection, optimizer)
-
-        msg = f"Unhandled field options type: {options}"  # pragma: no cover
-        raise OptimizerError(msg)  # pragma: no cover
-
-    def handle_regular_node(
-        self,
-        field_type: GrapheneObjectType,
-        selection: FieldNode,
-        optimizer: QueryOptimizer,
-    ) -> None:
-        model: type[Model] = field_type.graphene_type._meta.model
-        selection_graphql_name = selection.name.value
-        selection_graphql_field = field_type.fields.get(selection_graphql_name)
-        if selection_graphql_field is None:
-            return
-
-        model_field_name, model_field = self.extract_model_field(model, selection_graphql_name)
-        if model_field is None:
-            selection_field = getattr(field_type.graphene_type, to_snake_case(selection_graphql_name), None)
-            self.check_resolver_hints(selection_graphql_field, selection_field, model, optimizer)
-            return
-
-        if not model_field.is_relation or is_foreign_key_id(model_field, model_field_name):
-            optimizer.only_fields.append(model_field_name)
-
-        elif is_to_one(model_field):  # noinspection PyTypeChecker
-            self.handle_to_one(model_field_name, selection, selection_graphql_field.type, model_field, optimizer)
-
-        elif is_to_many(model_field):  # noinspection PyTypeChecker
-            self.handle_to_many(model_field_name, selection, selection_graphql_field.type, model_field, optimizer)
-
-        else:  # pragma: no cover
-            msg = f"Unhandled selection: '{selection.name.value}'"
+    def increase_complexity(self) -> None:
+        super().increase_complexity()
+        if self.complexity > self.max_complexity:
+            msg = f"Query complexity exceeds the maximum allowed of {self.max_complexity}"
             raise OptimizerError(msg)
 
-    def handle_connection_node(
+    def handle_normal_field(self, field_type: GrapheneObjectType, field_node: FieldNode, field: models.Field) -> None:
+        self.optimizer.only_fields.append(field.get_attname())
+
+    def handle_to_one_field(
         self,
         field_type: GrapheneObjectType,
-        selection: FieldNode,
-        optimizer: QueryOptimizer,
+        field_node: FieldNode,
+        related_field: ToOneField,
+        related_model: type[Model],
     ) -> None:
-        if selection.selection_set is None:
-            if selection.name.value == optimizer_settings.TOTAL_COUNT_FIELD:
-                optimizer.total_count = True
-            return
+        name = related_field.get_cache_name() or related_field.name
+        self.optimizer.select_related[name] = optimizer = QueryOptimizer(model=related_model, info=self.info)
+        if isinstance(related_field, ForeignKey):
+            self.optimizer.related_fields.append(related_field.attname)
 
-        gen = (selection for selection in selection.selection_set.selections if selection.name.value == "node")
-        node: Optional[FieldNode] = next(gen, None)
-        # Node was not requested, or nothing was requested from it, so we can skip this field
-        if node is None or node.selection_set is None:
-            return
+        with self.use_optimizer(optimizer):
+            super().handle_to_many_field(field_type, field_node, related_field, related_model)
 
-        edges_field = field_type.fields[selection.name.value]
-        edge_type = get_underlying_type(edges_field.type)
-        node_field = edge_type.fields[node.name.value]
-        node_type = get_underlying_type(node_field.type)
-        node_model: type[Model] = node_type.graphene_type._meta.model
-
-        nested_optimizer = self.handle_selections(node_type, node.selection_set.selections, node_model)
-        optimizer += nested_optimizer
-
-    def handle_to_one(
-        self,
-        model_field_name: str,
-        selection: FieldNode,
-        selection_field_type: GraphQLOutputType,
-        model_field: ToOneField,
-        optimizer: QueryOptimizer,
-    ) -> None:
-        if selection.selection_set is None:  # pragma: no cover
-            return
-
-        related_model: type[Model] = model_field.related_model  # type: ignore[assignment]
-        if related_model == "self":  # pragma: no cover
-            related_model = model_field.model
-
-        selection_field_type = get_underlying_type(selection_field_type)
-
-        self.increase_complexity()
-        nested_optimizer = self.handle_selections(
-            selection_field_type,
-            selection.selection_set.selections,
-            related_model,
-        )
-
-        if isinstance(model_field, ForeignKey):
-            optimizer.related_fields.append(model_field.attname)
-
-        optimizer.select_related[model_field_name] = nested_optimizer
-
-    def handle_to_many(
-        self,
-        model_field_name: str,
-        selection: FieldNode,
-        selection_field_type: GraphQLOutputType,
-        model_field: ToManyField,
-        optimizer: QueryOptimizer,
-    ) -> None:
-        if selection.selection_set is None:  # pragma: no cover
-            return
-
-        related_model: type[Model] = model_field.related_model  # type: ignore[assignment]
-        if related_model == "self":  # pragma: no cover
-            related_model = model_field.model
-
-        selection_field_type = get_underlying_type(selection_field_type)
-
-        self.increase_complexity()
-        nested_optimizer = self.handle_selections(
-            selection_field_type,
-            selection.selection_set.selections,
-            related_model,
-        )
-
-        if isinstance(model_field, ManyToOneRel):
-            nested_optimizer.related_fields.append(model_field.field.attname)
-
-        optimizer.prefetch_related[model_field_name] = nested_optimizer
-
-    def handle_fragment_spread(
+    def handle_to_many_field(
         self,
         field_type: GrapheneObjectType,
-        selection: FragmentSpreadNode,
-        model: type[Model],
-        optimizer: QueryOptimizer,
+        field_node: FieldNode,
+        related_field: ToManyField,
+        related_model: type[Model],
     ) -> None:
-        graphql_name = selection.name.value
-        field_node = self.info.fragments[graphql_name]
-        selections = field_node.selection_set.selections
-        nested_optimizer = self.handle_selections(field_type, selections, model)
-        optimizer += nested_optimizer
+        name = related_field.get_cache_name() or related_field.name
+        self.optimizer.prefetch_related[name] = optimizer = QueryOptimizer(model=related_model, info=self.info)
+        if isinstance(related_field, ManyToOneRel):
+            optimizer.related_fields.append(related_field.field.attname)
 
-    def handle_inline_fragment(
-        self,
-        field_type: GrapheneUnionType,
-        selection: InlineFragmentNode,
-        model: type[Model],
-        optimizer: QueryOptimizer,
-    ) -> None:
-        fragment_type_name = selection.type_condition.name.value
-        selection_graphql_field: Optional[GrapheneObjectType]
-        selection_graphql_field = next((t for t in field_type.types if t.name == fragment_type_name), None)
-        if selection_graphql_field is None:  # pragma: no cover
-            return
+        with self.use_optimizer(optimizer):
+            super().handle_to_many_field(field_type, field_node, related_field, related_model)
 
-        fragment_model: type[Model] = selection_graphql_field.graphene_type._meta.model
-        if fragment_model != model:
-            return
+    def handle_total_count(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
+        self.optimizer.total_count = True
 
-        selections = selection.selection_set.selections
-        nested_optimizer = self.handle_selections(selection_graphql_field, selections, fragment_model)
-        optimizer += nested_optimizer
+    def handle_custom_field(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
+        self.check_resolver_hints(field_type, field_node)
 
-    @staticmethod
-    def extract_model_field(model: type[Model], selection_graphql_name: str) -> tuple[str, Optional[ModelField]]:
-        model_field_name = to_snake_case(selection_graphql_name)
+    def check_resolver_hints(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
+        graphene_field = getattr(field_type.graphene_type, to_snake_case(field_node.name.value), None)
 
-        if model_field_name == "pk":
-            model_field: ModelField = model._meta.pk
-            model_field_name = model_field.name  # use actual model pk name, e.g. 'id'
-            return model_field_name, model_field
-
-        with suppress(FieldDoesNotExist):
-            model_field: ModelField = model._meta.get_field(model_field_name)
-            return model_field_name, model_field
-
-        # Field might be a reverse many-related field without `related_name`, in which case
-        # the `model._meta.fields_map` will store the relation without the "_set" suffix.
-        if model_field_name.endswith("_set"):
-            with suppress(FieldDoesNotExist):
-                model_field: ModelField = model._meta.get_field(model_field_name.removesuffix("_set"))
-                if is_to_many(model_field):
-                    return model_field_name, model_field
-
-        return model_field_name, None
-
-    def check_resolver_hints(
-        self,
-        graphql_field: GraphQLField,
-        graphene_field: Union[graphene.Field, graphene.Scalar, None],
-        model: type[Model],
-        optimizer: QueryOptimizer,
-    ) -> None:
         if isinstance(graphene_field, graphene.Scalar):
-            resolver = graphql_field.resolve
+            resolver = field_type.fields[field_node.name.value].resolve
         elif isinstance(graphene_field, graphene.Field):
             resolver = graphene_field.resolver
         else:  # pragma: no cover
@@ -390,30 +194,31 @@ class OptimizationCompiler:
 
         anns: dict[str, Expression] = getattr(resolver, "annotations", ())
         if anns:
-            optimizer.annotations.update(anns)
+            self.optimizer.annotations.update(anns)
 
-        model_fields: list[ModelField] = model._meta.get_fields()
+        model_fields: list[ModelField] = self.model._meta.get_fields()
 
         relations: tuple[str, ...] = getattr(resolver, "relations", ())
         if relations:
             for relation in relations:
                 with suppress(FieldDoesNotExist):
-                    related_field = model._meta.get_field(relation)
+                    related_field = self.model._meta.get_field(relation)
+                    related_model = get_related_model(related_field, self.model)
                     if is_to_one(related_field):
-                        hint_optimizer = QueryOptimizer(model=related_field.related_model, info=self.info)
-                        optimizer.select_related[relation] = hint_optimizer
+                        hint_optimizer = QueryOptimizer(model=related_model, info=self.info)
+                        self.optimizer.select_related[relation] = hint_optimizer
                     elif is_to_many(related_field):
-                        hint_optimizer = QueryOptimizer(model=related_field.related_model, info=self.info)
-                        optimizer.prefetch_related[relation] = hint_optimizer
+                        hint_optimizer = QueryOptimizer(model=related_model, info=self.info)
+                        self.optimizer.prefetch_related[relation] = hint_optimizer
                     else:
                         msg = f"Hinted related field {relation} is not a related field."
                         raise OptimizerError(msg)
 
         fields: tuple[str, ...] = getattr(resolver, "fields", ())
         for field_name in fields:
-            hint_optimizer = QueryOptimizer(model=model, info=self.info)
+            hint_optimizer = QueryOptimizer(model=self.model, info=self.info)
             self.find_field_from_model(field_name, model_fields, hint_optimizer)
-            optimizer += hint_optimizer
+            self.optimizer += hint_optimizer
 
     def find_field_from_model(
         self,
@@ -473,3 +278,12 @@ class OptimizationCompiler:
 
         msg = f"Field {field_name!r} not found in fields: {model_fields}."  # pragma: no cover
         raise OptimizerError(msg)  # pragma: no cover
+
+    @contextlib.contextmanager
+    def use_optimizer(self, optimizer: QueryOptimizer) -> GraphQLASTWalker:
+        orig_optimizer = self.optimizer
+        try:
+            self.optimizer = optimizer
+            yield
+        finally:
+            self.optimizer = orig_optimizer
