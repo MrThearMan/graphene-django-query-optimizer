@@ -170,11 +170,6 @@ class QueryOptimizer:
             max_limit=filter_info.get("max_limit", graphene_settings.RELAY_CONNECTION_MAX_LIMIT),
         )
 
-        # If no pagination arguments are given, and `RELAY_CONNECTION_MAX_LIMIT` is `None`,
-        # then don't limit the queryset.
-        if all(value is None for value in pagination_args.values()):  # pragma: no cover
-            return queryset
-
         try:
             # Try to find the prefetch join field from the model to use for partitioning.
             field = parent_model._meta.get_field(name)
@@ -209,6 +204,10 @@ class QueryOptimizer:
                     ),
                 },
             )
+
+        # Don't limit the queryset if no pagination arguments are given (and field `max_size=None`)
+        if all(value is None for value in pagination_args.values()):  # pragma: no cover
+            return queryset
 
         if pagination_args.get("last") is not None or pagination_args.get("size") is None:
             queryset = calculate_slice_for_queryset(queryset, **pagination_args)

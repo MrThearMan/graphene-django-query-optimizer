@@ -970,3 +970,46 @@ def test_optimizer__relay_connection__nested__max_limit__first(client_query):
         '"example_apartment"."apartment_number" DESC)'
     )
     assert match in results.queries[2], results.log
+
+
+@pytest.mark.usefixtures("_remove_apartment_node_apartments_max_limit")
+def test_optimizer__relay_connection__nested__max_limit__total_count(client_query):
+    query = """
+        query {
+          pagedBuildings {
+            edges {
+              node {
+                pk
+                apartments {
+                  totalCount
+                  edges {
+                    node {
+                      pk
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting Buildings
+    # 1 query for fetching Buildings
+    # 1 query for fetching nested Apartments
+    assert queries == 3, results.log
+
+    buildings = content["data"]["pagedBuildings"]["edges"]
+
+    for building in buildings:
+        pk = building["node"]["pk"]
+        total_count = building["node"]["apartments"]["totalCount"]
+        apartments = Apartment.objects.filter(building_id=pk).count()
+        assert total_count == apartments
