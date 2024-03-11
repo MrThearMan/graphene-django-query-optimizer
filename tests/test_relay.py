@@ -272,6 +272,33 @@ def test_optimizer__relay_connection__no_edges_from_connection_field(client_quer
     assert queries == 2, results.log
 
 
+def test_optimizer__relay_connection__no_edges_from_connection_field__filter(client_query):
+    street_address: str = Apartment.objects.values_list("street_address", flat=True).first()
+
+    query = """
+        query {
+          pagedApartments(streetAddress: "%s") {
+            totalCount
+            edgeCount
+          }
+        }
+    """ % (street_address,)
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    assert content["data"]["pagedApartments"]["totalCount"] == 1
+    assert content["data"]["pagedApartments"]["edgeCount"] == 1
+
+    queries = len(results.queries)
+    # 1 query for counting Apartments
+    # 1 query for fetching Apartments (still made even if nothing is returned from it)
+    assert queries == 2, results.log
+
+
 def test_optimizer__relay_connection__no_node_from_edges(client_query):
     query = """
         query {
