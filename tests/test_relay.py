@@ -920,8 +920,6 @@ def test_optimizer__relay_connection__nested__max_limit(client_query):
 
     buildings = content["data"]["pagedBuildings"]["edges"]
 
-    print(json.dumps(buildings, indent=2))
-
     assert all(len(building["node"]["apartments"]["edges"]) == 1 for building in buildings)
 
     queries = len(results.queries)
@@ -929,3 +927,46 @@ def test_optimizer__relay_connection__nested__max_limit(client_query):
     # 1 query for fetching Buildings
     # 1 query for fetching nested Apartments
     assert queries == 3, results.log
+
+
+@pytest.mark.usefixtures("_remove_apartment_node_apartments_max_limit")
+def test_optimizer__relay_connection__nested__max_limit__first(client_query):
+    query = """
+        query {
+          pagedBuildings {
+            edges {
+              node {
+                id
+                apartments(first: 1) {
+                  edges {
+                    node {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting Buildings
+    # 1 query for fetching Buildings
+    # 1 query for fetching nested Apartments
+    assert queries == 3, results.log
+
+    # Check that nested connection is limited
+    match = (
+        "ROW_NUMBER() OVER "
+        '(PARTITION BY "example_apartment"."building_id" '
+        'ORDER BY "example_apartment"."street_address", "example_apartment"."stair", '
+        '"example_apartment"."apartment_number" DESC)'
+    )
+    assert match in results.queries[2], results.log

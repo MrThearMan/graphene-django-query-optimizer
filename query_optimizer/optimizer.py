@@ -195,9 +195,10 @@ class QueryOptimizer:
             or None
         )
 
-        if self.total_count or pagination_args.get("last") is not None:
+        if self.total_count or pagination_args.get("last") is not None or pagination_args.get("size") is None:
             # If the query asks for total count for a nested connection field,
             # or is trying to limit the number of items from the end of the list,
+            # or the user has set the `max_size` for the field to None (=no limit),
             # annotate the models in the queryset with the total count for each partition.
             # This is optional, since there is a performance impact due to needing
             # to use a subquery for each partition.
@@ -209,7 +210,7 @@ class QueryOptimizer:
                 },
             )
 
-        if pagination_args.get("last") is not None:
+        if pagination_args.get("last") is not None or pagination_args.get("size") is None:
             queryset = calculate_slice_for_queryset(queryset, **pagination_args)
         else:
             cut = calculate_queryset_slice(**pagination_args)

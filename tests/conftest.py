@@ -56,3 +56,13 @@ def _set_building_node_apartments_max_limit() -> int:
         yield
     finally:
         BuildingNode.apartments.max_limit = limit
+
+
+@pytest.fixture()
+def _remove_apartment_node_apartments_max_limit() -> int:
+    limit = BuildingNode.apartments.max_limit
+    try:
+        BuildingNode.apartments.max_limit = None
+        yield
+    finally:
+        BuildingNode.apartments.max_limit = limit
