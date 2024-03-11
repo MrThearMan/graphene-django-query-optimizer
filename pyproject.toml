@@ -60,24 +60,24 @@ django-settings-holder = ">=0.1.2"
 filter = ["django-filter"]
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.1.0"
+pytest = "8.1.1"
 coverage = "7.4.3"
 pytest-django = "4.8.0"
 pre-commit = "3.6.2"
-tox = "4.13.0"
+tox = "4.14.1"
 tox-gh-actions = "3.2.0"
-faker = "23.3.0"
+faker = "24.1.0"
 sqlparse = "0.4.4"
 django-graphiql-debug-toolbar = "0.2.0"
 py-spy = "0.3.14"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.5.3"
-pymdown-extensions = "10.7"
+pymdown-extensions = "10.7.1"
 mkdocs-mermaid2-plugin = "1.1.1"
 
 [tool.poetry.group.lint.dependencies]
-mypy = "1.8.0"
+mypy = "1.9.0"
 django-stubs = "4.2.7"
 
 [tool.ruff]
