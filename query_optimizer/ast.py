@@ -209,13 +209,15 @@ class GraphQLASTWalker:
 
 
 @overload
-def get_underlying_type(field_type: type[GraphQLOutputType]) -> type[Union[DjangoObjectType, GrapheneObjectType]]:
-    ...  # pragma: no cover
+def get_underlying_type(
+    field_type: type[GraphQLOutputType],
+) -> type[Union[DjangoObjectType, GrapheneObjectType]]: ...  # pragma: no cover
 
 
 @overload
-def get_underlying_type(field_type: GraphQLOutputType) -> Union[DjangoObjectType, GrapheneObjectType]:
-    ...  # pragma: no cover
+def get_underlying_type(
+    field_type: GraphQLOutputType,
+) -> Union[DjangoObjectType, GrapheneObjectType]: ...  # pragma: no cover
 
 
 def get_underlying_type(field_type):
