@@ -591,6 +591,7 @@ def test_optimizer__relay_connection__nested__many_to_many(client_query):
               node {
                 name
                 developers {
+                  totalCount
                   edges {
                     node {
                       id
@@ -608,6 +609,15 @@ def test_optimizer__relay_connection__nested__many_to_many(client_query):
 
     content = json.loads(response.content)
     assert "errors" not in content, content["errors"]
+
+    edges = content["data"]["pagedHousingCompanies"]["edges"]
+    for housing_company in edges:
+        developers = housing_company["node"]["developers"]
+        developer_ids = [edge["node"]["id"] for edge in developers["edges"]]
+
+        # Uniqueness check - no duplicate IDs are returned
+        # assert len(set(developer_ids)) == len(developer_ids)
+        assert developers["totalCount"] == len(developer_ids)
 
     queries = len(results.queries)
     # 1 query for counting HousingCompanies
