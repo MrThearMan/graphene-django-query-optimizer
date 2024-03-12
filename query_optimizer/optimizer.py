@@ -80,8 +80,6 @@ class QueryOptimizer:
 
         results = self.compile(filter_info=filter_info)
 
-        queryset = self.get_filtered_queryset(queryset)
-
         if filter_info is not None and filter_info.get("filterset_class") is not None:
             filterset = filter_info["filterset_class"](
                 data=self.process_filters(filter_info["filters"]),
@@ -92,6 +90,8 @@ class QueryOptimizer:
                 raise ValidationError(filterset.form.errors.as_json())
 
             queryset = filterset.qs
+
+        queryset = self.get_filtered_queryset(queryset)
 
         if results.prefetch_related:
             queryset = queryset.prefetch_related(*results.prefetch_related)
