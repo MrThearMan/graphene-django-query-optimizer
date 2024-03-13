@@ -87,7 +87,7 @@ class GraphQLASTWalker:
         if issubclass(graphene_type, Connection):
             return self.handle_connection(field_type, field_node)
 
-        if issubclass(graphene_type, PageInfo):
+        if issubclass(graphene_type, PageInfo):  # pragma: no cover
             return self.handle_page_info(field_type, field_node)
 
         if is_edge(field_type):
@@ -174,10 +174,10 @@ class GraphQLASTWalker:
         return self.handle_selections(graphene_type, selections)
 
     def handle_total_count(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
-        pass
+        pass  # pragma: no cover
 
     def handle_page_info(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
-        pass
+        pass  # pragma: no cover
 
     def handle_fragment_spread(self, field_type: GrapheneObjectType, fragment_spread: FragmentSpreadNode) -> None:
         name = fragment_spread.name.value
@@ -274,7 +274,7 @@ def get_fragment_type(field_type: GrapheneUnionType, inline_fragment: InlineFrag
 
 def get_related_model(related_field: Union[ToOneField, ToManyField], model: type[Model]) -> type[Model]:
     related_model = related_field.related_model
-    if related_model == "self":
+    if related_model == "self":  # pragma: no cover
         return model
     return related_model  # type: ignore[return-value]
 

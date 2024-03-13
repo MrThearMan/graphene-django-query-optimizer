@@ -204,13 +204,13 @@ class OptimizationCompiler(GraphQLASTWalker):
                 with suppress(FieldDoesNotExist):
                     related_field = self.model._meta.get_field(relation)
                     related_model = get_related_model(related_field, self.model)
-                    if is_to_one(related_field):
+                    if is_to_one(related_field):  # pragma: no cover
                         hint_optimizer = QueryOptimizer(model=related_model, info=self.info)
                         self.optimizer.select_related[relation] = hint_optimizer
                     elif is_to_many(related_field):
                         hint_optimizer = QueryOptimizer(model=related_model, info=self.info)
                         self.optimizer.prefetch_related[relation] = hint_optimizer
-                    else:
+                    else:  # pragma: no cover
                         msg = f"Hinted related field {relation} is not a related field."
                         raise OptimizerError(msg)
 

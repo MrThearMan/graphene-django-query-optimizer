@@ -6,6 +6,8 @@ import graphene
 from django.db import models
 from graphene_django.converter import convert_django_field, get_django_field_description
 
+from .settings import optimizer_settings
+
 if TYPE_CHECKING:
     from graphene_django.registry import Registry
 
@@ -66,8 +68,8 @@ def convert_to_many_field(
 
         from query_optimizer.fields import DjangoConnectionField, DjangoListField
 
-        if type_._meta.connection:  # pragma: no cover
-            return DjangoConnectionField(
+        if type_._meta.connection and optimizer_settings.ALLOW_CONNECTION_AS_DEFAULT_NESTED_TO_MANY_FIELD:
+            return DjangoConnectionField(  # pragma: no cover
                 type_,
                 required=required,
                 description=description,
