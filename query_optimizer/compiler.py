@@ -41,24 +41,17 @@ def optimize(
     max_complexity: Optional[int] = None,
 ) -> QuerySet[TModel]:
     """Optimize the given queryset according to the field selections received in the GraphQLResolveInfo."""
-    try:
-        optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
-        if optimizer is None:
-            return queryset
+    optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
+    if optimizer is not None:
+        queryset = optimizer.optimize_queryset(queryset)
+        store_in_query_cache(
+            key=info.operation,
+            queryset=queryset,
+            schema=info.schema,
+            optimizer=optimizer,
+        )
 
-        optimized_queryset = optimizer.optimize_queryset(queryset)
-        store_in_query_cache(key=info.operation, queryset=optimized_queryset, schema=info.schema, optimizer=optimizer)
-        return optimized_queryset  # noqa: TRY300
-
-    except OptimizerError:  # pragma: no cover
-        raise
-
-    except Exception as error:  # noqa: BLE001  # pragma: no cover
-        if not optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
-            raise
-
-        optimizer_logger.warning("Something went wrong during the optimization process.", exc_info=error)
-        return queryset
+    return queryset
 
 
 def optimize_single(
@@ -71,32 +64,26 @@ def optimize_single(
     """Optimize the given queryset for a single model instance by its primary key."""
     queryset = queryset.filter(pk=pk)
 
-    try:
-        optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
-        if optimizer is None:  # pragma: no cover
-            return queryset.first()
-
-        cached_item = get_from_query_cache(info.operation, info.schema, queryset.model, pk, optimizer)
-        if cached_item is not None:
-            return cached_item
-
-        optimized_queryset = optimizer.optimize_queryset(queryset)
-        store_in_query_cache(key=info.operation, queryset=optimized_queryset, schema=info.schema, optimizer=optimizer)
-
-        # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
-        # The queryset should have the right model instance, since we started by filtering by its pk,
-        # so we can just pick that out of the result cache (if it hasn't been filtered out).
-        return next(iter(optimized_queryset._result_cache or []), None)
-
-    except OptimizerError:  # pragma: no cover
-        raise
-
-    except Exception as error:  # noqa: BLE001  # pragma: no cover
-        if not optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
-            raise
-
-        optimizer_logger.warning("Something went wrong during the optimization process.", exc_info=error)
+    optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
+    if optimizer is None:
         return queryset.first()
+
+    cached_item = get_from_query_cache(info.operation, info.schema, queryset.model, pk, optimizer)
+    if cached_item is not None:
+        return cached_item
+
+    optimized_queryset = optimizer.optimize_queryset(queryset)
+    store_in_query_cache(
+        key=info.operation,
+        queryset=optimized_queryset,
+        schema=info.schema,
+        optimizer=optimizer,
+    )
+
+    # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
+    # The queryset should have the right model instance, since we started by filtering by its pk,
+    # so we can just pick that out of the result cache (if it hasn't been filtered out).
+    return next(iter(optimized_queryset._result_cache or []), None)
 
 
 class OptimizationCompiler(GraphQLASTWalker):
@@ -132,7 +119,20 @@ class OptimizationCompiler(GraphQLASTWalker):
         self.optimizer = QueryOptimizer(model=queryset.model, info=self.info)
 
         # Walk the query AST to compile the optimizations.
-        self.run()
+        try:
+            self.run()
+
+        # Allow known errors to be raised.
+        except OptimizerError:  # pragma: no cover
+            raise
+
+        # Raise unknown errors if not allowed to skip optimization on error.
+        except Exception as error:  # noqa: BLE001  # pragma: no cover
+            optimizer_logger.warning("Something went wrong during the optimization process.", exc_info=error)
+            if not optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
+                raise
+            return None
+
         return self.optimizer
 
     def increase_complexity(self) -> None:

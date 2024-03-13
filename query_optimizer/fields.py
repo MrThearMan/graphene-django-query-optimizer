@@ -16,7 +16,7 @@ from .ast import get_underlying_type
 from .cache import store_in_query_cache
 from .compiler import OptimizationCompiler, optimize
 from .settings import optimizer_settings
-from .utils import calculate_queryset_slice, check_for_optimizer_errors, is_optimized
+from .utils import calculate_queryset_slice, is_optimized
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     from graphql_relay import EdgeType
     from graphql_relay.connection.connection import ConnectionType
 
-    from .optimizer import QueryOptimizer
     from .typing import (
         Any,
         ConnectionResolver,
@@ -210,11 +209,9 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         # Note if the queryset has already been optimized.
         already_optimized = is_optimized(queryset)
 
-        optimizer: Optional[QueryOptimizer] = None  # REQUIRED!
-        with check_for_optimizer_errors():
-            optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
-            if optimizer is not None:
-                queryset = optimizer.optimize_queryset(queryset)
+        optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
+        if optimizer is not None:
+            queryset = optimizer.optimize_queryset(queryset)
 
         # Queryset optimization contains filtering, so we count after optimization.
         pagination_args["size"] = count = (
