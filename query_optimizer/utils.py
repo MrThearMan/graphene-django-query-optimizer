@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import TYPE_CHECKING
 
 from django.db import models
 
+from .errors import OptimizerError
 from .settings import optimizer_settings
 
 if TYPE_CHECKING:
@@ -15,13 +17,14 @@ if TYPE_CHECKING:
 
 
 __all__ = [
-    "SubqueryCount",
     "add_slice_to_queryset",
     "calculate_slice_for_queryset",
+    "check_for_optimizer_errors",
     "is_optimized",
     "mark_optimized",
     "mark_unoptimized",
     "optimizer_logger",
+    "SubqueryCount",
 ]
 
 
@@ -186,3 +189,18 @@ def add_slice_to_queryset(
 class SubqueryCount(models.Subquery):
     template = "(SELECT COUNT(*) FROM (%(subquery)s) _count)"
     output_field = models.BigIntegerField()
+
+
+@contextlib.contextmanager
+def check_for_optimizer_errors() -> None:
+    try:
+        yield
+
+    # Allow known errors to be raised.
+    except OptimizerError:  # pragma: no cover
+        raise
+
+    # Raise unknown errors if not allowed to skip optimization on error.
+    except Exception:  # noqa: BLE001  # pragma: no cover
+        if not optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
+            raise

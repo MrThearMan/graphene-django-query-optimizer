@@ -15,9 +15,8 @@ from graphql_relay.connection.array_connection import offset_to_cursor
 from .ast import get_underlying_type
 from .cache import store_in_query_cache
 from .compiler import OptimizationCompiler, optimize
-from .errors import OptimizerError
 from .settings import optimizer_settings
-from .utils import calculate_queryset_slice, is_optimized, optimizer_logger
+from .utils import calculate_queryset_slice, check_for_optimizer_errors, is_optimized
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
@@ -28,6 +27,7 @@ if TYPE_CHECKING:
     from graphql_relay import EdgeType
     from graphql_relay.connection.connection import ConnectionType
 
+    from .optimizer import QueryOptimizer
     from .typing import (
         Any,
         ConnectionResolver,
@@ -203,53 +203,40 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         # Otherwise, call the default resolver (usually `dict_or_attr_resolver`).
         result = self.resolver(root, info, **kwargs)
         queryset = self.to_queryset(result)
-        queryset = pre_optimized_queryset = self.underlying_type.get_queryset(queryset, info)
+        queryset = self.underlying_type.get_queryset(queryset, info)
 
         max_complexity: Optional[int] = getattr(self.underlying_type._meta, "max_complexity", None)
 
-        try:
-            # Note if the queryset has already been optimized.
-            already_optimized = is_optimized(queryset)
+        # Note if the queryset has already been optimized.
+        already_optimized = is_optimized(queryset)
 
+        optimizer: Optional[QueryOptimizer] = None  # REQUIRED!
+        with check_for_optimizer_errors():
             optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
             if optimizer is not None:
                 queryset = optimizer.optimize_queryset(queryset)
 
-            # Queryset optimization contains filtering, so we count after optimization.
-            pagination_args["size"] = count = (
-                queryset.count()
-                if not already_optimized
-                # If this is a nested connection field, prefetch queryset models should have been
-                # annotated with the queryset count (pick it from the first one).
-                else getattr(
-                    next(iter(queryset._result_cache), None),
-                    optimizer_settings.PREFETCH_COUNT_KEY,
-                    0,  # QuerySet result cache is empty -> count is 0.
-                )
+        # Queryset optimization contains filtering, so we count after optimization.
+        pagination_args["size"] = count = (
+            queryset.count()
+            if not already_optimized
+            # If this is a nested connection field, prefetch queryset models should have been
+            # annotated with the queryset count (pick it from the first one).
+            else getattr(
+                next(iter(queryset._result_cache or []), None),
+                optimizer_settings.PREFETCH_COUNT_KEY,
+                0,  # QuerySet result cache is empty -> count is 0.
             )
-            cut = calculate_queryset_slice(**pagination_args)
+        )
+        cut = calculate_queryset_slice(**pagination_args)
 
-            # Prefetch queryset has already been sliced.
-            if not already_optimized:
-                queryset = queryset[cut]
-
-            # Store data in cache after pagination
-            if optimizer:
-                store_in_query_cache(key=info.operation, queryset=queryset, schema=info.schema, optimizer=optimizer)
-
-        except OptimizerError:  # pragma: no cover
-            raise
-
-        except Exception as error:  # noqa: BLE001  # pragma: no cover
-            if not optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
-                raise
-
-            # If an error occurs during optimization, we should still return the unoptimized queryset.
-            optimizer_logger.warning("Something went wrong during the optimization process.", exc_info=error)
-            queryset = pre_optimized_queryset
-            pagination_args["size"] = count = queryset.count()
-            cut = calculate_queryset_slice(**pagination_args)
+        # Prefetch queryset has already been sliced.
+        if not already_optimized:
             queryset = queryset[cut]
+
+        # Store data in cache after pagination
+        if optimizer is not None:
+            store_in_query_cache(key=info.operation, queryset=queryset, schema=info.schema, optimizer=optimizer)
 
         # Create a connection from the sliced queryset.
         edges: list[EdgeType] = [
