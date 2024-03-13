@@ -4,7 +4,6 @@ import contextlib
 from contextlib import suppress
 from typing import TYPE_CHECKING, Iterable, Optional, Union
 
-import graphene
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Expression, ForeignKey, Manager, ManyToOneRel, Model, QuerySet
 from django.db.models.constants import LOOKUP_SEP
@@ -182,23 +181,24 @@ class OptimizationCompiler(GraphQLASTWalker):
         self.check_resolver_hints(field_type, field_node)
 
     def check_resolver_hints(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
-        graphene_field = getattr(field_type.graphene_type, to_snake_case(field_node.name.value), None)
+        field_name = to_snake_case(field_node.name.value)
+        maybe_resolver = getattr(getattr(field_type.graphene_type, field_name, None), "resolver", None)
 
-        if isinstance(graphene_field, graphene.Scalar):
-            resolver = field_type.fields[field_node.name.value].resolve
-        elif isinstance(graphene_field, graphene.Field):
-            resolver = graphene_field.resolver
-        else:  # pragma: no cover
-            msg = f"Unhandled graphene field type: {graphene_field}"
-            raise OptimizerError(msg)
+        anns: dict[str, Expression] = getattr(maybe_resolver, "annotations", {})
+        relations: tuple[str, ...] = getattr(maybe_resolver, "relations", ())
+        fields: tuple[str, ...] = getattr(maybe_resolver, "fields", ())
 
-        anns: dict[str, Expression] = getattr(resolver, "annotations", ())
+        maybe_resolver = getattr(field_type.fields.get(field_node.name.value, None), "resolve", None)
+
+        anns.update(getattr(maybe_resolver, "annotations", {}))
+        relations = (*relations, *getattr(maybe_resolver, "relations", ()))
+        fields = (*fields, *getattr(maybe_resolver, "fields", ()))
+
         if anns:
             self.optimizer.annotations.update(anns)
 
         model_fields: list[ModelField] = self.model._meta.get_fields()
 
-        relations: tuple[str, ...] = getattr(resolver, "relations", ())
         if relations:
             for relation in relations:
                 with suppress(FieldDoesNotExist):
@@ -214,7 +214,6 @@ class OptimizationCompiler(GraphQLASTWalker):
                         msg = f"Hinted related field {relation} is not a related field."
                         raise OptimizerError(msg)
 
-        fields: tuple[str, ...] = getattr(resolver, "fields", ())
         for field_name in fields:
             hint_optimizer = QueryOptimizer(model=self.model, info=self.info)
             self.find_field_from_model(field_name, model_fields, hint_optimizer)
