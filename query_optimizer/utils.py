@@ -8,7 +8,7 @@ from django.db import models
 from .settings import optimizer_settings
 
 if TYPE_CHECKING:
-    from .typing import Optional, ParamSpec, TypeVar
+    from .typing import Optional, ParamSpec, TypeVar, Union
 
     T = TypeVar("T")
     P = ParamSpec("P")
@@ -38,8 +38,11 @@ def mark_unoptimized(queryset: models.QuerySet) -> None:  # pragma: no cover
     queryset._hints.pop(optimizer_settings.OPTIMIZER_MARK, None)  # type: ignore[attr-defined]
 
 
-def is_optimized(queryset: models.QuerySet) -> bool:
+def is_optimized(queryset: Union[models.QuerySet, list[models.Model]]) -> bool:
     """Has the queryset been optimized?"""
+    # If Prefetch(..., to_attr=...) is used, the relation is a list of models.
+    if isinstance(queryset, list):
+        return True
     return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)  # type: ignore[no-any-return, attr-defined]
 
 

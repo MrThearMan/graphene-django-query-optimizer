@@ -113,10 +113,16 @@ def _add_selected(query_cache: QueryCache, instance: Model, optimizer: QueryOpti
 
 def _add_prefetched(query_cache: QueryCache, instance: Model, optimizer: QueryOptimizer) -> None:
     for nested_name, nested_optimizer in optimizer.prefetch_related.items():
-        # Here we can fetch the many-related items from the instance with `.all()`
-        # without hitting the database, because the items have already been prefetched.
-        # See: `django.db.models.fields.related_descriptors.RelatedManager.get_queryset`
-        # and `django.db.models.fields.related_descriptors.ManyRelatedManager.get_queryset`
-        selected: QuerySet[Model] = getattr(instance, nested_name).all()
+        if nested_optimizer.to_attr is not None:
+            # If `to_attr` is defined, Prefetch(..., to_attr=...) was used in the query.
+            # This means the relation items are a list of models.
+            selected: list[Model] = getattr(instance, nested_optimizer.to_attr)
+        else:
+            # Here we can fetch the many-related items from the instance with `.all()`
+            # without hitting the database, because the items have already been prefetched.
+            # See: `django.db.models.fields.related_descriptors.RelatedManager.get_queryset`
+            # and `django.db.models.fields.related_descriptors.ManyRelatedManager.get_queryset`
+            selected: QuerySet[Model] = getattr(instance, nested_name).all()
+
         for select in selected:
             _add_item(query_cache, select, nested_optimizer)

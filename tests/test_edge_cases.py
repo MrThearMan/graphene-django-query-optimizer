@@ -117,7 +117,28 @@ def test_optimizer__pk_fields(client_query):
     assert queries == 1, results.log
 
 
-def test_optimizer__annotated_value(client_query):
+def test_optimizer__annotated_field(client_query):
+    query = """
+        query {
+          allHousingCompanies {
+            greeting
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for fetching HousingCompanies
+    assert queries == 1, results.log
+    assert content["data"]["allHousingCompanies"][0]["greeting"].startswith("Hello")
+
+
+def test_optimizer__annotated_field__annotation_needs_joins(client_query):
     query = """
         query {
           examples {
@@ -136,7 +157,30 @@ def test_optimizer__annotated_value(client_query):
     assert results.query_count == 1, results.log
 
 
-def test_optimizer__select_related_promoted_to_prefetch_due_to_annotations(client_query):
+def test_optimizer__annotated_field__in_relations(client_query):
+    query = """
+        query {
+          allDevelopers {
+            housingcompanySet {
+              greeting
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for fetching Developers
+    # 1 query for fetching HousingCompanies with custom fields
+    assert queries == 2, results.log
+
+
+def test_optimizer__annotated_field__select_related_promoted_to_prefetch(client_query):
     query = """
         query {
           examples {
@@ -159,32 +203,18 @@ def test_optimizer__select_related_promoted_to_prefetch_due_to_annotations(clien
     assert results.query_count == 2, results.log
 
 
-def test_optimizer__named_relation(client_query):
+def test_optimizer__alternate_field__related_field(client_query):
     query = """
         query {
-          examples {
-            customRelation
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-    assert "data" in content, content
-
-    # 1 query for all examples
-    # 1 query for fetching the named relations on each example
-    assert results.query_count == 1, results.log
-
-
-def test_optimizer__required_fields(client_query):
-    query = """
-        query {
-          allHousingCompanies {
-            primary
+          pagedHousingCompanies {
+            edges {
+              node {
+                name
+                propertyManagerAlt {
+                  name
+                }
+              }
+            }
           }
         }
     """
@@ -196,60 +226,41 @@ def test_optimizer__required_fields(client_query):
     assert "errors" not in content, content["errors"]
 
     queries = len(results.queries)
+    # 1 query for counting HousingCompanies
+    # 1 query for fetching HousingCompanies with PropertyManagers
+    assert queries == 2, results.log
+
+
+def test_optimizer__alternate_field__list_field(client_query):
+    query = """
+        query {
+          pagedHousingCompanies {
+            edges {
+              node {
+                name
+                developersAlt {
+                  name
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting HousingCompanies
     # 1 query for fetching HousingCompanies
-    # 1 query for fetching primary RealEstate
-    assert queries == 2, results.log
+    # 1 query for fetching nested Developers (to the alternate field)
+    assert queries == 3, results.log
 
 
-def test_optimizer__required_fields__in_relations(client_query):
-    query = """
-        query {
-          allDevelopers {
-            housingcompanySet {
-              greeting
-              manager
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    queries = len(results.queries)
-    # 1 query for fetching Developers
-    # 1 query for fetching HousingCompanies with custom attributes
-    assert queries == 2, results.log
-
-
-def test_optimizer__required_fields__backtracking(client_query):
-    query = """
-        query {
-          allRealEstates {
-            name
-            housingCompany {
-              primary
-            }
-          }
-        }
-    """
-
-    with capture_database_queries() as results:
-        response = client_query(query)
-
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
-
-    queries = len(results.queries)
-    # 1 query for fetching RealEstates and related HousingCompanies
-    # 1 query for fetching primary RealEstate
-    assert queries == 2, results.log
-
-
-def test_optimizer__required_relations(client_query):
+def test_optimizer__alternate_field__connection(client_query):
     query = """
         query {
           pagedPropertyManagers {
@@ -278,5 +289,34 @@ def test_optimizer__required_relations(client_query):
     queries = len(results.queries)
     # 1 query for counting PropertyManagers
     # 1 query for fetching PropertyManagers
-    # 1 query for fetching nested HousingCompanies
+    # 1 query for fetching nested HousingCompanies (to the alternate field)
+    assert queries == 3, results.log
+
+
+def test_optimizer__alternate_field__one_to_many(client_query):
+    query = """
+        query {
+          pagedHousingCompanies {
+            edges {
+              node {
+                name
+                realEstatesAlt {
+                  name
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting HousingCompanies
+    # 1 query for fetching HousingCompanies
+    # 1 query for fetching nested RealEstates (to the alternate field)
     assert queries == 3, results.log

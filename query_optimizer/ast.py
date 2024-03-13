@@ -102,11 +102,14 @@ class GraphQLASTWalker:
         return self.handle_selections(graphene_type, selections)
 
     def handle_object_type(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
-        model: type[Model] = field_type.graphene_type._meta.model
         field_name = to_snake_case(field_node.name.value)
         if is_graphql_builtin(field_name):
             return None
 
+        return self.handle_model_field(field_type, field_node, field_name)
+
+    def handle_model_field(self, field_type: GrapheneObjectType, field_node: FieldNode, field_name: str) -> None:
+        model: type[Model] = field_type.graphene_type._meta.model
         field = get_model_field(model, field_name)
 
         if field is None:

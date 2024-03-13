@@ -21,6 +21,7 @@ from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
     from django.db import models
+    from django.db.models import Model
     from django.db.models.manager import Manager
     from graphene.relay.connection import Connection
     from graphene_django import DjangoObjectType
@@ -29,7 +30,9 @@ if TYPE_CHECKING:
 
     from .typing import (
         Any,
+        Callable,
         ConnectionResolver,
+        Expr,
         GQLInfo,
         ModelResolver,
         ObjectTypeInput,
@@ -38,6 +41,7 @@ if TYPE_CHECKING:
         Type,
         TypeVar,
         Union,
+        UnmountedTypeInput,
     )
 
     TModel = TypeVar("TModel", bound=models.Model)
@@ -50,17 +54,31 @@ __all__ = [
 
 
 class RelatedField(graphene.Field):
-    """Field for `to-one` related models with automatic node resolution."""
+    """Field for `to-one` related models with default resolvers."""
 
-    def __init__(self, type_: ObjectTypeInput, *, reverse: bool = False, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        type_: ObjectTypeInput,
+        /,
+        *,
+        reverse: bool = False,
+        field_name: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize a related field for the given type.
 
-        :param type_: Object type or dot import path to the object type.
+        :param type_: DjangoObjectType the related field is for.
+                      This can also be a dot import path to the object type,
+                      or a callable that returns the object type.
         :param reverse: Is the relation direction forward or reverse?
+        :param field_name: The name of the model field or related accessor this related field is for.
+                           Only needed if the field name on the ObjectType this field is
+                           defined on is different from the field name on the model.
         :param kwargs: Extra arguments passed to `graphene.types.field.Field`.
         """
         self.reverse = reverse
+        self.field_name = field_name
         super().__init__(type_, **kwargs)
 
     def wrap_resolve(self, parent_resolver: ModelResolver) -> ModelResolver:
@@ -72,7 +90,7 @@ class RelatedField(graphene.Field):
         return self.forward_resolver
 
     def forward_resolver(self, root: models.Model, info: GQLInfo) -> Optional[models.Model]:
-        field_name = to_snake_case(info.field_name)
+        field_name = self.field_name or to_snake_case(info.field_name)
         db_field_key: str = root.__class__._meta.get_field(field_name).attname
         object_pk = getattr(root, db_field_key, None)
         if object_pk is None:  # pragma: no cover
@@ -80,7 +98,7 @@ class RelatedField(graphene.Field):
         return self.underlying_type.get_node(info, object_pk)
 
     def reverse_resolver(self, root: models.Model, info: GQLInfo) -> Optional[models.Model]:
-        field_name = to_snake_case(info.field_name)
+        field_name = self.field_name or to_snake_case(info.field_name)
         # Reverse object should be optimized to the root model.
         reverse_object: Optional[models.Model] = getattr(root, field_name, None)
         if reverse_object is None:
@@ -122,16 +140,31 @@ class FilteringMixin:
 
 
 class DjangoListField(FilteringMixin, graphene.Field):
-    """Django list field that also supports filtering."""
+    """DjangoListField that also supports filtering."""
 
-    def __init__(self, type_: ObjectTypeInput, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        type_: ObjectTypeInput,
+        /,
+        *,
+        no_filters: bool = False,
+        field_name: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize a list field for the given type.
 
-        :param type_: Object type or dot import path to the object type.
-        :param kwargs:  Extra arguments passed to `graphene.types.field.Field`.
+        :param type_: DjangoObjectType the list field is for.
+                      This can also be a dot import path to the object type,
+                      or a callable that returns the object type.
+        :param no_filters: Should filterset filters be disabled for this field?
+        :param field_name: The name of the model field or related accessor this list field is for.
+                           Only needed if the field name on the ObjectType this field is
+                           defined on is different from the field name on the model.
+        :param kwargs: Extra arguments passed to `graphene.types.field.Field`.
         """
-        self.no_filters = kwargs.pop("no_filters", False)
+        self.no_filters = no_filters
+        self.field_name = field_name
         if isinstance(type_, graphene.NonNull):  # pragma: no cover
             type_ = type_.of_type
         super().__init__(graphene.List(graphene.NonNull(type_)), **kwargs)
@@ -164,19 +197,37 @@ class DjangoListField(FilteringMixin, graphene.Field):
 
 
 class DjangoConnectionField(FilteringMixin, graphene.Field):
-    """Connection field for Django models that works for both filtered and non-filtered Relay-nodes."""
+    """DjangoConnectionField for Django models that works for both filtered and non-filtered Relay-nodes."""
 
-    def __init__(self, type_: ObjectTypeInput, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        type_: ObjectTypeInput,
+        /,
+        *,
+        max_limit: Optional[int] = ...,
+        no_filters: bool = False,
+        field_name: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
         """
         Initialize a connection field for the given type.
 
         :param type_: DjangoObjectType the connection is for.
+                      This can also be a dot import path to the object type,
+                      or a callable that returns the object type.
+        :param max_limit: Maximum number of items that can be requested in a single query for this connection.
+                          Set to None to disable the limit.
+        :param no_filters: Should filterset filters be disabled for this field?
+        :param field_name: The name of the model field or related accessor this connection is for.
+                           Only needed if the field name on the ObjectType this field is
+                           defined on is different from the field name on the model.
         :param kwargs: Extra arguments passed to `graphene.types.field.Field`.
         """
         # Maximum number of items that can be requested in a single query for this connection.
         # Set to None to disable the limit.
-        self.max_limit: Optional[int] = kwargs.pop("max_limit", graphene_settings.RELAY_CONNECTION_MAX_LIMIT)
-        self.no_filters = kwargs.pop("no_filters", False)
+        self.max_limit = max_limit if max_limit is not ... else graphene_settings.RELAY_CONNECTION_MAX_LIMIT
+        self.no_filters = no_filters
+        self.field_name = field_name
 
         # Default inputs for a connection field
         kwargs.setdefault("first", graphene.Int())
@@ -220,10 +271,13 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         pagination_args["size"] = count = (
             queryset.count()
             if not already_optimized
+            # Prefetch(..., to_attr=...) will return a list of models.
+            else len(queryset)
+            if isinstance(queryset, list)
             # If this is a nested connection field, prefetch queryset models should have been
             # annotated with the queryset count (pick it from the first one).
             else getattr(
-                next(iter(queryset._result_cache or []), None),
+                next(iter(getattr(queryset, "_result_cache", []) or []), None),
                 optimizer_settings.PREFETCH_COUNT_KEY,
                 0,  # QuerySet result cache is empty -> count is 0.
             )
@@ -293,3 +347,25 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
     @cached_property
     def model(self) -> Type[models.Model]:
         return self.underlying_type._meta.model
+
+
+class AnnotatedField(graphene.Field):
+    """Field for resolving Django ORM expressions that the optimizer will annotate to the queryset."""
+
+    def __init__(self, type_: UnmountedTypeInput, /, expression: Expr, **kwargs: Any) -> None:
+        self.expression = expression
+        super().__init__(type_, **kwargs)
+
+    def __set_name__(self, owner: type[DjangoObjectType], name: str) -> None:
+        # Get the name of the field from the owner class.
+        # This will be the annotated name in the queryset.
+        self.name = name
+
+    def wrap_resolve(self, parent_resolver: Callable[..., Any]) -> Callable[..., Any]:
+        # `parent_resolver` is either a `resolve_{self.name}` method defined
+        # on the owner class, or `dict_or_attr_resolver`.
+        self.resolver = parent_resolver
+        return self.annotation_resolver
+
+    def annotation_resolver(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
+        return self.resolver(root, self.name, **kwargs)

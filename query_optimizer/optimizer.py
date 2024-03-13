@@ -52,7 +52,7 @@ class CompilationResults:
 class QueryOptimizer:
     """Creates optimized queryset based on the optimization data found by the OptimizationCompiler."""
 
-    def __init__(self, model: type[Model], info: GQLInfo) -> None:
+    def __init__(self, model: type[Model], info: GQLInfo, to_attr: Optional[str] = None) -> None:
         self.model = model
         self.info = info
         self.only_fields: list[str] = []
@@ -62,6 +62,7 @@ class QueryOptimizer:
         self.prefetch_related: dict[str, QueryOptimizer] = {}
         self._cache_key: Optional[str] = None  # generated during the optimization process
         self.total_count: bool = False
+        self.to_attr = to_attr
 
     def optimize_queryset(
         self,
@@ -147,7 +148,7 @@ class QueryOptimizer:
         queryset = optimizer.model._default_manager.all()
         queryset = optimizer.optimize_queryset(queryset, filter_info=filter_info)
         queryset = optimizer.paginate_prefetch_queryset(self.model, queryset, name, filter_info=filter_info)
-        results.prefetch_related.append(Prefetch(name, queryset))
+        results.prefetch_related.append(Prefetch(name, queryset, to_attr=optimizer.to_attr))
 
     def paginate_prefetch_queryset(
         self,
@@ -258,14 +259,6 @@ class QueryOptimizer:
         if self._cache_key is None:
             self.compile(filter_info={})
         return self._cache_key
-
-    def __add__(self, other: QueryOptimizer) -> QueryOptimizer:
-        self.only_fields += other.only_fields
-        self.related_fields += other.related_fields
-        self.annotations.update(other.annotations)
-        self.select_related.update(other.select_related)
-        self.prefetch_related.update(other.prefetch_related)
-        return self
 
     def __str__(self) -> str:  # pragma: no cover
         return self.cache_key
