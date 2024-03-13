@@ -20,6 +20,7 @@ from typing import (
 )
 
 from graphene.relay.connection import ConnectionOptions
+from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions
 from graphql_relay import ConnectionType
 
@@ -54,13 +55,14 @@ if TYPE_CHECKING:
 __all__ = [
     "Any",
     "Callable",
+    "cast",
     "Collection",
     "ConnectionResolver",
     "FieldNodes",
     "FilterFields",
+    "Generator",
     "GQLInfo",
     "GRAPHQL_BUILTIN",
-    "Generator",
     "GraphQLFilterInfo",
     "Hashable",
     "Iterable",
@@ -68,24 +70,24 @@ __all__ = [
     "ModelField",
     "ModelResolver",
     "NamedTuple",
+    "ObjectTypeInput",
     "OptimizedDjangoOptions",
     "OptimizerKey",
     "Optional",
-    "PK",
+    "overload",
     "ParamSpec",
+    "PK",
     "QueryCache",
     "QuerySetResolver",
     "TableName",
     "ToManyField",
     "ToOneField",
     "Type",
+    "TypedDict",
     "TypeGuard",
     "TypeOptions",
     "TypeVar",
-    "TypedDict",
     "Union",
-    "overload",
-    "cast",
 ]
 
 
@@ -105,6 +107,8 @@ QuerySetResolver = Callable[..., Union[QuerySet, Manager, None]]
 ModelResolver = Callable[..., Union[Model, None]]
 ConnectionResolver = Callable[..., ConnectionType]
 FieldNodes = Iterable[Union[FieldNode, SelectionNode]]
+ObjectTypeInput = Union[type[DjangoObjectType], str, Callable[[], type[DjangoObjectType]]]
+
 
 GRAPHQL_BUILTIN = (
     "__typename",

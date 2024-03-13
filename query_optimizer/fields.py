@@ -32,6 +32,7 @@ if TYPE_CHECKING:
         ConnectionResolver,
         GQLInfo,
         ModelResolver,
+        ObjectTypeInput,
         Optional,
         QuerySetResolver,
         Type,
@@ -40,7 +41,6 @@ if TYPE_CHECKING:
     )
 
     TModel = TypeVar("TModel", bound=models.Model)
-
 
 __all__ = [
     "DjangoConnectionField",
@@ -52,7 +52,7 @@ __all__ = [
 class RelatedField(graphene.Field):
     """Field for `to-one` related models with automatic node resolution."""
 
-    def __init__(self, type_: Union[type[DjangoObjectType], str], *, reverse: bool = False, **kwargs: Any) -> None:
+    def __init__(self, type_: ObjectTypeInput, *, reverse: bool = False, **kwargs: Any) -> None:
         """
         Initialize a related field for the given type.
 
@@ -121,7 +121,7 @@ class FilteringMixin:
 class DjangoListField(FilteringMixin, graphene.Field):
     """Django list field that also supports filtering."""
 
-    def __init__(self, type_: Union[Type[DjangoObjectType], str], **kwargs: Any) -> None:
+    def __init__(self, type_: ObjectTypeInput, **kwargs: Any) -> None:
         """
         Initialize a list field for the given type.
 
@@ -163,7 +163,7 @@ class DjangoListField(FilteringMixin, graphene.Field):
 class DjangoConnectionField(FilteringMixin, graphene.Field):
     """Connection field for Django models that works for both filtered and non-filtered Relay-nodes."""
 
-    def __init__(self, type_: Union[Type[DjangoObjectType], str], **kwargs: Any) -> None:
+    def __init__(self, type_: ObjectTypeInput, **kwargs: Any) -> None:
         """
         Initialize a connection field for the given type.
 
