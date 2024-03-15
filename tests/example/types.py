@@ -127,6 +127,9 @@ class HousingCompanyType(DjangoObjectType):
     def resolve_name(root: HousingCompany, info: GQLInfo) -> str:
         return root.name
 
+    def resolve_postal_code(root: HousingCompany, info: GQLInfo) -> PostalCode:
+        return root.postal_code
+
     greeting = graphene.String()
     manager = graphene.String()
     primary = graphene.String()

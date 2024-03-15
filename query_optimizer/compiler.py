@@ -65,7 +65,7 @@ def optimize_single(
     queryset = queryset.filter(pk=pk)
 
     optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
-    if optimizer is None:
+    if optimizer is None:  # pragma: no cover
         return queryset.first()
 
     cached_item = get_from_query_cache(info.operation, info.schema, queryset.model, pk, optimizer)

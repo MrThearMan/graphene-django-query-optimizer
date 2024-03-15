@@ -1,7 +1,7 @@
 # ruff: noqa: UP006
 from __future__ import annotations
 
-from functools import cached_property
+from functools import cached_property, partial
 from typing import TYPE_CHECKING
 
 import graphene
@@ -64,6 +64,9 @@ class RelatedField(graphene.Field):
         super().__init__(type_, **kwargs)
 
     def wrap_resolve(self, parent_resolver: ModelResolver) -> ModelResolver:
+        # Allow user defined resolvers to override the default behavior.
+        if not isinstance(parent_resolver, partial):
+            return parent_resolver
         if self.reverse:
             return self.reverse_resolver
         return self.forward_resolver
