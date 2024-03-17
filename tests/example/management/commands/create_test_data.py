@@ -154,6 +154,7 @@ def create_real_estates(housing_companies: list[HousingCompany]) -> list[RealEst
             surface_area=random.randint(1, 200),
             housing_company=housing_company,
         )
+        for _ in range(2)
         for housing_company in housing_companies
     ]
 
