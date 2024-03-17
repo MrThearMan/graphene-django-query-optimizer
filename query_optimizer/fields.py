@@ -290,7 +290,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
 
         # Store data in cache after pagination
         if optimizer is not None:
-            store_in_query_cache(key=info.operation, queryset=queryset, schema=info.schema, optimizer=optimizer)
+            store_in_query_cache(queryset, optimizer, info)
 
         # Create a connection from the sliced queryset.
         edges: list[EdgeType] = [

@@ -42,7 +42,7 @@ def optimize(
     optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
     if optimizer is not None:
         queryset = optimizer.optimize_queryset(queryset)
-        store_in_query_cache(key=info.operation, queryset=queryset, schema=info.schema, optimizer=optimizer)
+        store_in_query_cache(queryset, optimizer, info)
 
     return queryset
 
@@ -61,12 +61,12 @@ def optimize_single(
     if optimizer is None:  # pragma: no cover
         return queryset.first()
 
-    cached_item = get_from_query_cache(info.operation, info.schema, queryset.model, pk, optimizer)
+    cached_item = get_from_query_cache(queryset.model, pk, optimizer, info)
     if cached_item is not None:
         return cached_item
 
     optimized_queryset = optimizer.optimize_queryset(queryset)
-    store_in_query_cache(key=info.operation, queryset=optimized_queryset, schema=info.schema, optimizer=optimizer)
+    store_in_query_cache(optimized_queryset, optimizer, info)
 
     # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
     # The queryset should have the right model instance, since we started by filtering by its pk,
