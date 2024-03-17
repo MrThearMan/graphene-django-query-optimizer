@@ -23,6 +23,7 @@ from .types import (
     ApartmentType,
     BuildingNode,
     BuildingType,
+    DeveloperNode,
     DeveloperType,
     ExampleType,
     HousingCompanyNode,
@@ -69,6 +70,8 @@ class Query(graphene.ObjectType):
     def resolve_housing_company_by_name(parent: None, info: GQLInfo, name: str) -> models.QuerySet[HousingCompany]:
         return optimize(HousingCompany.objects.filter(name=name), info)
 
+    developer = relay.Node.Field(DeveloperNode)
+    paged_developers = DjangoConnectionField(DeveloperNode)
     apartment = relay.Node.Field(ApartmentNode)
     paged_apartments = DjangoConnectionField(ApartmentNode)
     building = relay.Node.Field(BuildingNode)
