@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import dataclasses
+from copy import copy
 from typing import TYPE_CHECKING
 
-from django.core.exceptions import FieldDoesNotExist, ValidationError
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Expression, Model, Prefetch, QuerySet
 from django.db.models.constants import LOOKUP_SEP
@@ -11,7 +12,9 @@ from django.db.models.functions import RowNumber
 from graphene_django.registry import get_global_registry
 from graphene_django.settings import graphene_settings
 
+from .ast import get_model_field
 from .filter_info import get_filter_info
+from .prefetch_hack import _register_for_prefetch_hack
 from .settings import optimizer_settings
 from .utils import (
     SubqueryCount,
@@ -25,7 +28,7 @@ from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
     from .types import DjangoObjectType
-    from .typing import Any, GQLInfo, GraphQLFilterInfo, Optional, TypeVar
+    from .typing import Any, GQLInfo, GraphQLFilterInfo, Optional, ToManyField, TypeVar
 
     TModel = TypeVar("TModel", bound=Model)
 
@@ -162,6 +165,24 @@ class QueryOptimizer:
         if not filter_info.get("is_connection", False):
             return queryset
 
+        field: Optional[ToManyField] = get_model_field(parent_model, name)
+        if field is None:
+            msg = f"Cannot find field {name!r} on model {parent_model.__name__!r}. Cannot optimize nested pagination."
+            optimizer_logger.warning(msg)
+            return queryset
+
+        remote_field = field.remote_field
+        field_name = remote_field.name if isinstance(field, models.ManyToManyField) else remote_field.attname
+
+        order_by: list[str] = (
+            # Use the `order_by` from the filter info, if available
+            [x for x in filter_info.get("filters", {}).get("order_by", "").split(",") if x]
+            # Use the model's `Meta.ordering` if no `order_by` is given
+            or copy(queryset.model._meta.ordering)
+            # No ordering if neither is available
+            or []
+        )
+
         pagination_args = validate_pagination_args(
             after=filter_info.get("filters", {}).get("after"),
             before=filter_info.get("filters", {}).get("before"),
@@ -169,26 +190,6 @@ class QueryOptimizer:
             first=filter_info.get("filters", {}).get("first"),
             last=filter_info.get("filters", {}).get("last"),
             max_limit=filter_info.get("max_limit", graphene_settings.RELAY_CONNECTION_MAX_LIMIT),
-        )
-
-        try:
-            # Try to find the prefetch join field from the model to use for partitioning.
-            field = parent_model._meta.get_field(name)
-        except FieldDoesNotExist:
-            msg = f"Cannot find field {name!r} on model {parent_model.__name__!r}. Cannot optimize nested pagination."
-            optimizer_logger.warning(msg)
-            return queryset
-
-        field_name: str = (
-            field.remote_field.name if isinstance(field, models.ManyToManyField) else field.remote_field.attname
-        )
-        order_by: Optional[list[str]] = (
-            # Use the `order_by` from the filter info, if available
-            [x for x in filter_info.get("filters", {}).get("order_by", "").split(",") if x]
-            # Use the model's `Meta.ordering` if no `order_by` is given
-            or queryset.model._meta.ordering
-            # No ordering if neither is available
-            or None
         )
 
         if self.total_count or pagination_args.get("last") is not None or pagination_args.get("size") is None:
@@ -215,6 +216,8 @@ class QueryOptimizer:
         else:
             cut = calculate_queryset_slice(**pagination_args)
             queryset = add_slice_to_queryset(queryset, start=models.Value(cut.start), stop=models.Value(cut.stop))
+
+        _register_for_prefetch_hack(self.info, field)
 
         return (
             queryset

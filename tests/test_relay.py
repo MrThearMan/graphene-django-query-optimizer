@@ -614,7 +614,39 @@ def test_optimizer__relay_connection__nested__many_to_many(client_query):
     # 1 query for fetching HousingCompanies
     # 1 query for fetching RealEstates
     assert queries == 3, results.log
-    # Check that nested connection is limited even without any pagination args (based on settings)
+
+
+def test_optimizer__relay_connection__nested__many_to_many__reverse(client_query):
+    query = """
+        query {
+          pagedDevelopers {
+            edges {
+              node {
+                name
+                housingcompanySet {
+                  edges {
+                    node {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting Developers
+    # 1 query for fetching Developers
+    # 1 query for fetching HousingCompanies
+    assert queries == 3, results.log
 
 
 def test_optimizer__relay_connection__nested__paginated(client_query):
@@ -662,6 +694,80 @@ def test_optimizer__relay_connection__nested__paginated(client_query):
         '"example_apartment"."apartment_number" DESC)'
     )
     assert match in results.queries[2], results.log
+
+
+def test_optimizer__relay_connection__nested__paginated__many_to_many(client_query):
+    query = """
+        query {
+          pagedHousingCompanies {
+            edges {
+              node {
+                name
+                developers(first:2) {
+                  edges {
+                    node {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting HousingCompanies
+    # 1 query for fetching HousingCompanies
+    # 1 query for fetching RealEstates
+    assert queries == 3, results.log
+
+    # Check that nested connection is limited with pagination
+    housing_companies = [edge["node"] for edge in content["data"]["pagedHousingCompanies"]["edges"]]
+    assert all(len(housing_company["developers"]["edges"]) <= 2 for housing_company in housing_companies)
+
+
+def test_optimizer__relay_connection__nested__paginated__many_to_many__reverse(client_query):
+    query = """
+        query {
+          pagedDevelopers {
+            edges {
+              node {
+                name
+                housingcompanySet(first:2) {
+                  edges {
+                    node {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    with capture_database_queries() as results:
+        response = client_query(query)
+
+    content = json.loads(response.content)
+    assert "errors" not in content, content["errors"]
+
+    queries = len(results.queries)
+    # 1 query for counting Developers
+    # 1 query for fetching Developers
+    # 1 query for fetching HousingCompanies
+    assert queries == 3, results.log
+
+    # Check that nested connection is limited with pagination
+    developers = [edge["node"] for edge in content["data"]["pagedDevelopers"]["edges"]]
+    assert all(len(developer["housingcompanySet"]["edges"]) <= 2 for developer in developers)
 
 
 def test_optimizer__relay_connection__nested__paginated__custom_ordering(client_query):

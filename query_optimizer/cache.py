@@ -4,6 +4,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
+from .prefetch_hack import fetch_context
 from .settings import optimizer_settings
 
 if TYPE_CHECKING:
@@ -66,7 +67,9 @@ def store_in_query_cache(queryset: QuerySet, optimizer: QueryOptimizer, info: GQ
     :param info: The GraphQLResolveInfo object. Used for getting the optimizer cache.
     """
     query_cache = get_query_cache(info)
-    items = list(queryset)
+    with fetch_context():
+        items = list(queryset)  # the database query will occur here
+
     if not items:
         return
 
