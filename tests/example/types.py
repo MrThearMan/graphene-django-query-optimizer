@@ -8,6 +8,7 @@ from graphene import relay, Connection
 from query_optimizer import DjangoObjectType
 from query_optimizer.fields import AnnotatedField, DjangoConnectionField, DjangoListField, RelatedField
 from query_optimizer.filter import FilterSet
+from query_optimizer.settings import optimizer_settings
 from query_optimizer.typing import GQLInfo, Any
 from tests.example.models import (
     Apartment,
@@ -252,6 +253,18 @@ class IsTypeOfProxyPatch:
 
 
 class DeveloperNode(IsTypeOfProxyPatch, DjangoObjectType):
+    housingcompany_set = DjangoConnectionField(lambda: HousingCompanyNode)
+
+    idx = graphene.Field(graphene.Int)
+
+    def resolve_idx(root: DeveloperProxy, info: GQLInfo) -> int:
+        return getattr(root, optimizer_settings.PREFETCH_PARTITION_INDEX, -1)
+
+    housing_company_id = graphene.Field(graphene.Int)
+
+    def resolve_housing_company_id(root: DeveloperProxy, info: GQLInfo) -> str:
+        return getattr(root, "_prefetch_related_val_housingcompany_id", -1)
+
     class Meta:
         model = DeveloperProxy
         interfaces = (relay.Node,)
@@ -339,6 +352,16 @@ class HousingCompanyNode(IsTypeOfProxyPatch, DjangoObjectType):
     developers_alt = DjangoListField(DeveloperNode, field_name="developers")
     property_manager_alt = RelatedField(lambda: PropertyManagerNode, field_name="property_manager")
     real_estates_alt = DjangoListField(RealEstateNode, field_name="real_estates")
+
+    idx = graphene.Field(graphene.Int)
+
+    def resolve_idx(root: HousingCompanyProxy, info: GQLInfo) -> int:
+        return getattr(root, optimizer_settings.PREFETCH_PARTITION_INDEX, -1)
+
+    developer_id = graphene.Field(graphene.Int)
+
+    def resolve_developer_id(root: HousingCompanyProxy, info: GQLInfo) -> list[int]:
+        return getattr(root, "_prefetch_related_val_developer_id", -1)
 
     class Meta:
         model = HousingCompanyProxy
