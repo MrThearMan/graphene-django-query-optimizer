@@ -272,6 +272,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
             queryset.count()
             if not already_optimized
             # Prefetch(..., to_attr=...) will return a list of models.
+            # TODO: This might be wrong.
             else len(queryset)
             if isinstance(queryset, list)
             # If this is a nested connection field, prefetch queryset models should have been

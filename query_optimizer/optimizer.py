@@ -94,10 +94,10 @@ class QueryOptimizer:
 
         queryset = self.get_filtered_queryset(queryset)
 
-        if results.prefetch_related:
-            queryset = queryset.prefetch_related(*results.prefetch_related)
         if results.select_related:
             queryset = queryset.select_related(*results.select_related)
+        if results.prefetch_related:
+            queryset = queryset.prefetch_related(*results.prefetch_related)
         if not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (results.only_fields or self.related_fields):
             queryset = queryset.only(*results.only_fields, *self.related_fields)
         if self.annotations:

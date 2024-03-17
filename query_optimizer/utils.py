@@ -15,13 +15,13 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "SubqueryCount",
     "add_slice_to_queryset",
     "calculate_slice_for_queryset",
     "is_optimized",
     "mark_optimized",
-    "mark_unoptimized",
     "optimizer_logger",
-    "SubqueryCount",
+    "remove_optimized_mark",
 ]
 
 
@@ -30,12 +30,12 @@ optimizer_logger = logging.getLogger("query_optimizer")
 
 def mark_optimized(queryset: models.QuerySet) -> None:
     """Mark queryset as optimized so that later optimizers know to skip optimization"""
-    queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True  # type: ignore[attr-defined]
+    queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True
 
 
-def mark_unoptimized(queryset: models.QuerySet) -> None:  # pragma: no cover
+def remove_optimized_mark(queryset: models.QuerySet) -> None:  # pragma: no cover
     """Mark queryset as unoptimized so that later optimizers will run optimization"""
-    queryset._hints.pop(optimizer_settings.OPTIMIZER_MARK, None)  # type: ignore[attr-defined]
+    queryset._hints.pop(optimizer_settings.OPTIMIZER_MARK, None)
 
 
 def is_optimized(queryset: Union[models.QuerySet, list[models.Model]]) -> bool:
@@ -43,7 +43,7 @@ def is_optimized(queryset: Union[models.QuerySet, list[models.Model]]) -> bool:
     # If Prefetch(..., to_attr=...) is used, the relation is a list of models.
     if isinstance(queryset, list):
         return True
-    return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)  # type: ignore[no-any-return, attr-defined]
+    return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)
 
 
 def calculate_queryset_slice(
