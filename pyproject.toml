@@ -61,12 +61,12 @@ filter = ["django-filter"]
 
 [tool.poetry.group.test.dependencies]
 pytest = "8.1.1"
-coverage = "7.4.3"
+coverage = "7.4.4"
 pytest-django = "4.8.0"
 pre-commit = "3.6.2"
 tox = "4.14.1"
 tox-gh-actions = "3.2.0"
-faker = "24.1.0"
+faker = "24.2.0"
 sqlparse = "0.4.4"
 django-graphiql-debug-toolbar = "0.2.0"
 py-spy = "0.3.14"
