@@ -12,6 +12,7 @@ from typing import (
     Literal,
     NamedTuple,
     Optional,
+    Protocol,
     Type,
     TypedDict,
     TypeVar,
@@ -53,6 +54,7 @@ from graphql import FieldNode, GraphQLResolveInfo, SelectionNode
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser, User
     from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+    from django.db.models.sql import Query
     from django_filters import FilterSet
 
 __all__ = [
@@ -62,6 +64,7 @@ __all__ = [
     "ConnectionResolver",
     "ContextManager",
     "Expr",
+    "ExpressionKind",
     "FieldNodes",
     "FilterFields",
     "GQLInfo",
@@ -149,3 +152,14 @@ class GraphQLFilterInfo(TypedDict, total=False):
     is_connection: bool
     is_node: bool
     max_limit: Optional[int]
+
+
+class ExpressionKind(Protocol):
+    def resolve_expression(
+        self,
+        query: Query,
+        allow_joins: bool,  # noqa: FBT001
+        reuse: Any,
+        summarize: bool,  # noqa: FBT001
+        for_save: bool,  # noqa: FBT001
+    ) -> Expr: ...

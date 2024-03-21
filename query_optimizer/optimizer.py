@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Expression, Model, Prefetch, QuerySet
+from django.db.models import Model, Prefetch, QuerySet
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.functions import RowNumber
 from graphene_django.registry import get_global_registry
@@ -28,7 +28,7 @@ from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
     from .types import DjangoObjectType
-    from .typing import Any, GQLInfo, GraphQLFilterInfo, Optional, ToManyField, TypeVar
+    from .typing import Any, ExpressionKind, GQLInfo, GraphQLFilterInfo, Optional, ToManyField, TypeVar
 
     TModel = TypeVar("TModel", bound=Model)
 
@@ -60,7 +60,8 @@ class QueryOptimizer:
         self.info = info
         self.only_fields: list[str] = []
         self.related_fields: list[str] = []
-        self.annotations: dict[str, Expression] = {}
+        self.aliases: dict[str, ExpressionKind] = {}
+        self.annotations: dict[str, ExpressionKind] = {}
         self.select_related: dict[str, QueryOptimizer] = {}
         self.prefetch_related: dict[str, QueryOptimizer] = {}
         self._cache_key: Optional[str] = None  # generated during the optimization process
@@ -103,6 +104,8 @@ class QueryOptimizer:
             queryset = queryset.prefetch_related(*results.prefetch_related)
         if not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (results.only_fields or self.related_fields):
             queryset = queryset.only(*results.only_fields, *self.related_fields)
+        if self.aliases:
+            queryset = queryset.alias(**self.aliases)
         if self.annotations:
             queryset = queryset.annotate(**self.annotations)
 
@@ -166,7 +169,7 @@ class QueryOptimizer:
             return queryset
 
         field: Optional[ToManyField] = get_model_field(parent_model, name)
-        if field is None:
+        if field is None:  # pragma: no cover
             msg = f"Cannot find field {name!r} on model {parent_model.__name__!r}. Cannot optimize nested pagination."
             optimizer_logger.warning(msg)
             return queryset

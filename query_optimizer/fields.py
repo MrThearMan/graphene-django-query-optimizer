@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import graphene
 from graphene.relay.connection import connection_adapter, page_info_adapter
 from graphene.types.argument import to_arguments
-from graphene.utils.str_converters import to_snake_case
+from graphene.utils.str_converters import to_camel_case, to_snake_case
 from graphene_django.settings import graphene_settings
 from graphene_django.utils.utils import DJANGO_FILTER_INSTALLED, maybe_queryset
 from graphql_relay.connection.array_connection import offset_to_cursor
@@ -32,8 +32,9 @@ if TYPE_CHECKING:
         Any,
         Callable,
         ConnectionResolver,
-        Expr,
+        ExpressionKind,
         GQLInfo,
+        Iterable,
         ModelResolver,
         ObjectTypeInput,
         Optional,
@@ -50,6 +51,8 @@ __all__ = [
     "DjangoConnectionField",
     "DjangoListField",
     "RelatedField",
+    "AnnotatedField",
+    "MultiField",
 ]
 
 
@@ -353,20 +356,46 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
 class AnnotatedField(graphene.Field):
     """Field for resolving Django ORM expressions that the optimizer will annotate to the queryset."""
 
-    def __init__(self, type_: UnmountedTypeInput, /, expression: Expr, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        type_: UnmountedTypeInput,
+        /,
+        expression: ExpressionKind,
+        aliases: Optional[dict[str, ExpressionKind]] = None,
+        **kwargs: Any,
+    ) -> None:
         self.expression = expression
+        self.aliases = aliases
         super().__init__(type_, **kwargs)
 
     def __set_name__(self, owner: type[DjangoObjectType], name: str) -> None:
-        # Get the name of the field from the owner class.
-        # This will be the annotated name in the queryset.
-        self.name = name
+        self.name = to_camel_case(name)
 
     def wrap_resolve(self, parent_resolver: Callable[..., Any]) -> Callable[..., Any]:
         # `parent_resolver` is either a `resolve_{self.name}` method defined
-        # on the owner class, or `dict_or_attr_resolver`.
+        # on the owner class, or a partial of `dict_or_attr_resolver`.
         self.resolver = parent_resolver
         return self.annotation_resolver
 
     def annotation_resolver(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
-        return self.resolver(root, self.name, **kwargs)
+        return self.resolver(root, info, **kwargs)
+
+
+class MultiField(graphene.Field):
+    """Field that requires multiple model fields to resolve. Does not support related lookups."""
+
+    def __init__(self, type_: UnmountedTypeInput, /, fields: Iterable[str], **kwargs: Any) -> None:
+        self.fields = fields
+        super().__init__(type_, **kwargs)
+
+    def __set_name__(self, owner: type[DjangoObjectType], name: str) -> None:
+        self.name = to_camel_case(name)
+
+    def wrap_resolve(self, parent_resolver: Callable[..., Any]) -> Callable[..., Any]:
+        # `parent_resolver` is either a `resolve_{self.name}` method defined
+        # on the owner class, or a partial of `dict_or_attr_resolver`.
+        self.resolver = parent_resolver
+        return self.multi_field_resolver
+
+    def multi_field_resolver(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
+        return self.resolver(root, info, **kwargs)

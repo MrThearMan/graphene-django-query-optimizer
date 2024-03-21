@@ -6,7 +6,7 @@ from django_filters import CharFilter, OrderingFilter
 from graphene import relay, Connection
 
 from query_optimizer import DjangoObjectType
-from query_optimizer.fields import AnnotatedField, DjangoConnectionField, DjangoListField, RelatedField
+from query_optimizer.fields import AnnotatedField, DjangoConnectionField, DjangoListField, MultiField, RelatedField
 from query_optimizer.filter import FilterSet
 from query_optimizer.settings import optimizer_settings
 from query_optimizer.typing import GQLInfo, Any
@@ -136,6 +136,11 @@ class HousingCompanyType(DjangoObjectType):
     def resolve_greeting(root: HousingCompany, info: GQLInfo) -> str:
         return f"Hello {root.name}!"
 
+    alias_greeting = AnnotatedField(graphene.String, F("alias_greeting"), aliases={"alias_greeting": F("name")})
+
+    def resolve_alias_greeting(root: HousingCompany, info: GQLInfo) -> str:
+        return f"Hello {root.alias_greeting}!"
+
 
 class RealEstateType(DjangoObjectType):
     class Meta:
@@ -182,6 +187,11 @@ class ApartmentType(DjangoObjectType):
             "building__name": ["exact"],
         }
         max_complexity = 10
+
+    share_range = MultiField(graphene.String, fields=["shares_start", "shares_end"])
+
+    def resolve_share_range(root: Apartment, info: GQLInfo) -> str:
+        return f"{root.shares_start} - {root.shares_end}"
 
     @classmethod
     def filter_queryset(cls, queryset: QuerySet, info: GQLInfo) -> QuerySet:
@@ -416,7 +426,7 @@ class People(graphene.Union):
 
 
 class ExampleType(DjangoObjectType):
-    foo = AnnotatedField(graphene.String, F("forward_one_to_one_field__name"))
+    fizz_buzz = AnnotatedField(graphene.String, F("forward_one_to_one_field__name"))
 
     class Meta:
         model = Example

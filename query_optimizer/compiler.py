@@ -186,10 +186,16 @@ class OptimizationCompiler(GraphQLASTWalker):
             with self.use_to_attr(field_name):
                 return self.handle_model_field(field_type, field_node, actual_field_name)
 
-        from .fields import AnnotatedField
+        from .fields import AnnotatedField, MultiField
 
         if isinstance(field, AnnotatedField):
-            self.optimizer.annotations[field.name] = field.expression
+            self.optimizer.annotations[to_snake_case(field.name)] = field.expression
+            if field.aliases is not None:
+                self.optimizer.aliases.update(field.aliases)
+            return None
+
+        if isinstance(field, MultiField):
+            self.optimizer.only_fields.extend(field.fields)
             return None
 
         return None  # pragma: no cover
