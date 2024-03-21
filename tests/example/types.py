@@ -1,5 +1,6 @@
 # ruff: noqa: RUF012, I001
 import graphene
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet, Value
 from django.db.models.functions import Concat, ExtractYear
 from django_filters import CharFilter, OrderingFilter
@@ -55,6 +56,7 @@ from tests.example.models import (
     ReverseOneToOneToReverseOneToOne,
     Sale,
     DeveloperProxy,
+    Tag,
 )
 
 __all__ = [
@@ -74,16 +76,44 @@ __all__ = [
 ]
 
 
+# Generic Relations
+
+
+class ContentTypeType(DjangoObjectType):
+    class Meta:
+        model = ContentType
+        fields = [
+            "app_label",
+            "model",
+        ]
+
+
+class TagType(DjangoObjectType):
+    content_object = RelatedField(lambda: ContentTypeType)
+
+    class Meta:
+        model = Tag
+        fields = [
+            "tag",
+            "object_id",
+            "content_type",
+            "content_object",
+        ]
+
+
 # Basic
 
 
 class PostalCodeType(DjangoObjectType):
+    tags = DjangoListField(TagType)
+
     class Meta:
         model = PostalCode
         fields = [
             "pk",
             "code",
             "housing_companies",
+            "tags",
         ]
 
 

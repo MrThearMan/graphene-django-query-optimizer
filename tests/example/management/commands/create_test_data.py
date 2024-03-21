@@ -45,6 +45,7 @@ from tests.example.models import (
     ReverseOneToOneToReverseOneToMany,
     ReverseOneToOneToReverseOneToOne,
     Sale,
+    Tag,
 )
 
 faker = Faker(locale="en_US")
@@ -63,6 +64,7 @@ class Command(BaseCommand):
 def create_test_data() -> None:
     clear_database()
     postal_codes = create_postal_codes()
+    create_tags(postal_codes)
     developers = create_developers()
     property_managers = create_property_managers()
     housing_companies = create_housing_companies(postal_codes, developers, property_managers)
@@ -89,6 +91,19 @@ def create_postal_codes() -> list[PostalCode]:
     ]
 
     return PostalCode.objects.bulk_create(postal_codes)
+
+
+def create_tags(postal_codes: list[PostalCode]) -> list[Tag]:
+    tags: list[Tag] = [
+        Tag(
+            tag=faker.word(),
+            content_object=postal_code,
+        )
+        for postal_code in postal_codes
+        for _ in range(2)
+    ]
+
+    return Tag.objects.bulk_create(tags)
 
 
 def create_developers(*, number: int = 10) -> list[Developer]:

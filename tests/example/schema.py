@@ -23,6 +23,7 @@ from .types import (
     ApartmentType,
     BuildingNode,
     BuildingType,
+    ContentTypeType,
     DeveloperNode,
     DeveloperType,
     ExampleType,
@@ -37,6 +38,7 @@ from .types import (
     RealEstateNode,
     RealEstateType,
     SaleType,
+    TagType,
 )
 
 
@@ -90,6 +92,9 @@ class Query(graphene.ObjectType):
         property_managers = optimize(PropertyManager.objects.all(), info)
         owners = optimize(Owner.objects.all(), info)
         return itertools.chain(developers, property_managers, owners)
+
+    all_tagged_items = DjangoListField(TagType)
+    all_content_types = DjangoListField(ContentTypeType)
 
     # --------------------------------------------------------------------
 
