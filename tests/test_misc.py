@@ -134,3 +134,21 @@ def test_misc__pk_fields(graphql_client):
             '"example_postalcode"."code"'
         ),
     )
+
+
+def test_misc__generic_relations(graphql_client):
+    query = """
+        query {
+          allTaggedItems {
+            tag
+            contentType {
+              appLabel
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    assert response.queries.count == 1, response.queries.log

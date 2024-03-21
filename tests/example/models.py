@@ -1,7 +1,10 @@
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import DecimalField
 
 __all__ = [
+    "Tag",
     "Apartment",
     "ApartmentProxy",
     "Building",
@@ -50,8 +53,25 @@ __all__ = [
 ]
 
 
+class Tag(models.Model):
+    tag = models.SlugField()
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
+
+    def __str__(self) -> str:
+        return self.tag
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["content_type", "object_id"]),
+        ]
+
+
 class PostalCode(models.Model):
     code = models.CharField(max_length=5, unique=True, primary_key=True)
+
+    tags = GenericRelation(Tag)
 
     class Meta:
         ordering = ["code"]
