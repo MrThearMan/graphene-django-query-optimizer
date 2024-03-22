@@ -83,11 +83,12 @@ def clear_database() -> None:
 
 
 def create_postal_codes() -> list[PostalCode]:
+    codes = {random.randint(1, 100_000) for _ in range(1000)}
     postal_codes: list[PostalCode] = [
         PostalCode(
             code=f"{i}".zfill(5),
         )
-        for i in range(1, 100_000)
+        for i in codes
     ]
 
     return PostalCode.objects.bulk_create(postal_codes)
@@ -99,7 +100,7 @@ def create_tags(postal_codes: list[PostalCode]) -> list[Tag]:
             tag=faker.word(),
             content_object=postal_code,
         )
-        for postal_code in postal_codes
+        for postal_code in random.sample(postal_codes, k=100)
         for _ in range(2)
     ]
 
