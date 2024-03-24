@@ -1,13 +1,18 @@
-import json
-
 import pytest
 
-from tests.example.utils import capture_database_queries
+from tests.factories import ApartmentFactory, DeveloperFactory, OwnerFactory, PropertyManagerFactory
+from tests.helpers import has
 
-pytestmark = pytest.mark.django_db
+pytestmark = [
+    pytest.mark.django_db,
+]
 
 
-def test_optimizer__fragment_spread(client_query):
+def test_fragment_spread(graphql_client):
+    ApartmentFactory.create(shares_start=1, shares_end=2)
+    ApartmentFactory.create(shares_start=3, shares_end=4)
+    ApartmentFactory.create(shares_start=5, shares_end=6)
+
     query = """
         query {
           allApartments {
@@ -21,18 +26,30 @@ def test_optimizer__fragment_spread(client_query):
         }
     """
 
-    with capture_database_queries() as results:
-        response = client_query(query)
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
 
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
+    # 1 query for fetching apartments.
+    assert response.queries.count == 1, response.queries.log
 
-    queries = len(results.queries)
-    # 1 query for fetching Apartments
-    assert queries == 1, results.log
+    assert response.queries[0] == has(
+        'FROM "example_apartment"',
+        '"example_apartment"."shares_start"',
+        '"example_apartment"."shares_end"',
+    )
+
+    assert response.content == [
+        {"sharesStart": 1, "sharesEnd": 2},
+        {"sharesStart": 3, "sharesEnd": 4},
+        {"sharesStart": 5, "sharesEnd": 6},
+    ]
 
 
-def test_optimizer__fragment_spread__deep(client_query):
+def test_fragment_spread__relations(graphql_client):
+    ApartmentFactory.create(building__real_estate__housing_company__postal_code__code="00001")
+    ApartmentFactory.create(building__real_estate__housing_company__postal_code__code="00002")
+    ApartmentFactory.create(building__real_estate__housing_company__postal_code__code="00003")
+
     query = """
         query {
           allApartments {
@@ -41,34 +58,44 @@ def test_optimizer__fragment_spread__deep(client_query):
         }
 
         fragment Address on ApartmentType {
-          streetAddress
-          floor
-          apartmentNumber
           building {
             realEstate {
               housingCompany {
                 postalCode {
                   code
                 }
-                city
               }
             }
           }
         }
     """
 
-    with capture_database_queries() as results:
-        response = client_query(query)
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
 
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
+    # 1 query for fetching apartments and related buildings, real estates, housing companies, and postal codes
+    assert response.queries.count == 1, response.queries.log
 
-    queries = len(results.queries)
-    # 1 query for fetching Apartments and related Buildings, RealEstates, HousingCompanies, and PostalCodes
-    assert queries == 1, results.log
+    assert response.queries[0] == has(
+        'FROM "example_apartment"',
+        'INNER JOIN "example_building"',
+        'INNER JOIN "example_realestate"',
+        'INNER JOIN "example_housingcompany"',
+        'INNER JOIN "example_postalcode"',
+    )
+
+    assert response.content == [
+        {"building": {"realEstate": {"housingCompany": {"postalCode": {"code": "00001"}}}}},
+        {"building": {"realEstate": {"housingCompany": {"postalCode": {"code": "00002"}}}}},
+        {"building": {"realEstate": {"housingCompany": {"postalCode": {"code": "00003"}}}}},
+    ]
 
 
-def test_optimizer__fragment_spread__many_to_one_relations(client_query):
+def test_fragment_spread__one_to_many_relations(graphql_client):
+    ApartmentFactory.create(sales__ownerships__owner__name="1")
+    ApartmentFactory.create(sales__ownerships__owner__name="2")
+    ApartmentFactory.create(sales__ownerships__owner__name="3")
+
     query = """
         query {
           allApartments {
@@ -78,10 +105,7 @@ def test_optimizer__fragment_spread__many_to_one_relations(client_query):
 
         fragment Sales on ApartmentType {
           sales {
-            purchaseDate
-            purchasePrice
             ownerships {
-              percentage
               owner {
                 name
               }
@@ -90,20 +114,37 @@ def test_optimizer__fragment_spread__many_to_one_relations(client_query):
         }
     """
 
-    with capture_database_queries() as results:
-        response = client_query(query)
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
 
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
+    # 1 query for fetching apartments.
+    # 1 query for fetching sales.
+    # 1 query for fetching ownerships and related owners.
+    assert response.queries.count == 3, response.queries.log
 
-    queries = len(results.queries)
-    # 1 query for fetching Apartments
-    # 1 query for fetching Sales
-    # 1 query for fetching Ownerships and related Owners
-    assert queries == 3, results.log
+    assert response.queries[0] == has(
+        'FROM "example_apartment"',
+    )
+    assert response.queries[1] == has(
+        'FROM "example_sale"',
+    )
+    assert response.queries[2] == has(
+        'FROM "example_ownership"',
+        'INNER JOIN "example_owner"',
+    )
+
+    assert response.content == [
+        {"sales": [{"ownerships": [{"owner": {"name": "1"}}]}]},
+        {"sales": [{"ownerships": [{"owner": {"name": "2"}}]}]},
+        {"sales": [{"ownerships": [{"owner": {"name": "3"}}]}]},
+    ]
 
 
-def test_optimizer__inline_fragment(client_query):
+def test_inline_fragment(graphql_client):
+    DeveloperFactory.create(name="1", housingcompany_set__name="1")
+    PropertyManagerFactory.create(name="1", housing_companies__name="1")
+    OwnerFactory.create(name="1", ownerships__percentage=100)
+
     query = """
         query {
           allPeople {
@@ -132,17 +173,32 @@ def test_optimizer__inline_fragment(client_query):
         }
     """
 
-    with capture_database_queries() as results:
-        response = client_query(query)
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
 
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
+    # 1 query for fetching developers.
+    # 1 query for fetching housing companies for developers.
+    # 1 query for fetching property managers.
+    # 1 query for fetching housing companies for property managers.
+    # 1 query for fetching owners.
+    # 1 query for fetching ownerships for owners.
+    assert response.queries.count == 6, response.queries.log
 
-    queries = len(results.queries)
-    # 1 query for fetching Developers
-    # 1 query for fetching HousingCompanies for Developers
-    # 1 query for fetching PropertyManagers
-    # 1 query for fetching HousingCompanies for PropertyManagers
-    # 1 query for fetching Owners
-    # 1 query for fetching Ownerships for Owners
-    assert queries == 6, results.log
+    assert response.queries[0] == has(
+        'FROM "example_developer"',
+    )
+    assert response.queries[1] == has(
+        'FROM "example_housingcompany"',
+    )
+    assert response.queries[2] == has(
+        'FROM "example_propertymanager"',
+    )
+    assert response.queries[3] == has(
+        'FROM "example_housingcompany"',
+    )
+    assert response.queries[4] == has(
+        'FROM "example_owner"',
+    )
+    assert response.queries[5] == has(
+        'FROM "example_ownership"',
+    )

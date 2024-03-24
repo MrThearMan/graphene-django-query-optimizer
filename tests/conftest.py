@@ -1,49 +1,39 @@
-import os
+import json
 
 import pytest
-from django.http import HttpResponse
 from django.test.client import Client
 from graphene_django.utils.testing import graphql_query
 
-from query_optimizer.typing import Callable
+from query_optimizer.typing import Any, Callable, NamedTuple, Optional, Union
 from tests.example.types import BuildingNode
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tests.project.settings")
-
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_database(django_db_blocker, request) -> None:  # noqa: PT004
-    """Setup database."""
-    from django.core.management import call_command
-
-    create_db: bool = request.config.getoption("--create-db")
-    reuse_db: bool = request.config.getoption("--reuse-db")
-    if reuse_db and not create_db:
-        return
-
-    no_migrations: bool = request.config.getoption("--no-migrations")
-    with django_db_blocker.unblock():
-        if not no_migrations or create_db:
-            call_command("migrate")
-        call_command("create_test_data")
+from tests.example.utils import QueryData, capture_database_queries
 
 
-@pytest.fixture(scope="session")
-def django_db_setup():  # noqa: PT004
-    """Setup read-only database."""
+class GraphQLResponse(NamedTuple):
+    content: Union[dict[str, Any], list[dict[str, Any]], None]
+    errors: Optional[list[dict[str, Any]]]
+    queries: QueryData
+
+    @property
+    def no_errors(self):
+        return self.errors is None
 
 
 @pytest.fixture()
-def db_access_without_rollback_and_truncate(request, django_db_setup, django_db_blocker):  # noqa: PT004
-    """Setup read-only database."""
-    django_db_blocker.unblock()
-    request.addfinalizer(django_db_blocker.restore)  # noqa: PT021
+def graphql_client(client: Client) -> Callable[..., GraphQLResponse]:
+    def func(*args, **kwargs) -> GraphQLResponse:
+        with capture_database_queries() as queries:
+            response = graphql_query(*args, **kwargs, client=client)
 
+        full_content = json.loads(response.content)
+        errors = full_content.get("errors")
+        content = next(iter(full_content.get("data", {}).values()), None)
 
-@pytest.fixture()
-def client_query(client: Client) -> Callable[..., HttpResponse]:
-    def func(*args, **kwargs) -> HttpResponse:
-        return graphql_query(*args, **kwargs, client=client)
+        return GraphQLResponse(
+            content=content,
+            errors=errors,
+            queries=queries,
+        )
 
     return func
 

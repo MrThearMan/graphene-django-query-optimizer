@@ -52,7 +52,7 @@ class Query(graphene.ObjectType):
     all_owners = DjangoListField(OwnerType)
     all_ownerships = DjangoListField(OwnershipType)
 
-    def resolve_all_apartments(parent: None, info: GQLInfo) -> models.QuerySet[Apartment]:
+    def resolve_all_apartments(parent: None, info: GQLInfo, **kwargs) -> models.QuerySet[Apartment]:
         return optimize(
             Apartment.objects.all().annotate(
                 full_address=Concat(

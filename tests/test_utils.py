@@ -5,6 +5,7 @@ from query_optimizer.settings import optimizer_settings
 from query_optimizer.typing import NamedTuple, Optional
 from query_optimizer.utils import calculate_queryset_slice, calculate_slice_for_queryset
 from tests.example.models import Example
+from tests.factories.example import ExampleFactory
 from tests.helpers import parametrize_helper
 
 
@@ -126,6 +127,8 @@ def test_calculate_queryset_slice(pagination_input: PaginationInput, start: int,
 @pytest.mark.django_db()
 @pytest.mark.parametrize(**parametrize_helper(TEST_CASES))
 def test_calculate_slice_for_queryset(pagination_input: PaginationInput, start: int, stop: int) -> None:
+    ExampleFactory.create()
+
     qs = Example.objects.all()
     qs = qs.annotate(**{optimizer_settings.PREFETCH_COUNT_KEY: models.Value(pagination_input.size)})
 

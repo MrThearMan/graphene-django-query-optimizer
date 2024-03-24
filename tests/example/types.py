@@ -1,7 +1,7 @@
 # ruff: noqa: RUF012, I001
 import graphene
 from django.db.models import F, Model, QuerySet, Value
-from django.db.models.functions import Concat
+from django.db.models.functions import Concat, ExtractYear
 from django_filters import CharFilter, OrderingFilter
 from graphene import relay, Connection
 
@@ -154,6 +154,8 @@ class RealEstateType(DjangoObjectType):
 
 
 class BuildingType(DjangoObjectType):
+    real_estate_name = AnnotatedField(graphene.String, F("real_estate__name"))
+
     class Meta:
         model = Building
         fields = [
@@ -187,6 +189,8 @@ class ApartmentType(DjangoObjectType):
             "building__name": ["exact"],
         }
         max_complexity = 10
+
+    completion_year = AnnotatedField(graphene.Int, ExtractYear("completion_date"))
 
     share_range = MultiField(graphene.String, fields=["shares_start", "shares_end"])
 
@@ -317,6 +321,9 @@ class RealEstateNode(IsTypeOfProxyPatch, DjangoObjectType):
 
     class Meta:
         model = RealEstateProxy
+        filter_fields = {
+            "name": ["exact"],
+        }
         interfaces = (relay.Node,)
 
 
@@ -426,8 +433,6 @@ class People(graphene.Union):
 
 
 class ExampleType(DjangoObjectType):
-    fizz_buzz = AnnotatedField(graphene.String, F("forward_one_to_one_field__name"))
-
     class Meta:
         model = Example
         fields = "__all__"
@@ -440,8 +445,6 @@ class ForwardOneToOneType(DjangoObjectType):
 
 
 class ForwardManyToOneType(DjangoObjectType):
-    bar = AnnotatedField(graphene.String, F("name"))
-
     class Meta:
         model = ForwardManyToOne
         fields = "__all__"

@@ -13,7 +13,7 @@ class QueryData:
     queries: list[str]
 
     @property
-    def query_count(self) -> int:
+    def count(self) -> int:
         return len(self.queries)
 
     @property
@@ -25,6 +25,9 @@ class QueryData:
             message += f"{index + 1}) ".ljust(75, "-") + f"\n{formatted_query}\n"
         message += "-" * 75
         return message
+
+    def __getitem__(self, item: int) -> str:
+        return self.queries[item]
 
 
 def db_query_logger(

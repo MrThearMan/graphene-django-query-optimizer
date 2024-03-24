@@ -1,46 +1,54 @@
-import json
-
 import pytest
 
-from tests.example.utils import capture_database_queries
+from tests.factories import ApartmentFactory
+from tests.helpers import has
 
 pytestmark = pytest.mark.django_db
 
 
-def test_optimizer__multiple_queries(client_query):
+def test_multiple_queries(graphql_client):
+    ApartmentFactory.create(building__real_estate__name="1", building__real_estate__housing_company__name="1")
+    ApartmentFactory.create(building__real_estate__name="2", building__real_estate__housing_company__name="2")
+    ApartmentFactory.create(building__real_estate__name="3", building__real_estate__housing_company__name="3")
+
     query = """
         query {
           allApartments {
-            completionDate
             building {
-              name
               realEstate {
-                surfaceArea
+                name
               }
             }
           }
           allRealEstates {
-            name
             housingCompany {
-              streetAddress
+              name
             }
           }
         }
     """
 
-    with capture_database_queries() as results:
-        response = client_query(query)
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
 
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
+    # 1 query for fetching apartments and related buildings and real estates.
+    # 1 query for fetching real estates and related housing companies.
+    assert response.queries.count == 2, response.queries.log
 
-    queries = len(results.queries)
-    # 1 query for fetching Apartments and related Buildings and RealEstates
-    # 1 query for fetching RealEstates and related HousingCompanies
-    assert queries == 2, results.log
+    assert response.queries[0] == has(
+        'FROM "example_apartment"',
+        'INNER JOIN "example_building"',
+        'INNER JOIN "example_realestate"',
+    )
+    assert response.queries[1] == has(
+        'FROM "example_realestate"',
+        'INNER JOIN "example_housingcompany"',
+    )
 
 
-def test_optimizer__max_complexity_reached(client_query):
+def test_max_complexity_reached(graphql_client):
+    ApartmentFactory.create()
+
     query = """
         query {
           allApartments {
@@ -71,21 +79,19 @@ def test_optimizer__max_complexity_reached(client_query):
         }
     """
 
-    with capture_database_queries() as results:
-        response = client_query(query)
+    response = graphql_client(query)
 
-    content = json.loads(response.content)
-    assert "errors" in content, content["errors"]
+    assert response.errors[0]["message"] == "Query complexity exceeds the maximum allowed of 10"
 
-    message = content["errors"][0]["message"]
-    assert message == "Query complexity exceeds the maximum allowed of 10"
-
-    queries = len(results.queries)
-    # No queries since fetching is stopped due to complexity
-    assert queries == 0, results.log
+    # No queries are performed since fetching is stopped due to complexity.
+    assert response.queries.count == 0, response.queries.log
 
 
-def test_optimizer__pk_fields(client_query):
+def test_misc__pk_fields(graphql_client):
+    ApartmentFactory.create(building__real_estate__housing_company__postal_code__code="00001")
+    ApartmentFactory.create(building__real_estate__housing_company__postal_code__code="00002")
+    ApartmentFactory.create(building__real_estate__housing_company__postal_code__code="00003")
+
     query = """
         query {
           allApartments {
@@ -106,12 +112,25 @@ def test_optimizer__pk_fields(client_query):
         }
     """
 
-    with capture_database_queries() as results:
-        response = client_query(query)
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
 
-    content = json.loads(response.content)
-    assert "errors" not in content, content["errors"]
+    # 1 query for fetching apartments and related buildings, real estates, housing companies, and postal codes
+    assert response.queries.count == 1, response.queries.log
 
-    queries = len(results.queries)
-    # 1 query for fetching Apartments and related Buildings, RealEstates, HousingCompanies, and PostalCodes
-    assert queries == 1, results.log
+    assert response.queries[0] == has(
+        'FROM "example_apartment"',
+        'INNER JOIN "example_building"',
+        'INNER JOIN "example_realestate"',
+        'INNER JOIN "example_housingcompany"',
+        'INNER JOIN "example_postalcode"',
+        (
+            '"example_building"."id", '
+            '"example_building"."real_estate_id", '
+            '"example_realestate"."id", '
+            '"example_realestate"."housing_company_id", '
+            '"example_housingcompany"."id", '
+            '"example_housingcompany"."postal_code_id", '
+            '"example_postalcode"."code"'
+        ),
+    )
