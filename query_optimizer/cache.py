@@ -4,6 +4,8 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
+from django.db.models import Manager
+
 from .prefetch_hack import fetch_context
 from .settings import optimizer_settings
 
@@ -11,7 +13,7 @@ if TYPE_CHECKING:
     from django.db.models import Model, QuerySet
 
     from .optimizer import QueryOptimizer
-    from .typing import PK, GQLInfo, Optional, QueryCache, TableName, TypeVar
+    from .typing import PK, GQLInfo, Optional, QueryCache, TableName, TypeVar, Union
 
     TModel = TypeVar("TModel", bound=Model)
 
@@ -95,17 +97,14 @@ def _add_selected(query_cache: QueryCache, instance: Model, optimizer: QueryOpti
 
 
 def _add_prefetched(query_cache: QueryCache, instance: Model, optimizer: QueryOptimizer) -> None:
-    for nested_name, nested_optimizer in optimizer.prefetch_related.items():
-        if nested_optimizer.to_attr is not None:
-            # If `to_attr` is defined, Prefetch(..., to_attr=...) was used in the query.
-            # This means the relation items are a list of models.
-            selected: list[Model] = getattr(instance, nested_optimizer.to_attr)
-        else:
-            # Here we can fetch the many-related items from the instance with `.all()`
-            # without hitting the database, because the items have already been prefetched.
-            # See: `django.db.models.fields.related_descriptors.RelatedManager.get_queryset`
-            # and `django.db.models.fields.related_descriptors.ManyRelatedManager.get_queryset`
-            selected: QuerySet[Model] = getattr(instance, nested_name).all()
+    for attr, prefetch_optimizer in optimizer.prefetch_related.items():
+        selected: Union[Manager, list[Model]] = getattr(instance, attr)
+        if isinstance(selected, Manager):
+            # If Prefetch(..., to_attr=...) was used in the query, the relation items are a list of models.
+            # Otherwise, they are contained in a ManyRelatedManager, and we can fetch
+            # the items from it with `.all()` without hitting the database.
+            # See: `django.db.models.fields.related_descriptors.ManyRelatedManager.get_queryset`
+            selected: QuerySet[Model] = selected.all()
 
         for select in selected:
-            _add_item(query_cache, select, nested_optimizer)
+            _add_item(query_cache, select, prefetch_optimizer)

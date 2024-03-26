@@ -141,7 +141,7 @@ class OptimizationCompiler(GraphQLASTWalker):
         related_model: type[Model],
     ) -> None:
         name = related_field.get_cache_name() or related_field.name
-        optimizer = QueryOptimizer(model=related_model, info=self.info, to_attr=self.to_attr)
+        optimizer = QueryOptimizer(model=related_model, info=self.info, name=name)
         self.optimizer.select_related[name] = optimizer
         if isinstance(related_field, ForeignKey):
             self.optimizer.related_fields.append(related_field.attname)
@@ -157,8 +157,11 @@ class OptimizationCompiler(GraphQLASTWalker):
         related_model: type[Model],
     ) -> None:
         name = related_field.get_cache_name() or related_field.name
-        optimizer = QueryOptimizer(model=related_model, info=self.info, to_attr=self.to_attr)
-        self.optimizer.prefetch_related[name] = optimizer
+        key = self.to_attr if self.to_attr is not None else name
+        self.to_attr = None
+
+        optimizer = QueryOptimizer(model=related_model, info=self.info, name=name)
+        self.optimizer.prefetch_related[key] = optimizer
         if isinstance(related_field, ManyToOneRel):
             optimizer.related_fields.append(related_field.field.attname)
 
@@ -179,12 +182,12 @@ class OptimizationCompiler(GraphQLASTWalker):
             optimizer_logger.warning(msg)
             return None
 
-        # `RelatedField`, `DjangoListField` and `DjangoConnectionField` can define
-        # a 'field_name' attribute to specify the actual model field name.
+        # `RelatedField`, `DjangoListField` and `DjangoConnectionField` can define a
+        # 'field_name' attribute to specify the actual model field name.
         actual_field_name: Optional[str] = getattr(field, "field_name", None)
         if actual_field_name is not None:
-            with self.use_to_attr(field_name):
-                return self.handle_model_field(field_type, field_node, actual_field_name)
+            self.to_attr = field_name
+            return self.handle_model_field(field_type, field_node, actual_field_name)
 
         from .fields import AnnotatedField, MultiField
 
@@ -208,12 +211,3 @@ class OptimizationCompiler(GraphQLASTWalker):
             yield
         finally:
             self.optimizer = orig_optimizer
-
-    @contextlib.contextmanager
-    def use_to_attr(self, to_attr: str) -> None:
-        orig_attr = self.to_attr
-        try:
-            self.to_attr = to_attr
-            yield
-        finally:
-            self.to_attr = orig_attr

@@ -526,6 +526,101 @@ def test_relay__connection__nested__no_related_name(graphql_client):
     }
 
 
+def test_relay__connection__nested__many_to_many__shared_entities(graphql_client):
+    developer_1 = DeveloperFactory.create(name="1")
+    developer_2 = DeveloperFactory.create(name="2")
+    developer_3 = DeveloperFactory.create(name="3")
+    developer_4 = DeveloperFactory.create(name="4")
+    developer_5 = DeveloperFactory.create(name="5")
+    developer_6 = DeveloperFactory.create(name="6")
+
+    HousingCompanyFactory.create(developers=[developer_1, developer_2, developer_3])
+    HousingCompanyFactory.create(developers=[developer_3, developer_5, developer_6])
+    HousingCompanyFactory.create(developers=[developer_1, developer_3, developer_4, developer_6])
+
+    query = """
+        query {
+          pagedHousingCompanies {
+            edges {
+              node {
+                developers {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query to count housing companies.
+    # 1 query to fetch housing companies.
+    # 1 query to fetch related real estates.
+    assert response.queries.count == 3, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "example_housingcompany"',
+    )
+    assert response.queries[1] == has(
+        'FROM "example_housingcompany"',
+        "LIMIT 3",
+    )
+    assert response.queries[2] == has(
+        'FROM "example_developer"',
+        # Nested connections are limited via a window function.
+        (
+            "ROW_NUMBER() OVER "
+            '(PARTITION BY "example_housingcompany_developers"."housingcompany_id" ORDER BY "example_developer"."id")'
+        ),
+    )
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {"node": {"name": "1"}},
+                            {"node": {"name": "2"}},
+                            {"node": {"name": "3"}},
+                        ],
+                    },
+                },
+            },
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {"node": {"name": "3"}},
+                            {"node": {"name": "5"}},
+                            {"node": {"name": "6"}},
+                        ],
+                    },
+                },
+            },
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {"node": {"name": "1"}},
+                            {"node": {"name": "3"}},
+                            {"node": {"name": "4"}},
+                            {"node": {"name": "6"}},
+                        ],
+                    },
+                },
+            },
+        ],
+    }
+
+
 def test_relay__connection__nested__counts(graphql_client):
     PropertyManagerFactory.create(housing_companies__name="1")
     PropertyManagerFactory.create(housing_companies__name="2")

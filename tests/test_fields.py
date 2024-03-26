@@ -8,6 +8,7 @@ from tests.factories import (
     DeveloperFactory,
     HousingCompanyFactory,
     PropertyManagerFactory,
+    RealEstateFactory,
     SaleFactory,
 )
 from tests.helpers import has
@@ -185,7 +186,7 @@ def test_fields__annotated_field__aliases(graphql_client):
     ]
 
 
-def test_fields__alternate_field__to_one_relation(graphql_client):
+def test_fields__alternate_field__to_one_related(graphql_client):
     HousingCompanyFactory.create(property_manager__name="1")
     HousingCompanyFactory.create(property_manager__name="2")
     HousingCompanyFactory.create(property_manager__name="3")
@@ -230,9 +231,15 @@ def test_fields__alternate_field__to_one_relation(graphql_client):
 
 
 def test_fields__alternate_field__one_to_many_related(graphql_client):
-    HousingCompanyFactory.create(real_estates__name="1")
-    HousingCompanyFactory.create(real_estates__name="2")
-    HousingCompanyFactory.create(real_estates__name="3")
+    housing_company_1 = HousingCompanyFactory.create()
+    housing_company_2 = HousingCompanyFactory.create()
+    housing_company_3 = HousingCompanyFactory.create()
+    RealEstateFactory.create(name="1", housing_company=housing_company_1)
+    RealEstateFactory.create(name="2", housing_company=housing_company_1)
+    RealEstateFactory.create(name="3", housing_company=housing_company_1)
+    RealEstateFactory.create(name="4", housing_company=housing_company_2)
+    RealEstateFactory.create(name="5", housing_company=housing_company_2)
+    RealEstateFactory.create(name="6", housing_company=housing_company_3)
 
     query = """
         query {
@@ -269,17 +276,44 @@ def test_fields__alternate_field__one_to_many_related(graphql_client):
 
     assert response.content == {
         "edges": [
-            {"node": {"realEstatesAlt": [{"name": "1"}]}},
-            {"node": {"realEstatesAlt": [{"name": "2"}]}},
-            {"node": {"realEstatesAlt": [{"name": "3"}]}},
-        ]
+            {
+                "node": {
+                    "realEstatesAlt": [
+                        {"name": "1"},
+                        {"name": "2"},
+                        {"name": "3"},
+                    ],
+                },
+            },
+            {
+                "node": {
+                    "realEstatesAlt": [
+                        {"name": "4"},
+                        {"name": "5"},
+                    ],
+                },
+            },
+            {
+                "node": {
+                    "realEstatesAlt": [
+                        {"name": "6"},
+                    ],
+                },
+            },
+        ],
     }
 
 
 def test_fields__alternate_field__many_to_many_related(graphql_client):
-    HousingCompanyFactory.create(developers__name="1")
-    HousingCompanyFactory.create(developers__name="2")
-    HousingCompanyFactory.create(developers__name="3")
+    developer_1 = DeveloperFactory.create(name="1")
+    developer_2 = DeveloperFactory.create(name="2")
+    developer_3 = DeveloperFactory.create(name="3")
+    developer_4 = DeveloperFactory.create(name="4")
+    developer_5 = DeveloperFactory.create(name="5")
+
+    HousingCompanyFactory.create(developers=[developer_1, developer_2, developer_3])
+    HousingCompanyFactory.create(developers=[developer_3, developer_4, developer_5])
+    HousingCompanyFactory.create(developers__name="6")
 
     query = """
         query {
@@ -316,9 +350,345 @@ def test_fields__alternate_field__many_to_many_related(graphql_client):
 
     assert response.content == {
         "edges": [
-            {"node": {"developersAlt": [{"name": "1"}]}},
-            {"node": {"developersAlt": [{"name": "2"}]}},
-            {"node": {"developersAlt": [{"name": "3"}]}},
+            {
+                "node": {
+                    "developersAlt": [
+                        {"name": "1"},
+                        {"name": "2"},
+                        {"name": "3"},
+                    ],
+                },
+            },
+            {
+                "node": {
+                    "developersAlt": [
+                        {"name": "3"},
+                        {"name": "4"},
+                        {"name": "5"},
+                    ],
+                },
+            },
+            {
+                "node": {
+                    "developersAlt": [
+                        {"name": "6"},
+                    ],
+                },
+            },
+        ],
+    }
+
+
+def test_fields__alternate_field__many_to_many_related__reverse(graphql_client):
+    housing_company_1 = HousingCompanyFactory.create(name="1")
+    housing_company_2 = HousingCompanyFactory.create(name="2")
+    housing_company_3 = HousingCompanyFactory.create(name="3")
+    housing_company_4 = HousingCompanyFactory.create(name="4")
+    housing_company_5 = HousingCompanyFactory.create(name="5")
+    housing_company_6 = HousingCompanyFactory.create(name="6")
+
+    DeveloperFactory.create(housingcompany_set=[housing_company_1, housing_company_2, housing_company_3])
+    DeveloperFactory.create(housingcompany_set=[housing_company_3, housing_company_4, housing_company_5])
+    DeveloperFactory.create(housingcompany_set=[housing_company_1, housing_company_3, housing_company_6])
+
+    query = """
+        query {
+          pagedDevelopers {
+            edges {
+              node {
+                housingCompanies {
+                  name
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for counting developers
+    # 1 query for fetching developers
+    # 1 query for fetching nested housing companies (to the alternate field)
+    assert response.queries.count == 3, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "example_developer"',
+    )
+    assert response.queries[1] == has(
+        'FROM "example_developer"',
+    )
+    assert response.queries[2] == has(
+        'FROM "example_housingcompany"',
+    )
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "housingCompanies": [
+                        {"name": "1"},
+                        {"name": "2"},
+                        {"name": "3"},
+                    ],
+                },
+            },
+            {
+                "node": {
+                    "housingCompanies": [
+                        {"name": "3"},
+                        {"name": "4"},
+                        {"name": "5"},
+                    ],
+                },
+            },
+            {
+                "node": {
+                    "housingCompanies": [
+                        {"name": "1"},
+                        {"name": "3"},
+                        {"name": "6"},
+                    ],
+                },
+            },
+        ]
+    }
+
+
+def test_fields__alternate_field__many_to_many_related__with_original(graphql_client):
+    developer_1 = DeveloperFactory.create(name="1")
+    developer_2 = DeveloperFactory.create(name="2")
+    developer_3 = DeveloperFactory.create(name="3")
+    developer_4 = DeveloperFactory.create(name="4")
+    developer_5 = DeveloperFactory.create(name="5")
+    developer_6 = DeveloperFactory.create(name="6")
+
+    HousingCompanyFactory.create(developers=[developer_1, developer_2, developer_3])
+    HousingCompanyFactory.create(developers=[developer_3, developer_4, developer_5])
+    HousingCompanyFactory.create(developers=[developer_1, developer_3, developer_6])
+
+    query = """
+        query {
+          pagedHousingCompanies {
+            edges {
+              node {
+                developersAlt {
+                  name
+                }
+                developers {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for counting housing companies
+    # 1 query for fetching housing companies
+    # 1 query for fetching nested developers
+    # 1 query for fetching nested developers (to the alternate field)
+    assert response.queries.count == 4, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "example_housingcompany"',
+    )
+    assert response.queries[1] == has(
+        'FROM "example_housingcompany"',
+    )
+    assert response.queries[2] == has(
+        'FROM "example_developer"',
+        (
+            "ROW_NUMBER() OVER "
+            '(PARTITION BY "example_housingcompany_developers"."housingcompany_id" ORDER BY "example_developer"."id")'
+        ),
+    )
+    assert response.queries[3] == has(
+        'FROM "example_developer"',
+        (
+            "ROW_NUMBER() OVER "
+            '(PARTITION BY "example_housingcompany_developers"."housingcompany_id" ORDER BY "example_developer"."id")'
+        ),
+    )
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {"node": {"name": "1"}},
+                            {"node": {"name": "2"}},
+                            {"node": {"name": "3"}},
+                        ],
+                    },
+                    "developersAlt": [
+                        {"name": "1"},
+                        {"name": "2"},
+                        {"name": "3"},
+                    ],
+                },
+            },
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {"node": {"name": "3"}},
+                            {"node": {"name": "4"}},
+                            {"node": {"name": "5"}},
+                        ],
+                    },
+                    "developersAlt": [
+                        {"name": "3"},
+                        {"name": "4"},
+                        {"name": "5"},
+                    ],
+                },
+            },
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {"node": {"name": "1"}},
+                            {"node": {"name": "3"}},
+                            {"node": {"name": "6"}},
+                        ],
+                    },
+                    "developersAlt": [
+                        {"name": "1"},
+                        {"name": "3"},
+                        {"name": "6"},
+                    ],
+                },
+            },
+        ],
+    }
+
+
+def test_fields__alternate_field__many_to_many_related__reverse__with_original(graphql_client):
+    housing_company_1 = HousingCompanyFactory.create(name="1")
+    housing_company_2 = HousingCompanyFactory.create(name="2")
+    housing_company_3 = HousingCompanyFactory.create(name="3")
+    housing_company_4 = HousingCompanyFactory.create(name="4")
+    housing_company_5 = HousingCompanyFactory.create(name="5")
+    housing_company_6 = HousingCompanyFactory.create(name="6")
+
+    DeveloperFactory.create(housingcompany_set=[housing_company_1, housing_company_2, housing_company_3])
+    DeveloperFactory.create(housingcompany_set=[housing_company_3, housing_company_4, housing_company_5])
+    DeveloperFactory.create(housingcompany_set=[housing_company_1, housing_company_3, housing_company_6])
+
+    query = """
+        query {
+          pagedDevelopers {
+            edges {
+              node {
+                housingCompanies {
+                  name
+                }
+                housingcompanySet {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for counting developers
+    # 1 query for fetching developers
+    # 1 query for fetching nested housing companies
+    # 1 query for fetching nested housing companies (to the alternate field)
+    assert response.queries.count == 4, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "example_developer"',
+    )
+    assert response.queries[1] == has(
+        'FROM "example_developer"',
+    )
+    assert response.queries[2] == has(
+        'FROM "example_housingcompany"',
+        (
+            "ROW_NUMBER() OVER "
+            '(PARTITION BY "example_housingcompany_developers"."developer_id" ORDER BY "example_housingcompany"."id"'
+        ),
+    )
+    assert response.queries[3] == has(
+        'FROM "example_housingcompany"',
+        (
+            "ROW_NUMBER() OVER "
+            '(PARTITION BY "example_housingcompany_developers"."developer_id" ORDER BY "example_housingcompany"."id"'
+        ),
+    )
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "housingCompanies": [
+                        {"name": "1"},
+                        {"name": "2"},
+                        {"name": "3"},
+                    ],
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "1"}},
+                            {"node": {"name": "2"}},
+                            {"node": {"name": "3"}},
+                        ]
+                    },
+                }
+            },
+            {
+                "node": {
+                    "housingCompanies": [
+                        {"name": "3"},
+                        {"name": "4"},
+                        {"name": "5"},
+                    ],
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "3"}},
+                            {"node": {"name": "4"}},
+                            {"node": {"name": "5"}},
+                        ]
+                    },
+                }
+            },
+            {
+                "node": {
+                    "housingCompanies": [
+                        {"name": "1"},
+                        {"name": "3"},
+                        {"name": "6"},
+                    ],
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "1"}},
+                            {"node": {"name": "3"}},
+                            {"node": {"name": "6"}},
+                        ]
+                    },
+                }
+            },
         ]
     }
 

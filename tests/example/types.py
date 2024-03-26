@@ -225,7 +225,6 @@ class OwnerType(DjangoObjectType):
             "pk",
             "name",
             "email",
-            "sales",
             "ownerships",
         ]
 
@@ -268,6 +267,7 @@ class IsTypeOfProxyPatch:
 
 class DeveloperNode(IsTypeOfProxyPatch, DjangoObjectType):
     housingcompany_set = DjangoConnectionField(lambda: HousingCompanyNode)
+    housing_companies = DjangoListField("tests.example.types.HousingCompanyType", field_name="housingcompany_set")
 
     idx = graphene.Field(graphene.Int)
 

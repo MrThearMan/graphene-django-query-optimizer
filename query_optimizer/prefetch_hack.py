@@ -1,3 +1,5 @@
+import contextlib
+from collections import defaultdict
 from contextlib import nullcontext
 from unittest.mock import patch
 from weakref import WeakKeyDictionary
@@ -6,7 +8,7 @@ from django.db import models
 from django.db.models.fields.related_descriptors import _filter_prefetch_queryset
 from graphql import OperationDefinitionNode
 
-from .typing import ContextManager, GQLInfo, ToManyField
+from .typing import ContextManager, GQLInfo, ToManyField, TypeAlias
 
 __all__ = [
     "_register_for_prefetch_hack",
@@ -14,8 +16,8 @@ __all__ = [
 ]
 
 
-# Use a weak key dictionary to make sure the saved values are cleared after the request ends.
-_REUSABLE_M2M: WeakKeyDictionary[OperationDefinitionNode, set[str]] = WeakKeyDictionary()
+_PrefetchCacheType: TypeAlias = defaultdict[str, defaultdict[str, set[str]]]
+_PREFETCH_HACK_CACHE: WeakKeyDictionary[OperationDefinitionNode, _PrefetchCacheType] = WeakKeyDictionary()
 
 
 def _register_for_prefetch_hack(info: GQLInfo, field: ToManyField) -> None:
@@ -24,9 +26,14 @@ def _register_for_prefetch_hack(info: GQLInfo, field: ToManyField) -> None:
     if not isinstance(field, (models.ManyToManyField, models.ManyToManyRel)):
         return
 
-    through = field.m2m_db_table() if isinstance(field, models.ManyToManyField) else field.remote_field.m2m_db_table()
-    # Use the info.operation as the key to make sure the saved values are cleared after the request ends.
-    _REUSABLE_M2M.setdefault(info.operation, set()).add(through)
+    forward_field: models.ManyToManyField = field.remote_field if isinstance(field, models.ManyToManyRel) else field
+    db_table = field.related_model._meta.db_table
+    field_name = field.remote_field.name
+    through = forward_field.m2m_db_table()
+
+    # Use the `info.operation` as the key to make sure the saved values are cleared after the request ends.
+    cache = _PREFETCH_HACK_CACHE.setdefault(info.operation, defaultdict(lambda: defaultdict(set)))
+    cache[db_table][field_name].add(through)
 
 
 def _prefetch_hack(queryset: models.QuerySet, field_name: str, instances: list[models.Model]) -> models.QuerySet:
@@ -49,14 +56,15 @@ def _prefetch_hack(queryset: models.QuerySet, field_name: str, instances: list[m
     # See: `django.db.models.sql.query.Query.chain`.
     queryset.query.filter_is_sticky = True
     #
-    # Add the registered through tables to the Query's `used_aliases`.
+    # Cache is stored per-operation, so there should only be one top-level value.
+    cache: _PrefetchCacheType = next(iter(_PREFETCH_HACK_CACHE.values()))
+    #
+    # Add the registered through tables for a given model and field to the Query's `used_aliases`.
     # This is passed along during the filtering that happens as a part of `_filter_prefetch_queryset`,
     # until `django.db.models.sql.query.Query.join`, which has access to it with its `reuse` argument.
     # There, this should prevent the method from adding a duplicate join.
-    queryset.query.used_aliases = {table for tables in _REUSABLE_M2M.values() for table in tables}
-    #
-    # Clear the hack once the queryset knows about the through tables.
-    _REUSABLE_M2M.clear()
+    queryset.query.used_aliases = cache[queryset.model._meta.db_table][field_name]
+
     return _filter_prefetch_queryset(queryset, field_name, instances)
 
 
@@ -66,6 +74,11 @@ _HACK_CONTEXT = patch(
 )
 
 
+@contextlib.contextmanager
 def fetch_context() -> ContextManager:
     """Patches the prefetch mechanism if required."""
-    return _HACK_CONTEXT if _REUSABLE_M2M else nullcontext()
+    try:
+        with _HACK_CONTEXT if _PREFETCH_HACK_CACHE else nullcontext():
+            yield
+    finally:
+        _PREFETCH_HACK_CACHE.clear()

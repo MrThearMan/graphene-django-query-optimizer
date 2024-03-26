@@ -192,3 +192,64 @@ def test_relations__many_to_many_relations__no_related_name(graphql_client):
         {"housingcompanySet": [{"name": "2"}]},
         {"housingcompanySet": [{"name": "3"}]},
     ]
+
+
+def test_relations__many_to_many_relations__shared_entities(graphql_client):
+    developer_1 = DeveloperFactory.create(name="1")
+    developer_2 = DeveloperFactory.create(name="2")
+    developer_3 = DeveloperFactory.create(name="3")
+    developer_4 = DeveloperFactory.create(name="4")
+    developer_5 = DeveloperFactory.create(name="5")
+    developer_6 = DeveloperFactory.create(name="6")
+
+    HousingCompanyFactory.create(developers=[developer_1, developer_2, developer_3])
+    HousingCompanyFactory.create(developers=[developer_3, developer_5, developer_6])
+    HousingCompanyFactory.create(developers=[developer_1, developer_3, developer_4, developer_6])
+
+    query = """
+        query {
+          allHousingCompanies {
+            developers {
+              name
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for fetching HousingCompanies
+    # 1 query for fetching Developers
+    assert response.queries.count == 2, response.queries.log
+
+    assert response.queries[0] == has('FROM "example_housingcompany"')
+    assert response.queries[1] == has('FROM "example_developer"')
+
+    # Check that limiting is not applied to the nested fields, since they are list fields
+    assert response.queries[1] != has("ROW_NUMBER() OVER")
+
+    assert response.content == [
+        {
+            "developers": [
+                {"name": "1"},
+                {"name": "2"},
+                {"name": "3"},
+            ]
+        },
+        {
+            "developers": [
+                {"name": "3"},
+                {"name": "5"},
+                {"name": "6"},
+            ]
+        },
+        {
+            "developers": [
+                {"name": "1"},
+                {"name": "3"},
+                {"name": "4"},
+                {"name": "6"},
+            ]
+        },
+    ]

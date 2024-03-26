@@ -55,7 +55,7 @@ class CompilationResults:
 class QueryOptimizer:
     """Creates optimized queryset based on the optimization data found by the OptimizationCompiler."""
 
-    def __init__(self, model: type[Model], info: GQLInfo, to_attr: Optional[str] = None) -> None:
+    def __init__(self, model: type[Model], info: GQLInfo, name: Optional[str] = None) -> None:
         self.model = model
         self.info = info
         self.only_fields: list[str] = []
@@ -66,7 +66,7 @@ class QueryOptimizer:
         self.prefetch_related: dict[str, QueryOptimizer] = {}
         self._cache_key: Optional[str] = None  # generated during the optimization process
         self.total_count: bool = False
-        self.to_attr = to_attr
+        self.name = name
 
     def optimize_queryset(
         self,
@@ -122,8 +122,8 @@ class QueryOptimizer:
             else:
                 self.compile_select(name, optimizer, results, filter_info)
 
-        for name, optimizer in self.prefetch_related.items():
-            self.compile_prefetch(name, optimizer, results, filter_info)
+        for attr, optimizer in self.prefetch_related.items():
+            self.compile_prefetch(attr, optimizer, results, filter_info)
 
         self._cache_key = results.cache_key
         return results
@@ -145,16 +145,17 @@ class QueryOptimizer:
 
     def compile_prefetch(
         self,
-        name: str,
+        attr: str,
         optimizer: QueryOptimizer,
         results: CompilationResults,
         filter_info: GraphQLFilterInfo,
     ) -> None:
-        filter_info = filter_info.get("children", {}).get(name, {})
+        filter_info = filter_info.get("children", {}).get(optimizer.name, {})
         queryset = optimizer.model._default_manager.all()
         queryset = optimizer.optimize_queryset(queryset, filter_info=filter_info)
-        queryset = optimizer.paginate_prefetch_queryset(self.model, queryset, name, filter_info=filter_info)
-        results.prefetch_related.append(Prefetch(name, queryset, to_attr=optimizer.to_attr))
+        queryset = optimizer.paginate_prefetch_queryset(self.model, queryset, optimizer.name, filter_info=filter_info)
+        to_attr = attr if attr != optimizer.name else None
+        results.prefetch_related.append(Prefetch(optimizer.name, queryset, to_attr=to_attr))
 
     def paginate_prefetch_queryset(
         self,
