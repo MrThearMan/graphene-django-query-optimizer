@@ -55,16 +55,15 @@ def optimize_single(
     max_complexity: Optional[int] = None,
 ) -> Optional[TModel]:
     """Optimize the given queryset for a single model instance by its primary key."""
-    queryset = queryset.filter(pk=pk)
-
     optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
     if optimizer is None:  # pragma: no cover
-        return queryset.first()
+        return queryset.filter(pk=pk).first()
 
     cached_item = get_from_query_cache(queryset.model, pk, optimizer, info)
     if cached_item is not None:
         return cached_item
 
+    queryset = queryset.filter(pk=pk)
     optimized_queryset = optimizer.optimize_queryset(queryset)
     store_in_query_cache(optimized_queryset, optimizer, info)
 
