@@ -1,5 +1,6 @@
 export DJANGO_SETTINGS_MODULE = tests.project.settings
 
+.PHONY: Makefile
 .PHONY: create-user
 .PHONY: dev
 .PHONY: docs
@@ -8,10 +9,10 @@ export DJANGO_SETTINGS_MODULE = tests.project.settings
 .PHONY: help
 .PHONY: hook
 .PHONY: lint
-.PHONY: Makefile
 .PHONY: migrate
 .PHONY: migrations
 .PHONY: mypy
+.PHONY: profile
 .PHONY: setup
 .PHONY: test
 .PHONY: tests
@@ -39,6 +40,7 @@ define helptext
   migrate              Migrate database.
   migrations           Make migrations.
   mypy                 Run mypy on all files.
+  profile <pid>        Run py-spy for a given PID.
   setup                Make migrations, apply them, and add a superuser
   test <name>          Run all tests maching the given <name>
   tests                Run all tests with coverage.
@@ -82,6 +84,9 @@ migrations:
 mypy:
 	@poetry run mypy query_optimizer/
 
+profile:
+	@poetry run py-spy record -o profile.svg --pid $(call args, "")
+
 setup: migrations migrate create-user
 
 test:
@@ -93,3 +98,4 @@ tests:
 
 tox:
 	@poetry run tox
+
