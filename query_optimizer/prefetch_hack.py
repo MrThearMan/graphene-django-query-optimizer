@@ -8,7 +8,7 @@ from django.db import models
 from django.db.models.fields.related_descriptors import _filter_prefetch_queryset
 from graphql import OperationDefinitionNode
 
-from .typing import ContextManager, GQLInfo, ToManyField, TypeAlias
+from .typing import ContextManager, GQLInfo, TModel, ToManyField, TypeAlias
 
 __all__ = [
     "_register_for_prefetch_hack",
@@ -82,3 +82,9 @@ def fetch_context() -> ContextManager:
             yield
     finally:
         _PREFETCH_HACK_CACHE.clear()
+
+
+def fetch_in_context(queryset: models.QuerySet[TModel]) -> list[TModel]:
+    """Evaluates the queryset with the prefetch hack applied."""
+    with fetch_context():
+        return list(queryset)  # the database query is executed here

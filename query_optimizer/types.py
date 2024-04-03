@@ -14,9 +14,7 @@ from .typing import PK, OptimizedDjangoOptions
 if TYPE_CHECKING:
     from django.db.models import Model, QuerySet
 
-    from .typing import Any, GQLInfo, Literal, Optional, TypeVar, Union
-
-    TModel = TypeVar("TModel", bound=Model)
+    from .typing import Any, GQLInfo, Literal, Optional, TModel, Union
 
 
 __all__ = [
@@ -75,4 +73,11 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
     @classmethod
     def get_node(cls, info: GQLInfo, pk: PK) -> Optional[TModel]:
         queryset = cls._meta.model._default_manager.all()
-        return optimize_single(queryset, info, pk=pk, max_complexity=cls._meta.max_complexity)
+        maybe_instance = optimize_single(queryset, info, pk=pk, max_complexity=cls._meta.max_complexity)
+        if maybe_instance is not None:  # pragma: no cover
+            cls.run_instance_checks(maybe_instance, info)
+        return maybe_instance
+
+    @classmethod
+    def run_instance_checks(cls, instance: TModel, info: GQLInfo) -> None:
+        """A hook for running checks after getting a single instance."""

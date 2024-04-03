@@ -32,9 +32,8 @@ def parametrize_helper(__tests: dict[str, TNamedTuple], /) -> ParametrizeArgs:
 
 
 class like:
-    """Compares a string to a regular expression pattern."""
-
     def __init__(self, query: str) -> None:
+        """Compares a string to a regular expression pattern."""
         self.pattern: re.Pattern[str] = re.compile(query)
 
     def __eq__(self, other: str) -> bool:
@@ -44,12 +43,18 @@ class like:
 
 
 class has:
-    """Does the compared string contain the specified regular expression patterns?"""
+    def __init__(self, *patterns: Union[str, bytes, like]) -> None:
+        """
+        Does the compared string contain the specified regular expression patterns?
 
-    def __init__(self, *patterns: Union[str, like]) -> None:
+        :param patterns: Use `str` of `like` objects for "contains" checks, and `bytes` for "excludes" checks.
+        """
         self.patterns = patterns
 
     def __eq__(self, other: str) -> bool:
         if not isinstance(other, str):
             return False
-        return all(pattern in other for pattern in self.patterns)
+        return all(
+            pattern.decode() not in other if isinstance(pattern, bytes) else pattern in other
+            for pattern in self.patterns
+        )

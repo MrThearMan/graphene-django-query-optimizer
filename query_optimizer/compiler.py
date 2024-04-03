@@ -8,9 +8,9 @@ from graphene.utils.str_converters import to_snake_case
 from graphene_django.utils import maybe_queryset
 
 from .ast import GraphQLASTWalker
-from .cache import get_from_query_cache, store_in_query_cache
 from .errors import OptimizerError
 from .optimizer import QueryOptimizer
+from .prefetch_hack import fetch_in_context
 from .settings import optimizer_settings
 from .utils import is_optimized, optimizer_logger
 
@@ -20,9 +20,7 @@ if TYPE_CHECKING:
     from graphene.types.definitions import GrapheneObjectType
     from graphql import FieldNode
 
-    from .typing import PK, GQLInfo, ToManyField, ToOneField, TypeVar
-
-    TModel = TypeVar("TModel", bound=Model)
+    from .typing import PK, GQLInfo, TModel, ToManyField, ToOneField
 
 
 __all__ = [
@@ -42,7 +40,7 @@ def optimize(
     optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
     if optimizer is not None:
         queryset = optimizer.optimize_queryset(queryset)
-        store_in_query_cache(queryset, optimizer, info)
+        fetch_in_context(queryset)
 
     return queryset
 
@@ -59,18 +57,13 @@ def optimize_single(
     if optimizer is None:  # pragma: no cover
         return queryset.filter(pk=pk).first()
 
-    cached_item = get_from_query_cache(queryset.model, pk, optimizer, info)
-    if cached_item is not None:
-        return cached_item
-
-    queryset = queryset.filter(pk=pk)
-    optimized_queryset = optimizer.optimize_queryset(queryset)
-    store_in_query_cache(optimized_queryset, optimizer, info)
+    queryset = optimizer.optimize_queryset(queryset.filter(pk=pk))
+    fetch_in_context(queryset)
 
     # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
     # The queryset should have the right model instance, since we started by filtering by its pk,
     # so we can just pick that out of the result cache (if it hasn't been filtered out).
-    return next(iter(optimized_queryset._result_cache or []), None)
+    return next(iter(queryset), None)
 
 
 class OptimizationCompiler(GraphQLASTWalker):

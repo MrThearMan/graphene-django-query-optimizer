@@ -23,7 +23,6 @@ from typing import (
 )
 
 from django.db import models
-from graphene.relay.connection import ConnectionOptions
 from graphene.types.unmountedtype import UnmountedType
 from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions
@@ -50,7 +49,7 @@ from django.db.models import (
     OneToOneField,
     QuerySet,
 )
-from graphql import FieldNode, GraphQLResolveInfo, SelectionNode
+from graphql import GraphQLResolveInfo
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser, User
@@ -66,8 +65,6 @@ __all__ = [
     "ContextManager",
     "Expr",
     "ExpressionKind",
-    "FieldNodes",
-    "FilterFields",
     "GQLInfo",
     "GRAPHQL_BUILTIN",
     "Generator",
@@ -81,18 +78,14 @@ __all__ = [
     "NamedTuple",
     "ObjectTypeInput",
     "OptimizedDjangoOptions",
-    "OptimizerKey",
     "Optional",
     "PK",
     "ParamSpec",
-    "QueryCache",
     "QuerySetResolver",
-    "TableName",
     "ToManyField",
     "ToOneField",
     "Type",
     "TypeGuard",
-    "TypeOptions",
     "TypeVar",
     "TypedDict",
     "Union",
@@ -103,20 +96,14 @@ __all__ = [
 
 
 TModel = TypeVar("TModel", bound=Model)
-TableName: TypeAlias = str
-OptimizerKey: TypeAlias = str
 PK: TypeAlias = Any
-QueryCache: TypeAlias = dict[TableName, dict[OptimizerKey, dict[PK, TModel]]]
 ModelField: TypeAlias = Union[Field, ForeignObjectRel, "GenericForeignKey"]
 ToManyField: TypeAlias = Union["GenericRelation", ManyToManyField, ManyToOneRel, ManyToManyRel]
 ToOneField: TypeAlias = Union["GenericRelation", ForeignObject, ForeignKey, OneToOneField]
-TypeOptions: TypeAlias = Union[DjangoObjectTypeOptions, ConnectionOptions]
 AnyUser: TypeAlias = Union["User", "AnonymousUser"]
-FilterFields: TypeAlias = Union[dict[str, list[str]], list[str]]
 QuerySetResolver: TypeAlias = Callable[..., Union[QuerySet, Manager, None]]
 ModelResolver: TypeAlias = Callable[..., Union[Model, None]]
 ConnectionResolver: TypeAlias = Callable[..., ConnectionType]
-FieldNodes: TypeAlias = Iterable[Union[FieldNode, SelectionNode]]
 ObjectTypeInput: TypeAlias = Union[type[DjangoObjectType], str, Callable[[], type[DjangoObjectType]]]
 UnmountedTypeInput: TypeAlias = Union[type[UnmountedType], str, Callable[[], type[UnmountedType]]]
 Expr: TypeAlias = Union[models.Expression, models.F, models.Q]

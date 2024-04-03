@@ -1,6 +1,7 @@
 # ruff: noqa: UP006
 from __future__ import annotations
 
+import warnings
 from functools import cached_property, partial
 from typing import TYPE_CHECKING
 
@@ -13,8 +14,8 @@ from graphene_django.utils.utils import DJANGO_FILTER_INSTALLED, maybe_queryset
 from graphql_relay.connection.array_connection import offset_to_cursor
 
 from .ast import get_underlying_type
-from .cache import store_in_query_cache
 from .compiler import OptimizationCompiler, optimize
+from .prefetch_hack import fetch_in_context
 from .settings import optimizer_settings
 from .utils import calculate_queryset_slice, is_optimized
 from .validators import validate_pagination_args
@@ -24,10 +25,10 @@ if TYPE_CHECKING:
     from django.db.models import Model
     from django.db.models.manager import Manager
     from graphene.relay.connection import Connection
-    from graphene_django import DjangoObjectType
     from graphql_relay import EdgeType
     from graphql_relay.connection.connection import ConnectionType
 
+    from .types import DjangoObjectType
     from .typing import (
         Any,
         Callable,
@@ -40,12 +41,9 @@ if TYPE_CHECKING:
         Optional,
         QuerySetResolver,
         Type,
-        TypeVar,
         Union,
         UnmountedTypeInput,
     )
-
-    TModel = TypeVar("TModel", bound=models.Model)
 
 __all__ = [
     "DjangoConnectionField",
@@ -64,7 +62,6 @@ class RelatedField(graphene.Field):
         type_: ObjectTypeInput,
         /,
         *,
-        reverse: bool = False,
         field_name: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
@@ -74,13 +71,18 @@ class RelatedField(graphene.Field):
         :param type_: DjangoObjectType the related field is for.
                       This can also be a dot import path to the object type,
                       or a callable that returns the object type.
-        :param reverse: Is the relation direction forward or reverse?
         :param field_name: The name of the model field or related accessor this related field is for.
                            Only needed if the field name on the ObjectType this field is
                            defined on is different from the field name on the model.
         :param kwargs: Extra arguments passed to `graphene.types.field.Field`.
         """
-        self.reverse = reverse
+        if kwargs.pop("reverse", None) is not None:  # pragma: no cover
+            msg = (
+                "The `reverse` argument is no longer required, and should be removed. "
+                "This will become an error in the future."
+            )
+            warnings.warn(msg, category=DeprecationWarning, stacklevel=1)
+
         self.field_name = field_name
         super().__init__(type_, **kwargs)
 
@@ -88,25 +90,16 @@ class RelatedField(graphene.Field):
         # Allow user defined resolvers to override the default behavior.
         if not isinstance(parent_resolver, partial):
             return parent_resolver
-        if self.reverse:
-            return self.reverse_resolver
-        return self.forward_resolver
+        return self.related_resolver
 
-    def forward_resolver(self, root: models.Model, info: GQLInfo) -> Optional[models.Model]:
+    def related_resolver(self, root: models.Model, info: GQLInfo) -> Optional[models.Model]:
         field_name = self.field_name or to_snake_case(info.field_name)
-        db_field_key: str = root.__class__._meta.get_field(field_name).attname
-        object_pk = getattr(root, db_field_key, None)
-        if object_pk is None:  # pragma: no cover
+        # Related object should be optimized to the root model.
+        related_instance: Optional[models.Model] = getattr(root, field_name, None)
+        if related_instance is None:
             return None
-        return self.underlying_type.get_node(info, object_pk)
-
-    def reverse_resolver(self, root: models.Model, info: GQLInfo) -> Optional[models.Model]:
-        field_name = self.field_name or to_snake_case(info.field_name)
-        # Reverse object should be optimized to the root model.
-        reverse_object: Optional[models.Model] = getattr(root, field_name, None)
-        if reverse_object is None:
-            return None
-        return self.underlying_type.get_node(info, reverse_object.pk)
+        self.underlying_type.run_instance_checks(related_instance, info)
+        return related_instance
 
     @cached_property
     def underlying_type(self) -> type[DjangoObjectType]:
@@ -292,15 +285,12 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         if not already_optimized:
             queryset = queryset[cut]
 
-        # Store data in cache after pagination
-        if optimizer is not None:
-            store_in_query_cache(queryset, optimizer, info)
-
-        # Create a connection from the sliced queryset.
         edges: list[EdgeType] = [
+            # Create a connection from the sliced queryset.
             self.connection_type.Edge(node=value, cursor=offset_to_cursor(cut.start + index))
-            for index, value in enumerate(queryset)
+            for index, value in enumerate(fetch_in_context(queryset))
         ]
+
         connection = connection_adapter(
             cls=self.connection_type,
             edges=edges,

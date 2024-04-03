@@ -1,9 +1,18 @@
 import pytest
 
-from tests.factories import ApartmentFactory
+from tests.factories import (
+    ApartmentFactory,
+    BuildingFactory,
+    DeveloperFactory,
+    HousingCompanyFactory,
+    PostalCodeFactory,
+    RealEstateFactory,
+)
 from tests.helpers import has
 
-pytestmark = pytest.mark.django_db
+pytestmark = [
+    pytest.mark.django_db,
+]
 
 
 def test_multiple_queries(graphql_client):
@@ -133,6 +142,85 @@ def test_misc__pk_fields(graphql_client):
             '"example_housingcompany"."postal_code_id", '
             '"example_postalcode"."code"'
         ),
+    )
+
+
+def test_misc__to_many_objects_with_same_related_object(graphql_client):
+    dev = DeveloperFactory.create(name="foo")
+    postal_code = PostalCodeFactory.create(code="00001")
+
+    HousingCompanyFactory.create(developers=[dev], postal_code=postal_code)
+    HousingCompanyFactory.create(developers=[dev], postal_code=postal_code)
+    HousingCompanyFactory.create(developers=[dev], postal_code=postal_code)
+
+    query = """
+        query {
+          allHousingCompanies {
+            name
+            developers {
+              name
+            }
+            postalCode {
+              code
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    assert response.queries.count == 2, response.queries.log
+
+    assert response.queries[0] == has(
+        'FROM "example_housingcompany"',
+        'INNER JOIN "example_postalcode"',
+    )
+    assert response.queries[1] == has(
+        'FROM "example_developer"',
+    )
+
+
+def test_misc__same_related_object_selected_with_different_fields_in_same_query(graphql_client):
+    real_estate = RealEstateFactory.create()
+    BuildingFactory.create(real_estate=real_estate)
+    BuildingFactory.create(real_estate=real_estate)
+    BuildingFactory.create(real_estate=real_estate)
+    BuildingFactory.create(real_estate=real_estate)
+
+    # Changing caching to pk based will
+    query = """
+        query {
+          allRealEstates {
+            name
+            buildingSet {
+              name
+              realEstate {
+                surfaceArea
+                buildingSet {
+                  streetAddress
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    assert response.queries.count == 3, response.queries.log
+
+    assert response.queries[0] == has(
+        'FROM "example_realestate"',
+    )
+    assert response.queries[1] == has(
+        'FROM "example_building"',
+        'INNER JOIN "example_realestate"',
+    )
+    assert response.queries[2] == has(
+        'FROM "example_building"',
+        b'INNER JOIN "example_realestate"',
     )
 
 

@@ -36,13 +36,11 @@ def convert_to_one_field(
         actual_field = field.field if isinstance(field, models.OneToOneRel) else field
         description: str = get_django_field_description(actual_field)
         required: bool = False if isinstance(field, models.OneToOneRel) else not field.null
-        reverse: bool = isinstance(field, models.OneToOneRel)
 
         from query_optimizer.fields import RelatedField
 
         return RelatedField(
             type_,
-            reverse=reverse,
             description=description,
             required=required,
         )

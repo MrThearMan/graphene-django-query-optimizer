@@ -28,9 +28,7 @@ from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
     from .types import DjangoObjectType
-    from .typing import Any, ExpressionKind, GQLInfo, GraphQLFilterInfo, Optional, ToManyField, TypeVar
-
-    TModel = TypeVar("TModel", bound=Model)
+    from .typing import Any, ExpressionKind, GQLInfo, GraphQLFilterInfo, Optional, TModel, ToManyField
 
 
 __all__ = [

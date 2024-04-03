@@ -8,10 +8,8 @@ from factory.declarations import SubFactory
 from factory.django import DjangoModelFactory
 from factory.utils import import_object
 
-from query_optimizer.typing import Any, Callable, Generic, Optional, TypeVar, Union
+from query_optimizer.typing import Any, Callable, Generic, Optional, TModel, Union
 
-T = TypeVar("T")
-TModel = TypeVar("TModel", bound=Model)
 FactoryType = Union[str, type[BaseFactory], Callable[[], type[BaseFactory]]]
 
 
