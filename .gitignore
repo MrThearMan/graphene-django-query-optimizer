@@ -7,3 +7,4 @@
 *.coverage
 tests/project/testdb
 pytest.ini
+profile.svg
