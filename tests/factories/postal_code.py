@@ -2,7 +2,7 @@ from factory import fuzzy
 
 from tests.example.models import PostalCode
 
-from ._base import GenericDjangoModelFactory, ManyToManyFactory
+from ._base import GenericDjangoModelFactory, OneToManyFactory
 
 
 class PostalCodeFactory(GenericDjangoModelFactory[PostalCode]):
@@ -11,4 +11,4 @@ class PostalCodeFactory(GenericDjangoModelFactory[PostalCode]):
         django_get_or_create = ["code"]
 
     code = fuzzy.FuzzyText()
-    housing_companies = ManyToManyFactory("tests.factories.housing_company.HousingCompanyFactory")
+    housing_companies = OneToManyFactory("tests.factories.housing_company.HousingCompanyFactory")

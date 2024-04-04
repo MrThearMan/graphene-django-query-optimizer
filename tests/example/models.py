@@ -56,7 +56,7 @@ __all__ = [
 class Tag(models.Model):
     tag = models.SlugField()
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
+    object_id = models.CharField(max_length=255)
     content_object = GenericForeignKey()
 
     def __str__(self) -> str:
@@ -88,6 +88,8 @@ class PostalCode(models.Model):
 class Developer(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
+
+    tags = GenericRelation(Tag)
 
     class Meta:
         ordering = ["pk"]

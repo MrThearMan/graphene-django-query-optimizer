@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING, Optional, Union
 
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.db.models import ForeignKey, Manager, ManyToOneRel, Model, QuerySet
 from graphene.utils.str_converters import to_snake_case
 from graphene_django.utils import maybe_queryset
@@ -134,12 +135,21 @@ class OptimizationCompiler(GraphQLASTWalker):
     ) -> None:
         name = related_field.get_cache_name() or related_field.name
         optimizer = QueryOptimizer(model=related_model, info=self.info, name=name)
-        self.optimizer.select_related[name] = optimizer
+
+        if isinstance(related_field, GenericForeignKey):
+            self.optimizer.prefetch_related[name] = optimizer
+        else:
+            self.optimizer.select_related[name] = optimizer
+
         if isinstance(related_field, ForeignKey):
             self.optimizer.related_fields.append(related_field.attname)
 
+        if isinstance(related_field, GenericForeignKey):
+            self.optimizer.related_fields.append(related_field.ct_field)
+            self.optimizer.related_fields.append(related_field.fk_field)
+
         with self.use_optimizer(optimizer):
-            super().handle_to_many_field(field_type, field_node, related_field, related_model)
+            super().handle_to_one_field(field_type, field_node, related_field, related_model)
 
     def handle_to_many_field(
         self,
@@ -154,8 +164,13 @@ class OptimizationCompiler(GraphQLASTWalker):
 
         optimizer = QueryOptimizer(model=related_model, info=self.info, name=name)
         self.optimizer.prefetch_related[key] = optimizer
+
         if isinstance(related_field, ManyToOneRel):
             optimizer.related_fields.append(related_field.field.attname)
+
+        if isinstance(related_field, GenericRelation):
+            optimizer.related_fields.append(related_field.object_id_field_name)
+            optimizer.related_fields.append(related_field.content_type_field_name)
 
         with self.use_optimizer(optimizer):
             super().handle_to_many_field(field_type, field_node, related_field, related_model)

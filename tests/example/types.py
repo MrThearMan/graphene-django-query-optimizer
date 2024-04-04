@@ -10,7 +10,7 @@ from query_optimizer import DjangoObjectType
 from query_optimizer.fields import AnnotatedField, DjangoConnectionField, DjangoListField, MultiField, RelatedField
 from query_optimizer.filter import FilterSet
 from query_optimizer.settings import optimizer_settings
-from query_optimizer.typing import GQLInfo, Any
+from query_optimizer.typing import GQLInfo, Any, Union
 from tests.example.models import (
     Apartment,
     ApartmentProxy,
@@ -76,36 +76,11 @@ __all__ = [
 ]
 
 
-# Generic Relations
-
-
-class ContentTypeType(DjangoObjectType):
-    class Meta:
-        model = ContentType
-        fields = [
-            "app_label",
-            "model",
-        ]
-
-
-class TagType(DjangoObjectType):
-    content_object = RelatedField(lambda: ContentTypeType)
-
-    class Meta:
-        model = Tag
-        fields = [
-            "tag",
-            "object_id",
-            "content_type",
-            "content_object",
-        ]
-
-
 # Basic
 
 
 class PostalCodeType(DjangoObjectType):
-    tags = DjangoListField(TagType)
+    tags = DjangoListField(lambda: TagType)
 
     class Meta:
         model = PostalCode
@@ -267,6 +242,52 @@ class OwnershipType(DjangoObjectType):
             "owner",
             "sale",
             "percentage",
+        ]
+
+
+# Generic Relations
+
+
+class TaggedItemType(graphene.Union):
+    class Meta:
+        types = [
+            PostalCodeType,
+            DeveloperType,
+        ]
+
+    @classmethod
+    def resolve_type(cls, instance: Model, info: GQLInfo) -> type[DjangoObjectType]:
+        if isinstance(instance, PostalCode):
+            return PostalCodeType
+        if isinstance(instance, Developer):
+            return DeveloperType
+        msg = f"Unknown type: {instance}"
+        raise TypeError(msg)
+
+
+class ContentTypeType(DjangoObjectType):
+    class Meta:
+        model = ContentType
+        fields = [
+            "app_label",
+            "model",
+        ]
+
+
+class TagType(DjangoObjectType):
+    content_type = RelatedField(ContentTypeType)
+    content_object = graphene.Field(TaggedItemType)
+
+    def resolve_content_object(root: Tag, info: GQLInfo) -> Union[PostalCode, Developer]:
+        return root.content_object
+
+    class Meta:
+        model = Tag
+        fields = [
+            "tag",
+            "object_id",
+            "content_type",
+            "content_object",
         ]
 
 

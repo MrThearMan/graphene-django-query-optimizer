@@ -93,7 +93,7 @@ class Query(graphene.ObjectType):
         owners = optimize(Owner.objects.all(), info)
         return itertools.chain(developers, property_managers, owners)
 
-    all_tagged_items = DjangoListField(TagType)
+    all_tags = DjangoListField(TagType)
     all_content_types = DjangoListField(ContentTypeType)
 
     # --------------------------------------------------------------------

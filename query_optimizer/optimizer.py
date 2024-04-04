@@ -40,20 +40,13 @@ __all__ = [
 class CompilationResults:
     only_fields: list[str] = dataclasses.field(default_factory=list)
     select_related: list[str] = dataclasses.field(default_factory=list)
-    prefetch_related: list[Prefetch] = dataclasses.field(default_factory=list)
-
-    @property
-    def cache_key(self) -> str:
-        only = ",".join(self.only_fields)
-        select = ",".join(self.select_related)
-        prefetch = ",".join(item.prefetch_to for item in self.prefetch_related)
-        return f"{only=}|{select=}|{prefetch=}"
+    prefetch_related: list[Prefetch | str] = dataclasses.field(default_factory=list)
 
 
 class QueryOptimizer:
     """Creates optimized queryset based on the optimization data found by the OptimizationCompiler."""
 
-    def __init__(self, model: type[Model], info: GQLInfo, name: Optional[str] = None) -> None:
+    def __init__(self, model: type[Model] | None, info: GQLInfo, name: Optional[str] = None) -> None:
         self.model = model
         self.info = info
         self.only_fields: list[str] = []
@@ -62,7 +55,6 @@ class QueryOptimizer:
         self.annotations: dict[str, ExpressionKind] = {}
         self.select_related: dict[str, QueryOptimizer] = {}
         self.prefetch_related: dict[str, QueryOptimizer] = {}
-        self._cache_key: Optional[str] = None  # generated during the optimization process
         self.total_count: bool = False
         self.name = name
 
@@ -123,7 +115,6 @@ class QueryOptimizer:
         for attr, optimizer in self.prefetch_related.items():
             self.compile_prefetch(attr, optimizer, results, filter_info)
 
-        self._cache_key = results.cache_key
         return results
 
     def compile_select(
@@ -138,8 +129,9 @@ class QueryOptimizer:
         results.only_fields.extend(f"{name}{LOOKUP_SEP}{only}" for only in nested_results.only_fields)
         results.select_related.extend(f"{name}{LOOKUP_SEP}{select}" for select in nested_results.select_related)
         for prefetch in nested_results.prefetch_related:
-            prefetch.add_prefix(name)
-            results.prefetch_related.append(prefetch)
+            if isinstance(prefetch, Prefetch):
+                prefetch.add_prefix(name)
+                results.prefetch_related.append(prefetch)
 
     def compile_prefetch(
         self,
@@ -148,6 +140,10 @@ class QueryOptimizer:
         results: CompilationResults,
         filter_info: GraphQLFilterInfo,
     ) -> None:
+        if optimizer.model is None:  # generic foreign keys
+            results.prefetch_related.append(optimizer.name)
+            return
+
         filter_info = filter_info.get("children", {}).get(optimizer.name, {})
         queryset = optimizer.model._default_manager.all()
         queryset = optimizer.optimize_queryset(queryset, filter_info=filter_info)
@@ -258,12 +254,3 @@ class QueryOptimizer:
         from graphene_django.filter.fields import convert_enum
 
         return {key: convert_enum(value) for key, value in input_data.items()}
-
-    @property
-    def cache_key(self) -> str:
-        if self._cache_key is None:
-            self.compile(filter_info={})
-        return self._cache_key
-
-    def __str__(self) -> str:  # pragma: no cover
-        return self.cache_key

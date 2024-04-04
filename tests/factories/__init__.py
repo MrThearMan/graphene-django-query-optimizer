@@ -8,6 +8,7 @@ from .postal_code import PostalCodeFactory
 from .property_manager import PropertyManagerFactory
 from .real_estate import RealEstateFactory
 from .sale import SaleFactory
+from .tag import TagFactory
 
 __all__ = [
     "ApartmentFactory",
@@ -20,4 +21,5 @@ __all__ = [
     "PropertyManagerFactory",
     "RealEstateFactory",
     "SaleFactory",
+    "TagFactory",
 ]
