@@ -148,7 +148,7 @@ class ExpressionKind(Protocol):
         self,
         query: Query,
         allow_joins: bool,  # noqa: FBT001
-        reuse: Any,
+        reuse: set[str] | None,
         summarize: bool,  # noqa: FBT001
         for_save: bool,  # noqa: FBT001
-    ) -> Expr: ...
+    ) -> ExpressionKind: ...
