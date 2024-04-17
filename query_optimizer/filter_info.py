@@ -122,7 +122,7 @@ class FilterInfoCompiler(GraphQLASTWalker):
     ) -> None:
         self.add_filter_info(field_type, field_node)
         with self.child_filter_info(field_node):
-            return super().handle_to_one_field(field_type, field_node, related_field, related_model)
+            return super().handle_to_many_field(field_type, field_node, related_field, related_model)
 
     @contextlib.contextmanager
     def child_filter_info(self, field_node: FieldNode) -> None:
