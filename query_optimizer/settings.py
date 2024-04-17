@@ -20,9 +20,6 @@ SETTING_NAME: str = "GRAPHQL_QUERY_OPTIMIZER"
 
 
 class DefaultSettings(NamedTuple):
-    QUERY_CACHE_KEY: str = "_query_cache"
-    """Key to store fetched model instances under in the GraphQL schema extensions."""
-
     OPTIMIZER_MARK: str = "_optimized"
     """Key used mark if a queryset has been optimized by the query optimizer."""
 
@@ -66,6 +63,7 @@ IMPORT_STRINGS: set[Union[bytes, str]] = set()
 REMOVED_SETTINGS: set[str] = {
     "PK_CACHE_KEY",
     "DONT_OPTIMIZE_ON_ERROR",
+    "QUERY_CACHE_KEY",
 }
 
 optimizer_settings = SettingsHolder(
