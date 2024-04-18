@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet, Value
 from django.db.models.functions import Concat, ExtractYear
 from django_filters import CharFilter, OrderingFilter
-from graphene import relay, Connection
+from graphene import relay, Connection, ObjectType
 
 from query_optimizer import DjangoObjectType
 from query_optimizer.fields import AnnotatedField, DjangoConnectionField, DjangoListField, MultiField, RelatedField
@@ -77,6 +77,15 @@ __all__ = [
 
 
 # Basic
+
+
+class PlainRelatedObjectType(ObjectType):
+    x = graphene.Int()
+
+
+class PlainObjectType(ObjectType):
+    foo = graphene.String()
+    bar = graphene.Field(PlainRelatedObjectType)
 
 
 class PostalCodeType(DjangoObjectType):

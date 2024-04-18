@@ -81,17 +81,17 @@ class GraphQLASTWalker:
         if self.info.parent_type == field_type:
             return self.handle_query_class(field_type, field_node)
 
-        if issubclass(graphene_type, DjangoObjectType):
-            return self.handle_object_type(field_type, field_node)
-
         if issubclass(graphene_type, Connection):
             return self.handle_connection(field_type, field_node)
+
+        if is_edge(field_type):
+            return self.handle_edge(field_type, field_node)
 
         if issubclass(graphene_type, PageInfo):  # pragma: no cover
             return self.handle_page_info(field_type, field_node)
 
-        if is_edge(field_type):
-            return self.handle_edge(field_type, field_node)
+        if issubclass(graphene_type, ObjectType):
+            return self.handle_object_type(field_type, field_node)
 
         msg = f"Unhandled graphene type: '{graphene_type}'"  # pragma: no cover
         raise OptimizerError(msg)  # pragma: no cover
@@ -104,9 +104,17 @@ class GraphQLASTWalker:
     def handle_object_type(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
         field_name = to_snake_case(field_node.name.value)
         if is_graphql_builtin(field_name):
-            return None
+            return self.handle_graphql_builtin(field_type, field_node)
 
-        return self.handle_model_field(field_type, field_node, field_name)
+        graphene_type: type[ObjectType] = field_type.graphene_type
+
+        if issubclass(graphene_type, DjangoObjectType):
+            return self.handle_model_field(field_type, field_node, field_name)
+        return self.handle_plain_object_type(field_type, field_node)
+
+    def handle_graphql_builtin(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None: ...
+
+    def handle_plain_object_type(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None: ...
 
     def handle_model_field(self, field_type: GrapheneObjectType, field_node: FieldNode, field_name: str) -> None:
         model: type[Model] = field_type.graphene_type._meta.model
@@ -133,11 +141,9 @@ class GraphQLASTWalker:
         msg = f"Unhandled field: '{field.name}'"  # pragma: no cover
         raise OptimizerError(msg)  # pragma: no cover
 
-    def handle_custom_field(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
-        pass
+    def handle_custom_field(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None: ...
 
-    def handle_normal_field(self, field_type: GrapheneObjectType, field_node: FieldNode, field: Field) -> None:
-        pass
+    def handle_normal_field(self, field_type: GrapheneObjectType, field_node: FieldNode, field: Field) -> None: ...
 
     def handle_to_one_field(
         self,
@@ -176,11 +182,9 @@ class GraphQLASTWalker:
         selections = get_selections(field_node)
         return self.handle_selections(graphene_type, selections)
 
-    def handle_total_count(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
-        pass  # pragma: no cover
+    def handle_total_count(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None: ...
 
-    def handle_page_info(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
-        pass  # pragma: no cover
+    def handle_page_info(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None: ...
 
     def handle_fragment_spread(self, field_type: GrapheneObjectType, fragment_spread: FragmentSpreadNode) -> None:
         name = fragment_spread.name.value

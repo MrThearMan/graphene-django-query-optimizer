@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import contextlib
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.db.models import ForeignKey, Manager, ManyToOneRel, Model, QuerySet
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from graphene.types.definitions import GrapheneObjectType
     from graphql import FieldNode
 
-    from .typing import PK, GQLInfo, TModel, ToManyField, ToOneField
+    from .typing import PK, GQLInfo, Optional, TModel, ToManyField, ToOneField, Union
 
 
 __all__ = [

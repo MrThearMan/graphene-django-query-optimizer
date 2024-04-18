@@ -96,7 +96,7 @@ class RelatedField(graphene.Field):
         field_name = self.field_name or to_snake_case(info.field_name)
         # Related object should be optimized to the root model.
         related_instance: Optional[models.Model] = getattr(root, field_name, None)
-        if related_instance is None:
+        if related_instance is None:  # pragma: no cover
             return None
         self.underlying_type.run_instance_checks(related_instance, info)
         return related_instance
