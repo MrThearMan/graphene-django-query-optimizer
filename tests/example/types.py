@@ -7,7 +7,14 @@ from django_filters import CharFilter, OrderingFilter
 from graphene import relay, Connection, ObjectType
 
 from query_optimizer import DjangoObjectType
-from query_optimizer.fields import AnnotatedField, DjangoConnectionField, DjangoListField, MultiField, RelatedField
+from query_optimizer.fields import (
+    AnnotatedField,
+    DjangoConnectionField,
+    DjangoListField,
+    MultiField,
+    RelatedField,
+    PreResolvingField,
+)
 from query_optimizer.filter import FilterSet
 from query_optimizer.settings import optimizer_settings
 from query_optimizer.typing import GQLInfo, Any, Union
@@ -233,6 +240,14 @@ class SaleType(DjangoObjectType):
 
 
 class OwnerType(DjangoObjectType):
+    pre_field = PreResolvingField(
+        graphene.String,
+        args={
+            "foo": graphene.Int(required=True),
+            "bar": graphene.String(),
+        },
+    )
+
     class Meta:
         model = Owner
         fields = [
@@ -241,6 +256,10 @@ class OwnerType(DjangoObjectType):
             "email",
             "ownerships",
         ]
+
+    @staticmethod
+    def pre_resolve_pre_field(queryset: QuerySet, info: GQLInfo, foo: int, bar: str = "") -> int:
+        return queryset.annotate(pre_field=Concat("name", Value(f"-{foo}{bar}")))
 
 
 class OwnershipType(DjangoObjectType):

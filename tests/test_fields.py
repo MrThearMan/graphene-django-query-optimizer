@@ -7,6 +7,7 @@ from tests.factories import (
     BuildingFactory,
     DeveloperFactory,
     HousingCompanyFactory,
+    OwnerFactory,
     PropertyManagerFactory,
     RealEstateFactory,
     SaleFactory,
@@ -773,4 +774,30 @@ def test_fields__multi_field(graphql_client):
         {"shareRange": "1 - 2"},
         {"shareRange": "3 - 4"},
         {"shareRange": "5 - 6"},
+    ]
+
+
+def test_fields__pre_field(graphql_client):
+    owner_1 = OwnerFactory.create()
+    owner_2 = OwnerFactory.create()
+    owner_3 = OwnerFactory.create()
+
+    query = """
+        query {
+          allOwners {
+            preField(foo:0)
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for fetching Owners
+    assert response.queries.count == 1, response.queries.log
+
+    assert response.content == [
+        {"preField": f"{owner_1.name}-0"},
+        {"preField": f"{owner_2.name}-0"},
+        {"preField": f"{owner_3.name}-0"},
     ]

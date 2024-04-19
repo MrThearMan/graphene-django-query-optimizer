@@ -22,7 +22,7 @@ from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
     from django.db import models
-    from django.db.models import Model
+    from django.db.models import Model, QuerySet
     from django.db.models.manager import Manager
     from graphene.relay.connection import Connection
     from graphql_relay import EdgeType
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from .types import DjangoObjectType
     from .typing import (
         Any,
+        ArgTypeInput,
         Callable,
         ConnectionResolver,
         ExpressionKind,
@@ -388,4 +389,48 @@ class MultiField(graphene.Field):
         return self.multi_field_resolver
 
     def multi_field_resolver(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
+        return self.resolver(root, info, **kwargs)
+
+
+class PreResolvingField(graphene.Field):
+    """
+    Field that has a pre-resolving step.
+
+    Must define a `pre_resolve_{name}(queryset, info, **kwargs)` staticmethod on the object type,
+    where `{name}` is the name of the field defined on the object type, and `kwargs`
+    are the values of 'args' defined on this field.
+
+    The optimizer will run pre-resolving methods as the last filtering step.
+    """
+
+    def __init__(
+        self,
+        type_: UnmountedTypeInput,
+        /,
+        *,
+        args: dict[str, ArgTypeInput],
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(type_, args=args, **kwargs)
+
+    def __set_name__(self, owner: type[DjangoObjectType], name: str) -> None:
+        self.owner = owner
+        self.name = to_camel_case(name)
+
+    def pre_resolver(self, queryset: QuerySet, info: GQLInfo, **kwargs: Any) -> QuerySet:
+        name = to_snake_case(self.name)
+        resolver_name = f"pre_resolve_{name}"
+        resolver: Callable[..., QuerySet] | None = getattr(self.owner, resolver_name, None)
+        if resolver is None:  # pragma: no cover
+            msg = f"Pre-resolver method '{resolver_name}' missing from '{self.owner}'."
+            raise AttributeError(msg)
+        return resolver(queryset, info, **kwargs)
+
+    def wrap_resolve(self, parent_resolver: Callable[..., Any]) -> Callable[..., Any]:
+        # `parent_resolver` is either a `resolve_{self.name}` method defined
+        # on the owner class, or a partial of `dict_or_attr_resolver`.
+        self.resolver = parent_resolver
+        return self.field_resolver
+
+    def field_resolver(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
         return self.resolver(root, info, **kwargs)

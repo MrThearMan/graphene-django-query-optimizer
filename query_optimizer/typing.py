@@ -23,6 +23,8 @@ from typing import (
 )
 
 from django.db import models
+from graphene import Argument, Dynamic
+from graphene.types.structures import Structure
 from graphene.types.unmountedtype import UnmountedType
 from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions
@@ -59,16 +61,18 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Any",
+    "ArgTypeInput",
     "Callable",
+    "cast",
     "Collection",
     "ConnectionResolver",
     "ContextManager",
     "Expr",
     "ExpressionKind",
-    "GQLInfo",
-    "GRAPHQL_BUILTIN",
     "Generator",
     "Generic",
+    "GQLInfo",
+    "GRAPHQL_BUILTIN",
     "GraphQLFilterInfo",
     "Hashable",
     "Iterable",
@@ -79,19 +83,18 @@ __all__ = [
     "ObjectTypeInput",
     "OptimizedDjangoOptions",
     "Optional",
-    "PK",
+    "overload",
     "ParamSpec",
+    "PK",
     "QuerySetResolver",
     "ToManyField",
     "ToOneField",
     "Type",
+    "TypedDict",
     "TypeGuard",
     "TypeVar",
-    "TypedDict",
     "Union",
     "UnmountedTypeInput",
-    "cast",
-    "overload",
 ]
 
 
@@ -104,8 +107,9 @@ AnyUser: TypeAlias = Union["User", "AnonymousUser"]
 QuerySetResolver: TypeAlias = Callable[..., Union[QuerySet, Manager, None]]
 ModelResolver: TypeAlias = Callable[..., Union[Model, None]]
 ConnectionResolver: TypeAlias = Callable[..., ConnectionType]
-ObjectTypeInput: TypeAlias = Union[type[DjangoObjectType], str, Callable[[], type[DjangoObjectType]]]
-UnmountedTypeInput: TypeAlias = Union[type[UnmountedType], str, Callable[[], type[UnmountedType]]]
+ObjectTypeInput: TypeAlias = Union[str, type[DjangoObjectType], Callable[[], type[DjangoObjectType]]]
+UnmountedTypeInput: TypeAlias = Union[str, type[UnmountedType], Structure, Callable[[], type[UnmountedType]]]
+ArgTypeInput: TypeAlias = Union[Argument, UnmountedType, Dynamic]
 Expr: TypeAlias = Union[models.Expression, models.F, models.Q]
 
 

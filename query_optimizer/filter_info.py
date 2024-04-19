@@ -104,6 +104,14 @@ class FilterInfoCompiler(GraphQLASTWalker):
         with self.child_filter_info(field_node):
             super().handle_query_class(field_type, field_node)
 
+    def handle_custom_field(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
+        from .fields import PreResolvingField
+
+        field_name = to_snake_case(field_node.name.value)
+        field = getattr(field_type.graphene_type, field_name, None)
+        if isinstance(field, PreResolvingField):
+            self.add_filter_info(field_type, field_node)
+
     def handle_to_one_field(
         self,
         field_type: GrapheneObjectType,

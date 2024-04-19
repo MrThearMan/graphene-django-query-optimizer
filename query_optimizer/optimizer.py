@@ -29,8 +29,16 @@ from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
     from .types import DjangoObjectType
-    from .typing import Any, ExpressionKind, GQLInfo, GraphQLFilterInfo, Optional, TModel, ToManyField
-
+    from .typing import (
+        Any,
+        ExpressionKind,
+        GQLInfo,
+        GraphQLFilterInfo,
+        Optional,
+        QuerySetResolver,
+        TModel,
+        ToManyField,
+    )
 
 __all__ = [
     "QueryOptimizer",
@@ -57,6 +65,7 @@ class QueryOptimizer:
         self.annotations: dict[str, ExpressionKind] = {}
         self.select_related: dict[str, QueryOptimizer] = {}
         self.prefetch_related: dict[str, QueryOptimizer] = {}
+        self.pre_resolvers: dict[str, QuerySetResolver] = {}
         self.total_count: bool = False
         self.name = name
 
@@ -89,6 +98,7 @@ class QueryOptimizer:
             queryset = filterset.qs
 
         queryset = self.get_filtered_queryset(queryset)
+        queryset = self.run_pre_resolvers(queryset, filter_info)
 
         if results.select_related:
             queryset = queryset.select_related(*results.select_related)
@@ -256,3 +266,9 @@ class QueryOptimizer:
         from graphene_django.filter.fields import convert_enum
 
         return {key: convert_enum(value) for key, value in input_data.items()}
+
+    def run_pre_resolvers(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
+        for name, resolver in self.pre_resolvers.items():
+            filters = filter_info["children"][name]["filters"]
+            queryset = resolver(queryset, self.info, **filters)
+        return queryset
