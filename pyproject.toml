@@ -66,15 +66,15 @@ pytest-django = "4.8.0"
 pre-commit = "3.7.0"
 tox = "4.14.2"
 tox-gh-actions = "3.2.0"
-faker = "24.9.0"
+faker = "24.11.0"
 factory-boy = "3.3.0"
 sqlparse = "0.5.0"
 django-graphiql-debug-toolbar = "0.2.0"
 py-spy = "0.3.14"
 
 [tool.poetry.group.docs.dependencies]
-mkdocs = "1.5.3"
-pymdown-extensions = "10.7.1"
+mkdocs = "1.6.0"
+pymdown-extensions = "10.8"
 mkdocs-mermaid2-plugin = "1.1.1"
 
 [tool.poetry.group.lint.dependencies]
