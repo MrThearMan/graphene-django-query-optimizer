@@ -69,14 +69,15 @@ def validate_pagination_args(  # noqa: C901, PLR0912
         if after is not None or before is not None:
             msg = "Can only use either `offset` or `before`/`after` for pagination."
             raise ValueError(msg)
-        if not isinstance(offset, int) or offset <= 0:
+        if not isinstance(offset, int) or offset < 0:
             msg = "Argument `offset` must be a positive integer."
             raise ValueError(msg)
 
         # Convert offset to after cursor value. Note that after cursor dictates
         # a value _after_ which results should be returned, so we need to subtract
         # 1 from the offset to get the correct cursor value.
-        after = offset - 1
+        if offset > 0:  # ignore zero offset
+            after = offset - 1
 
     if after is not None and (not isinstance(after, int) or after < 0):
         msg = "The node pointed with `after` does not exist."

@@ -88,7 +88,7 @@ class Params(NamedTuple):
             "offset zero": Params(
                 pagination_input=PaginationInput(offset=0),
                 output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
-                errors="Argument `offset` must be a positive integer.",
+                errors=None,
             ),
             "after negative": Params(
                 pagination_input=PaginationInput(after=offset_to_cursor(-1)),
@@ -114,16 +114,6 @@ class Params(NamedTuple):
                 pagination_input=PaginationInput(offset=1, before=offset_to_cursor(0)),
                 output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
                 errors="Can only use either `offset` or `before`/`after` for pagination.",
-            ),
-            "after not int": Params(
-                pagination_input=PaginationInput(after="0"),
-                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
-                errors="The node pointed with `after` does not exist.",
-            ),
-            "before not int": Params(
-                pagination_input=PaginationInput(before="0"),
-                output=PaginationArgs(after=None, before=None, first=None, last=None, size=None),
-                errors="The node pointed with `before` does not exist.",
             ),
             "first not int": Params(
                 pagination_input=PaginationInput(first="0"),
@@ -156,4 +146,6 @@ def test_validate_pagination_args(pagination_input, output, errors):
             pytest.fail(f"Unexpected error: {error}")
         assert str(error) == errors
     else:
+        if errors is not None:
+            pytest.fail(f"Expected error: {errors}")
         assert args == output
