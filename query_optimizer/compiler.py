@@ -109,7 +109,7 @@ class OptimizationCompiler(GraphQLASTWalker):
             raise
 
         # Raise unknown errors if not allowed to skip optimization on error.
-        except Exception as error:  # noqa: BLE001  # pragma: no cover
+        except Exception as error:  # pragma: no cover
             optimizer_logger.warning("Something went wrong during the optimization process.", exc_info=error)
             if not optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
                 raise
