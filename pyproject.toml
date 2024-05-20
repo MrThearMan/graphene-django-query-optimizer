@@ -60,13 +60,13 @@ django-settings-holder = ">=0.1.2"
 filter = ["django-filter"]
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.2.0"
+pytest = "8.2.1"
 coverage = "7.5.1"
 pytest-django = "4.8.0"
 pre-commit = "3.7.1"
 tox = "4.15.0"
 tox-gh-actions = "3.2.0"
-faker = "25.1.0"
+faker = "25.2.0"
 factory-boy = "3.3.0"
 sqlparse = "0.5.0"
 django-graphiql-debug-toolbar = "0.2.0"
