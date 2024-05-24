@@ -469,3 +469,70 @@ def test_misc__generic_foreign_key__nested_relations(graphql_client):
         {"contentObject": {"name": "foo", "housingcompanySet": [{"name": "fizz"}, {"name": "buzz"}]}},
         {"contentObject": {"name": "foo", "housingcompanySet": [{"name": "fizz"}, {"name": "buzz"}]}},
     ]
+
+
+def test_same_relation_multiple_times(graphql_client):
+    ApartmentFactory.create(
+        sales__purchase_date="2020-01-01",
+        sales__purchase_price=100,
+        sales__ownerships__percentage=10,
+        sales__ownerships__owner__name="foo",
+    )
+    ApartmentFactory.create(
+        sales__purchase_date="2020-01-02",
+        sales__purchase_price=200,
+        sales__ownerships__percentage=20,
+        sales__ownerships__owner__name="bar",
+    )
+    ApartmentFactory.create(
+        sales__purchase_date="2020-01-03",
+        sales__purchase_price=300,
+        sales__ownerships__percentage=30,
+        sales__ownerships__owner__name="baz",
+    )
+
+    query = """
+        query {
+          allApartments {
+            surfaceArea
+            sales {
+              purchaseDate
+              ownerships {
+                percentage
+                owner {
+                  name
+                }
+              }
+            }
+            sales {
+              purchasePrice
+              apartment {
+                sharesStart
+                sharesEnd
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for fetching apartments
+    # 1 query for fetching sales and apartments
+    # 1 query for fetching ownerships and owners
+    assert response.queries.count == 3, response.queries.log
+
+    assert response.queries[0] == has(
+        'FROM "example_apartment"',
+    )
+    assert response.queries[1] == has(
+        "purchase_date",
+        "purchase_price",
+        'FROM "example_sale"',
+        'INNER JOIN "example_apartment"',
+    )
+    assert response.queries[2] == has(
+        'FROM "example_ownership"',
+        'INNER JOIN "example_owner"',
+    )
