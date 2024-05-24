@@ -7,6 +7,8 @@ from graphene.utils.str_converters import to_snake_case
 
 from query_optimizer.ast import GraphQLASTWalker, get_selections
 
+from .utils import swappable_by_subclassing
+
 if TYPE_CHECKING:
     from django.db import models
     from graphene.types.definitions import GrapheneObjectType
@@ -27,6 +29,7 @@ def get_field_selections(info: GQLInfo, model: Optional[type[models.Model]] = No
     return compiler.field_selections[0][to_snake_case(info.field_name)]
 
 
+@swappable_by_subclassing
 class FieldSelectionCompiler(GraphQLASTWalker):
     """Class for compiling filtering information from a GraphQL query."""
 

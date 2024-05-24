@@ -23,6 +23,7 @@ from .utils import (
     calculate_slice_for_queryset,
     mark_optimized,
     optimizer_logger,
+    swappable_by_subclassing,
 )
 from .validators import validate_pagination_args
 
@@ -43,6 +44,7 @@ class CompilationResults:
     prefetch_related: list[Prefetch | str] = dataclasses.field(default_factory=list)
 
 
+@swappable_by_subclassing
 class QueryOptimizer:
     """Creates optimized queryset based on the optimization data found by the OptimizationCompiler."""
 

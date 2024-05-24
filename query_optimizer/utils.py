@@ -8,10 +8,11 @@ from django.db import models
 from .settings import optimizer_settings
 
 if TYPE_CHECKING:
-    from .typing import Optional, ParamSpec, TypeVar, Union
+    from .typing import Any, Optional, ParamSpec, TypeVar, Union
 
     T = TypeVar("T")
     P = ParamSpec("P")
+    Ttype = TypeVar("Ttype", bound=type)
 
 
 __all__ = [
@@ -22,6 +23,7 @@ __all__ = [
     "mark_optimized",
     "optimizer_logger",
     "remove_optimized_mark",
+    "swappable_by_subclassing",
 ]
 
 
@@ -189,3 +191,23 @@ def add_slice_to_queryset(
 class SubqueryCount(models.Subquery):
     template = "(SELECT COUNT(*) FROM (%(subquery)s) _count)"
     output_field = models.BigIntegerField()
+
+
+def swappable_by_subclassing(obj: Ttype) -> Ttype:
+    """Makes the decorated class return the most recently created direct subclass when it is instantiated."""
+    orig_init_subclass = obj.__init_subclass__
+
+    def init_subclass(*args: Any, **kwargs: Any) -> None:
+        nonlocal obj
+
+        new_subcls: type = obj.__subclasses__()[-1]
+
+        def new(_: type, *args: Any, **kwargs: Any) -> Ttype:
+            return super(type, new_subcls).__new__(new_subcls, *args, **kwargs)
+
+        obj.__new__ = new
+
+        return orig_init_subclass(*args, **kwargs)
+
+    obj.__init_subclass__ = init_subclass
+    return obj

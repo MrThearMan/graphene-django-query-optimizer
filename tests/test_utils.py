@@ -3,7 +3,7 @@ from django.db import models
 
 from query_optimizer.settings import optimizer_settings
 from query_optimizer.typing import NamedTuple, Optional
-from query_optimizer.utils import calculate_queryset_slice, calculate_slice_for_queryset
+from query_optimizer.utils import calculate_queryset_slice, calculate_slice_for_queryset, swappable_by_subclassing
 from tests.example.models import Example
 from tests.factories.example import ExampleFactory
 from tests.helpers import parametrize_helper
@@ -144,3 +144,40 @@ def test_calculate_slice_for_queryset(pagination_input: PaginationInput, start: 
     )
 
     assert values == {"start": start, "stop": stop}
+
+
+def test_swappable_by_subclassing():
+    @swappable_by_subclassing
+    class A:
+        def __init__(self) -> None:
+            self.one = 1
+
+    a = A()
+    assert type(a) is A
+    assert a.one == 1
+
+    class B(A):
+        def __init__(self) -> None:
+            super().__init__()
+            self.two = 2
+
+    b = A()
+    assert type(b) is B
+    assert b.one == 1
+    assert b.two == 2
+
+    class C(A):
+        def __init__(self) -> None:
+            super().__init__()
+            self.three = 3
+
+    c = A()
+    assert type(c) is C
+    assert c.one == 1
+    assert not hasattr(c, "two")
+    assert c.three == 3
+
+    class D(B): ...
+
+    d = A()
+    assert type(d) is C  # Only direct subclasses are swapped.

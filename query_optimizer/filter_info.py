@@ -18,6 +18,7 @@ from .ast import (
     is_node,
 )
 from .typing import GQLInfo, GraphQLFilterInfo, ToManyField, ToOneField
+from .utils import swappable_by_subclassing
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -39,6 +40,7 @@ def get_filter_info(info: GQLInfo, model: type[Model]) -> GraphQLFilterInfo:
     return compiler.filter_info.get(to_snake_case(info.field_name), {})
 
 
+@swappable_by_subclassing
 class FilterInfoCompiler(GraphQLASTWalker):
     """Class for compiling filtering information from a GraphQL query."""
 

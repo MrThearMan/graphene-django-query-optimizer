@@ -13,7 +13,7 @@ from .errors import OptimizerError
 from .optimizer import QueryOptimizer
 from .prefetch_hack import fetch_in_context
 from .settings import optimizer_settings
-from .utils import is_optimized, optimizer_logger
+from .utils import is_optimized, optimizer_logger, swappable_by_subclassing
 
 if TYPE_CHECKING:
     import graphene
@@ -67,6 +67,7 @@ def optimize_single(
     return next(iter(queryset), None)
 
 
+@swappable_by_subclassing
 class OptimizationCompiler(GraphQLASTWalker):
     """Class for compiling SQL optimizations based on the given query."""
 
