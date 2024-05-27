@@ -14,6 +14,7 @@ from .typing import PK, OptimizedDjangoOptions
 if TYPE_CHECKING:
     from django.db.models import Model, QuerySet
 
+    from .optimizer import QueryOptimizer
     from .typing import Any, GQLInfo, Literal, Optional, TModel, Union
 
 
@@ -65,6 +66,10 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
     def filter_queryset(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
         """Implement this method filter to the available rows from the model on this node."""
         return queryset
+
+    @classmethod
+    def pre_compilation_hook(cls, optimizer: QueryOptimizer) -> None:
+        """A hook for modifying the optimizer results before optimization happens."""
 
     @classmethod
     def get_queryset(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:

@@ -84,6 +84,7 @@ class QueryOptimizer:
         if filter_info is None:
             filter_info = get_filter_info(self.info, queryset.model)
 
+        self.pre_compilation(queryset.model)
         results = self.compile(filter_info=filter_info)
 
         if filter_info is not None and filter_info.get("filterset_class") is not None:
@@ -272,3 +273,8 @@ class QueryOptimizer:
             filters = filter_info["children"][name]["filters"]
             queryset = resolver(queryset, self.info, **filters)
         return queryset
+
+    def pre_compilation(self, model: type[Model]) -> None:
+        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(model)
+        if callable(getattr(object_type, "pre_compilation_hook", None)):
+            object_type.pre_compilation_hook(self)
