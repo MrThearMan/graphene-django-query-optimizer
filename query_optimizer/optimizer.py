@@ -56,7 +56,13 @@ class CompilationResults:
 class QueryOptimizer:
     """Creates optimized queryset based on the optimization data found by the OptimizationCompiler."""
 
-    def __init__(self, model: type[Model] | None, info: GQLInfo, name: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        model: type[Model] | None,
+        info: GQLInfo,
+        name: Optional[str] = None,
+        parent: QueryOptimizer | None = None,
+    ) -> None:
         self.model = model
         self.info = info
         self.only_fields: list[str] = []
@@ -68,6 +74,7 @@ class QueryOptimizer:
         self.pre_resolvers: dict[str, QuerySetResolver] = {}
         self.total_count: bool = False
         self.name = name
+        self.parent: QueryOptimizer | None = parent
 
     def optimize_queryset(
         self,
