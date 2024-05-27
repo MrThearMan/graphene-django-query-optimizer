@@ -8,6 +8,7 @@ from tests.factories import (
     DeveloperFactory,
     HousingCompanyFactory,
     OwnerFactory,
+    OwnershipFactory,
     PropertyManagerFactory,
     RealEstateFactory,
     SaleFactory,
@@ -120,13 +121,23 @@ def test_fields__annotated_field__in_relations(graphql_client):
 
 
 def test_fields__annotated_field__select_related_promoted_to_prefetch(graphql_client):
-    SaleFactory.create(apartment__completion_date=datetime.date(2020, 1, 1))
-    SaleFactory.create(apartment__completion_date=datetime.date(2021, 1, 1))
-    SaleFactory.create(apartment__completion_date=datetime.date(2022, 1, 1))
+    SaleFactory.create(
+        purchase_date=datetime.date(2024, 1, 1),
+        apartment__completion_date=datetime.date(2020, 1, 1),
+    )
+    SaleFactory.create(
+        purchase_date=datetime.date(2024, 1, 2),
+        apartment__completion_date=datetime.date(2021, 1, 1),
+    )
+    SaleFactory.create(
+        purchase_date=datetime.date(2024, 1, 3),
+        apartment__completion_date=datetime.date(2022, 1, 1),
+    )
 
     query = """
         query {
           allSales {
+            purchaseDate
             apartment {
               completionYear
             }
@@ -137,8 +148,8 @@ def test_fields__annotated_field__select_related_promoted_to_prefetch(graphql_cl
     response = graphql_client(query)
     assert response.no_errors, response.errors
 
-    # 1 query for all buildings.
-    # 1 query for all relates apartments with the annotated field.
+    # 1 query for all sales.
+    # 1 query for all related apartments.
     assert response.queries.count == 2, response.queries.log
 
     assert response.queries[0] == has(
@@ -150,9 +161,90 @@ def test_fields__annotated_field__select_related_promoted_to_prefetch(graphql_cl
     )
 
     assert response.content == [
-        {"apartment": {"completionYear": 2020}},
-        {"apartment": {"completionYear": 2021}},
-        {"apartment": {"completionYear": 2022}},
+        {
+            "purchaseDate": "2024-01-01",
+            "apartment": {"completionYear": 2020},
+        },
+        {
+            "purchaseDate": "2024-01-02",
+            "apartment": {"completionYear": 2021},
+        },
+        {
+            "purchaseDate": "2024-01-03",
+            "apartment": {"completionYear": 2022},
+        },
+    ]
+
+
+def test_fields__annotated_field__select_related_promoted_to_prefetch__in_related(graphql_client):
+    OwnershipFactory.create(
+        percentage=1,
+        sale__purchase_date=datetime.date(2024, 1, 1),
+        sale__apartment__completion_date=datetime.date(2020, 1, 1),
+    )
+    OwnershipFactory.create(
+        percentage=2,
+        sale__purchase_date=datetime.date(2024, 1, 2),
+        sale__apartment__completion_date=datetime.date(2021, 1, 1),
+    )
+    OwnershipFactory.create(
+        percentage=3,
+        sale__purchase_date=datetime.date(2024, 1, 3),
+        sale__apartment__completion_date=datetime.date(2022, 1, 1),
+    )
+
+    query = """
+        query {
+          allOwnerships {
+            percentage
+            sale {
+              purchaseDate
+              apartment {
+                completionYear
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for all ownerships with sales
+    # 1 query for all apartments on sales with the annotated field.
+    assert response.queries.count == 2, response.queries.log
+
+    assert response.queries[0] == has(
+        'FROM "example_ownership"',
+        'INNER JOIN "example_sale"',
+    )
+    assert response.queries[1] == has(
+        'FROM "example_apartment"',
+        'django_date_extract(year, "example_apartment"."completion_date") AS "completion_year"',
+    )
+
+    assert response.content == [
+        {
+            "percentage": "1",
+            "sale": {
+                "purchaseDate": "2024-01-01",
+                "apartment": {"completionYear": 2020},
+            },
+        },
+        {
+            "percentage": "2",
+            "sale": {
+                "purchaseDate": "2024-01-02",
+                "apartment": {"completionYear": 2021},
+            },
+        },
+        {
+            "percentage": "3",
+            "sale": {
+                "purchaseDate": "2024-01-03",
+                "apartment": {"completionYear": 2022},
+            },
+        },
     ]
 
 

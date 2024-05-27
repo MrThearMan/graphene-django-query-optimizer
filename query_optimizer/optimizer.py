@@ -48,6 +48,7 @@ __all__ = [
 @dataclasses.dataclass
 class CompilationResults:
     only_fields: list[str] = dataclasses.field(default_factory=list)
+    related_fields: list[str] = dataclasses.field(default_factory=list)
     select_related: list[str] = dataclasses.field(default_factory=list)
     prefetch_related: list[Prefetch | str] = dataclasses.field(default_factory=list)
 
@@ -112,8 +113,8 @@ class QueryOptimizer:
             queryset = queryset.select_related(*results.select_related)
         if results.prefetch_related:
             queryset = queryset.prefetch_related(*results.prefetch_related)
-        if not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (results.only_fields or self.related_fields):
-            queryset = queryset.only(*results.only_fields, *self.related_fields)
+        if not optimizer_settings.DISABLE_ONLY_FIELDS_OPTIMIZATION and (results.only_fields or results.related_fields):
+            queryset = queryset.only(*results.only_fields, *results.related_fields)
         if self.aliases:
             queryset = queryset.alias(**self.aliases)
         if self.annotations:
@@ -123,7 +124,7 @@ class QueryOptimizer:
         return queryset
 
     def compile(self, *, filter_info: GraphQLFilterInfo) -> CompilationResults:
-        results = CompilationResults(only_fields=self.only_fields.copy())
+        results = CompilationResults(only_fields=self.only_fields.copy(), related_fields=self.related_fields.copy())
 
         for name, optimizer in self.select_related.items():
             # Promote select related to prefetch related if any annotations are needed.
@@ -147,6 +148,7 @@ class QueryOptimizer:
         results.select_related.append(name)
         nested_results = optimizer.compile(filter_info=filter_info)
         results.only_fields.extend(f"{name}{LOOKUP_SEP}{only}" for only in nested_results.only_fields)
+        results.related_fields.extend(f"{name}{LOOKUP_SEP}{only}" for only in nested_results.related_fields)
         results.select_related.extend(f"{name}{LOOKUP_SEP}{select}" for select in nested_results.select_related)
         for prefetch in nested_results.prefetch_related:
             if isinstance(prefetch, Prefetch):
