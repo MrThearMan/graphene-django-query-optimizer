@@ -84,7 +84,7 @@ class QueryOptimizer:
         if filter_info is None:
             filter_info = get_filter_info(self.info, queryset.model)
 
-        self.pre_compilation(queryset.model)
+        self.pre_compilation()
         results = self.compile(filter_info=filter_info)
 
         if filter_info is not None and filter_info.get("filterset_class") is not None:
@@ -274,7 +274,12 @@ class QueryOptimizer:
             queryset = resolver(queryset, self.info, **filters)
         return queryset
 
-    def pre_compilation(self, model: type[Model]) -> None:
-        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(model)
+    def pre_compilation(self) -> None:
+        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(self.model)
         if callable(getattr(object_type, "pre_compilation_hook", None)):
             object_type.pre_compilation_hook(self)
+
+        # Run pre-compilation for all select related optimizers, since they might add annotations,
+        # which would promote the select related to prefetch related.
+        for optimizer in self.select_related.values():
+            optimizer.pre_compilation()
