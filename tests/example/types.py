@@ -13,7 +13,7 @@ from query_optimizer.fields import (
     DjangoListField,
     MultiField,
     RelatedField,
-    PreResolvingField,
+    ManuallyOptimizedField,
 )
 from query_optimizer.filter import FilterSet
 from query_optimizer.settings import optimizer_settings
@@ -240,7 +240,7 @@ class SaleType(DjangoObjectType):
 
 
 class OwnerType(DjangoObjectType):
-    pre_field = PreResolvingField(
+    pre_field = ManuallyOptimizedField(
         graphene.String,
         args={
             "foo": graphene.Int(required=True),
@@ -258,7 +258,7 @@ class OwnerType(DjangoObjectType):
         ]
 
     @staticmethod
-    def pre_resolve_pre_field(queryset: QuerySet, info: GQLInfo, foo: int, bar: str = "") -> int:
+    def optimize_pre_field(queryset: QuerySet, info: GQLInfo, foo: int, bar: str = "") -> int:
         return queryset.annotate(pre_field=Concat("name", Value(f"-{foo}{bar}")))
 
 

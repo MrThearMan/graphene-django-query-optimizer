@@ -82,6 +82,41 @@ class HousingCompanyType(DjangoObjectType):
 
 Note that this can only be used for fields on the same model.
 
+## ManuallyOptimizedField
+
+This is the most powerful custom field type, which allows defining a custom method to
+manually optimize the queryset when the field is requested. This allows for optimization
+strategies that are not possible with the other fields.
+
+> **Note:** You shouldn't default to using this field, as it can break the optimization
+> if you are not careful in considering other optimization already in the optimizer.
+
+```python
+import graphene
+from django.db.models import QuerySet
+from tests.example.models import HousingCompany
+
+from query_optimizer import DjangoObjectType, ManuallyOptimizedField  # new import
+from query_optimizer.optimizer import QueryOptimizer  # for type hinting
+
+class HousingCompanyType(DjangoObjectType):
+    class Meta:
+        model = HousingCompany
+
+    extra = ManuallyOptimizedField(graphene.String)
+
+    @staticmethod
+    def optimize_extra(queryset: QuerySet, optimizer: QueryOptimizer, **kwargs) -> QuerySet:
+        # Do any optimizations here, returning the queryset.
+        return queryset
+
+    def resolve_extra(root: HousingCompany, info) -> str:
+        # Still needs a resolver.
+        return ...
+```
+
+Note that this can only be used for fields on the same model.
+
 ## The `field_name` argument
 
 `RelatedField`, `DjangoListField`, `DjangoConnectionField` have a `field_name`

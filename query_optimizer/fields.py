@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from graphql_relay import EdgeType
     from graphql_relay.connection.connection import ConnectionType
 
+    from .optimizer import QueryOptimizer
     from .types import DjangoObjectType
     from .typing import (
         Any,
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
         ExpressionKind,
         GQLInfo,
         Iterable,
+        ManualOptimizerMethod,
         ModelResolver,
         ObjectTypeInput,
         Optional,
@@ -47,11 +49,12 @@ if TYPE_CHECKING:
     )
 
 __all__ = [
+    "AnnotatedField",
     "DjangoConnectionField",
     "DjangoListField",
-    "RelatedField",
-    "AnnotatedField",
+    "ManuallyOptimizedField",
     "MultiField",
+    "RelatedField",
 ]
 
 
@@ -353,10 +356,12 @@ class AnnotatedField(graphene.Field):
         /,
         expression: ExpressionKind,
         aliases: Optional[dict[str, ExpressionKind]] = None,
+        extra_annotations: Optional[dict[str, ExpressionKind]] = None,
         **kwargs: Any,
     ) -> None:
         self.expression = expression
         self.aliases = aliases
+        self.extra_annotations = extra_annotations
         super().__init__(type_, **kwargs)
 
     def __set_name__(self, owner: type[DjangoObjectType], name: str) -> None:
@@ -370,6 +375,13 @@ class AnnotatedField(graphene.Field):
 
     def annotation_resolver(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
         return self.resolver(root, info, **kwargs)
+
+    def optimizer_hook(self, compiler: OptimizationCompiler) -> None:
+        compiler.optimizer.annotations[to_snake_case(self.name)] = self.expression
+        if self.aliases is not None:
+            compiler.optimizer.aliases.update(self.aliases)
+        if self.extra_annotations is not None:  # pragma: no cover
+            compiler.optimizer.annotations.update(self.extra_annotations)
 
 
 class MultiField(graphene.Field):
@@ -391,16 +403,22 @@ class MultiField(graphene.Field):
     def multi_field_resolver(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
         return self.resolver(root, info, **kwargs)
 
+    def optimizer_hook(self, compiler: OptimizationCompiler) -> None:
+        compiler.optimizer.only_fields.extend(self.fields)
 
-class PreResolvingField(graphene.Field):
+
+class ManuallyOptimizedField(graphene.Field):
     """
-    Field that has a pre-resolving step.
+    Field that is manually optimized using a method defined on the object type this field is on.
 
-    Must define a `pre_resolve_{name}(queryset, info, **kwargs)` staticmethod on the object type,
-    where `{name}` is the name of the field defined on the object type, and `kwargs`
-    are the values of 'args' defined on this field.
+    Must define a `optimize_{name}` staticmethod on the object type, where `{name}` is the name
+    of the field defined on the object type. This method takes the following arguments:
 
-    The optimizer will run pre-resolving methods as the last filtering step.
+    - `queryset`: The QuerySet to optimize.
+    - `optimizer`: The QueryOptimizer instance that is performing the optimizations.
+    - `**kwargs`: Filters passed to the field (see `args` in __init__).
+
+    The optimizer will run these methods as the last filtering step.
     """
 
     def __init__(
@@ -411,20 +429,19 @@ class PreResolvingField(graphene.Field):
         args: dict[str, ArgTypeInput],
         **kwargs: Any,
     ) -> None:
+        self.optimizer: ManualOptimizerMethod | None = None
         super().__init__(type_, args=args, **kwargs)
 
-    def __set_name__(self, owner: type[DjangoObjectType], name: str) -> None:
-        self.owner = owner
+    def __set_name__(self, object_type: type[DjangoObjectType], name: str) -> None:
         self.name = to_camel_case(name)
-
-    def pre_resolver(self, queryset: QuerySet, info: GQLInfo, **kwargs: Any) -> QuerySet:
-        name = to_snake_case(self.name)
-        resolver_name = f"pre_resolve_{name}"
-        resolver: Callable[..., QuerySet] | None = getattr(self.owner, resolver_name, None)
-        if resolver is None:  # pragma: no cover
-            msg = f"Pre-resolver method '{resolver_name}' missing from '{self.owner}'."
+        resolver_name = f"optimize_{name}"
+        self.optimizer = getattr(object_type, resolver_name, None)
+        if self.optimizer is None:  # pragma: no cover
+            msg = f"Optimizer method '{resolver_name}' missing from '{object_type}'."
             raise AttributeError(msg)
-        return resolver(queryset, info, **kwargs)
+
+    def optimize(self, queryset: QuerySet, optimizer: QueryOptimizer, **kwargs: Any) -> QuerySet:
+        return self.optimizer(queryset, optimizer, **kwargs)
 
     def wrap_resolve(self, parent_resolver: Callable[..., Any]) -> Callable[..., Any]:
         # `parent_resolver` is either a `resolve_{self.name}` method defined
@@ -434,3 +451,6 @@ class PreResolvingField(graphene.Field):
 
     def field_resolver(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
         return self.resolver(root, info, **kwargs)
+
+    def optimizer_hook(self, compiler: OptimizationCompiler) -> None:
+        compiler.optimizer.manual_optimizers[to_snake_case(self.name)] = self.optimize

@@ -59,6 +59,8 @@ if TYPE_CHECKING:
     from django.db.models.sql import Query
     from django_filters import FilterSet
 
+    from query_optimizer.optimizer import QueryOptimizer
+
 __all__ = [
     "Any",
     "ArgTypeInput",
@@ -77,6 +79,7 @@ __all__ = [
     "Hashable",
     "Iterable",
     "Literal",
+    "ManualOptimizerMethod",
     "ModelField",
     "ModelResolver",
     "NamedTuple",
@@ -156,3 +159,7 @@ class ExpressionKind(Protocol):
         summarize: bool,  # noqa: FBT001
         for_save: bool,  # noqa: FBT001
     ) -> ExpressionKind: ...
+
+
+class ManualOptimizerMethod(Protocol):
+    def __call__(self, queryset: QuerySet, optimizer: QueryOptimizer, **kwargs: Any) -> QuerySet: ...

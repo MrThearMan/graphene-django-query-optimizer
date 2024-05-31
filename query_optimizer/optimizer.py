@@ -72,7 +72,7 @@ class QueryOptimizer:
         self.annotations: dict[str, ExpressionKind] = {}
         self.select_related: dict[str, QueryOptimizer] = {}
         self.prefetch_related: dict[str, QueryOptimizer] = {}
-        self.pre_resolvers: dict[str, QuerySetResolver] = {}
+        self.manual_optimizers: dict[str, QuerySetResolver] = {}
         self.total_count: bool = False
         self.name = name
         self.parent: QueryOptimizer | None = parent
@@ -107,7 +107,7 @@ class QueryOptimizer:
             queryset = filterset.qs
 
         queryset = self.get_filtered_queryset(queryset)
-        queryset = self.run_pre_resolvers(queryset, filter_info)
+        queryset = self.run_manual_optimizers(queryset, filter_info)
 
         if results.select_related:
             queryset = queryset.select_related(*results.select_related)
@@ -277,10 +277,10 @@ class QueryOptimizer:
 
         return {key: convert_enum(value) for key, value in input_data.items()}
 
-    def run_pre_resolvers(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
-        for name, resolver in self.pre_resolvers.items():
+    def run_manual_optimizers(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
+        for name, func in self.manual_optimizers.items():
             filters = filter_info["children"][name]["filters"]
-            queryset = resolver(queryset, self.info, **filters)
+            queryset = func(queryset, self, **filters)
         return queryset
 
     def pre_compilation(self) -> None:
