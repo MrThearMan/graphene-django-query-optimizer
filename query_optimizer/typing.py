@@ -110,8 +110,19 @@ AnyUser: TypeAlias = Union["User", "AnonymousUser"]
 QuerySetResolver: TypeAlias = Callable[..., Union[QuerySet, Manager, None]]
 ModelResolver: TypeAlias = Callable[..., Union[Model, None]]
 ConnectionResolver: TypeAlias = Callable[..., ConnectionType]
-ObjectTypeInput: TypeAlias = Union[str, type[DjangoObjectType], Callable[[], type[DjangoObjectType]]]
-UnmountedTypeInput: TypeAlias = Union[str, type[UnmountedType], Structure, Callable[[], type[UnmountedType]]]
+ObjectTypeInput: TypeAlias = Union[
+    str,
+    type[DjangoObjectType],
+    Callable[[], type[DjangoObjectType]],
+]
+UnmountedTypeInput: TypeAlias = Union[
+    str,
+    type[UnmountedType],
+    type[DjangoObjectType],
+    Structure,
+    Callable[[], type[UnmountedType]],
+    Callable[[], type[DjangoObjectType]],
+]
 ArgTypeInput: TypeAlias = Union[Argument, UnmountedType, Dynamic]
 Expr: TypeAlias = Union[models.Expression, models.F, models.Q]
 
