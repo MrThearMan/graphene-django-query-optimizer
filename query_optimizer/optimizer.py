@@ -34,6 +34,7 @@ if TYPE_CHECKING:
         ExpressionKind,
         GQLInfo,
         GraphQLFilterInfo,
+        Literal,
         Optional,
         QuerySetResolver,
         TModel,
@@ -292,3 +293,25 @@ class QueryOptimizer:
         # which would promote the select related to prefetch related.
         for optimizer in self.select_related.values():
             optimizer.pre_compilation()
+
+    def has_child_optimizer(self, name: str) -> bool:
+        return name in self.select_related or name in self.prefetch_related
+
+    def get_child_optimizer(self, name: str) -> QueryOptimizer | None:
+        return self.select_related.get(name) or self.prefetch_related.get(name)
+
+    def get_or_set_child_optimizer(
+        self,
+        name: str,
+        optimizer: QueryOptimizer,
+        *,
+        set_as: Literal["select_related", "prefetch_related"] = "select_related",
+    ) -> QueryOptimizer:
+        maybe_optimizer = self.select_related.get(name)
+        if maybe_optimizer is not None:
+            return maybe_optimizer
+        maybe_optimizer = self.prefetch_related.get(name)
+        if maybe_optimizer is not None:
+            return maybe_optimizer
+        getattr(self, set_as)[name] = optimizer
+        return optimizer
