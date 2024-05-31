@@ -426,7 +426,7 @@ class ManuallyOptimizedField(graphene.Field):
         type_: UnmountedTypeInput,
         /,
         *,
-        args: dict[str, ArgTypeInput],
+        args: dict[str, ArgTypeInput] | None = None,
         **kwargs: Any,
     ) -> None:
         self.optimizer: ManualOptimizerMethod | None = None

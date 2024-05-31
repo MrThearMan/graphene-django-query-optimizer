@@ -279,7 +279,7 @@ class QueryOptimizer:
 
     def run_manual_optimizers(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
         for name, func in self.manual_optimizers.items():
-            filters = filter_info["children"][name]["filters"]
+            filters: dict[str, Any] = filter_info.get("children", {}).get(name, {}).get("filters", {})
             queryset = func(queryset, self, **filters)
         return queryset
 
