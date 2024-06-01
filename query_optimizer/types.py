@@ -63,13 +63,14 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         super().__init_subclass_with_meta__(_meta=_meta, model=model, fields=fields, **options)
 
     @classmethod
-    def filter_queryset(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
-        """Implement this method filter to the available rows from the model on this node."""
+    def pre_optimization_hook(cls, queryset: QuerySet[TModel], optimizer: QueryOptimizer) -> QuerySet[TModel]:
+        """A hook for modifying the optimizer results before optimization happens."""
         return queryset
 
     @classmethod
-    def pre_compilation_hook(cls, optimizer: QueryOptimizer) -> None:
-        """A hook for modifying the optimizer results before optimization happens."""
+    def filter_queryset(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:
+        """Implement this method filter to the available rows from the model on this node."""
+        return queryset
 
     @classmethod
     def get_queryset(cls, queryset: QuerySet[TModel], info: GQLInfo) -> QuerySet[TModel]:

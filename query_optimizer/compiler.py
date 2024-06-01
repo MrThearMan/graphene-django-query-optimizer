@@ -132,7 +132,7 @@ class OptimizationCompiler(GraphQLASTWalker):
         field_type: GrapheneObjectType,
         field_node: FieldNode,
         related_field: ToOneField,
-        related_model: type[Model],
+        related_model: type[Model] | None,
     ) -> None:
         name = related_field.get_cache_name() or related_field.name
         optimizer = QueryOptimizer(model=related_model, info=self.info, name=name, parent=self.optimizer)
@@ -157,7 +157,7 @@ class OptimizationCompiler(GraphQLASTWalker):
         field_type: GrapheneObjectType,
         field_node: FieldNode,
         related_field: ToManyField,
-        related_model: type[Model],
+        related_model: type[Model] | None,
     ) -> None:
         name = related_field.get_cache_name() or related_field.name
         key = self.to_attr if self.to_attr is not None else name

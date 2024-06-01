@@ -1,6 +1,12 @@
 import pytest
 
-from tests.factories import ApartmentFactory, BuildingFactory, HousingCompanyFactory, PropertyManagerFactory
+from tests.factories import (
+    ApartmentFactory,
+    BuildingFactory,
+    HousingCompanyFactory,
+    PropertyManagerFactory,
+    RealEstateFactory,
+)
 from tests.helpers import has
 
 pytestmark = [
@@ -423,3 +429,24 @@ def test_filter__nested_connection__fragment_spread(graphql_client):
             {"node": {"housingCompanies": {"edges": []}}},
         ]
     }
+
+
+def test_filter__invalid_value(graphql_client):
+    RealEstateFactory.create(name="1", surface_area=1)
+    RealEstateFactory.create(name="2", surface_area=2)
+    RealEstateFactory.create(name="3", surface_area=3)
+
+    query = """
+        query {
+          pagedRealEstates(surfaceArea: "foo") {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.errors[0]["message"] == """Expected value of type 'Decimal', found "foo"."""

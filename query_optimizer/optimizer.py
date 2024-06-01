@@ -16,6 +16,7 @@ from .ast import get_model_field
 from .filter_info import get_filter_info
 from .prefetch_hack import _register_for_prefetch_hack
 from .settings import optimizer_settings
+from .typing import Generic, TModel
 from .utils import (
     SubqueryCount,
     add_slice_to_queryset,
@@ -37,7 +38,6 @@ if TYPE_CHECKING:
         Literal,
         Optional,
         QuerySetResolver,
-        TModel,
         ToManyField,
     )
 
@@ -47,11 +47,29 @@ __all__ = [
 
 
 @dataclasses.dataclass
-class CompilationResults:
+class OptimizationResults(Generic[TModel]):
+    name: str | None = None
+    queryset: QuerySet[TModel] | None = None
     only_fields: list[str] = dataclasses.field(default_factory=list)
     related_fields: list[str] = dataclasses.field(default_factory=list)
     select_related: list[str] = dataclasses.field(default_factory=list)
     prefetch_related: list[Prefetch | str] = dataclasses.field(default_factory=list)
+
+    def __add__(self, other: OptimizationResults) -> OptimizationResults:
+        """Adding two compilation results together means extending the lookups to the other model."""
+        self.select_related.append(other.name)
+        self.only_fields.extend(f"{other.name}{LOOKUP_SEP}{only}" for only in other.only_fields)
+        self.related_fields.extend(f"{other.name}{LOOKUP_SEP}{only}" for only in other.related_fields)
+        self.select_related.extend(f"{other.name}{LOOKUP_SEP}{select}" for select in other.select_related)
+
+        for prefetch in other.prefetch_related:
+            if isinstance(prefetch, str):
+                self.prefetch_related.append(f"{other.name}{LOOKUP_SEP}{prefetch}")
+            if isinstance(prefetch, Prefetch):
+                prefetch.add_prefix(other.name)
+                self.prefetch_related.append(prefetch)
+
+        return self
 
 
 @swappable_by_subclassing
@@ -78,37 +96,68 @@ class QueryOptimizer:
         self.name = name
         self.parent: QueryOptimizer | None = parent
 
-    def optimize_queryset(
-        self,
-        queryset: QuerySet[TModel],
-        *,
-        filter_info: Optional[GraphQLFilterInfo] = None,
-    ) -> QuerySet[TModel]:
+    def optimize_queryset(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
         """
         Add the optimizations in this optimizer to the given queryset.
 
         :param queryset: QuerySet to optimize.
-        :param filter_info: Additional filtering info to use for the optimization.
         """
-        if filter_info is None:
-            filter_info = get_filter_info(self.info, queryset.model)
+        filter_info = get_filter_info(self.info, queryset.model)
+        results = self.process(queryset, filter_info)
+        return self.optimize(results, filter_info)
 
-        self.pre_compilation()
-        results = self.compile(filter_info=filter_info)
+    def pre_processing(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
+        """Run all pre-optimization hooks on the objct type mathcing the queryset's model."""
+        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
+        if callable(getattr(object_type, "pre_optimization_hook", None)):
+            return object_type.pre_optimization_hook(queryset, self)
 
-        if filter_info is not None and filter_info.get("filterset_class") is not None:
-            filterset = filter_info["filterset_class"](
-                data=self.process_filters(filter_info["filters"]),
-                queryset=queryset,
-                request=self.info.context,
-            )
-            if not filterset.is_valid():  # pragma: no cover
-                raise ValidationError(filterset.form.errors.as_json())
+        return queryset  # pragma: no cover
 
-            queryset = filterset.qs
-
-        queryset = self.get_filtered_queryset(queryset)
+    def process(self, queryset: QuerySet[TModel], filter_info: GraphQLFilterInfo) -> OptimizationResults[TModel]:
+        """Process compiled optimizations to optimize the given queryset."""
+        queryset = self.pre_processing(queryset)
         queryset = self.run_manual_optimizers(queryset, filter_info)
+
+        results = OptimizationResults(
+            name=self.name,
+            queryset=queryset,
+            only_fields=self.only_fields,
+            related_fields=self.related_fields,
+        )
+
+        for name, optimizer in self.select_related.items():
+            queryset = optimizer.model._default_manager.all()
+            nested_filter_info = filter_info.get("children", {}).get(optimizer.name, {})
+            nested_results = optimizer.process(queryset, nested_filter_info)
+
+            # Promote `select_related` to `prefetch_related` if any annotations are needed.
+            if optimizer.annotations:
+                prefetch = optimizer.process_prefetch(name, nested_results, nested_filter_info)
+                results.prefetch_related.append(prefetch)
+                continue
+
+            # Otherwise extend lookups to this model.
+            results += nested_results
+
+        for name, optimizer in self.prefetch_related.items():
+            # For generic foreign keys, we don't know the model, so we can't optimize the queryset.
+            if optimizer.model is None:
+                results.prefetch_related.append(optimizer.name)
+                continue
+
+            queryset = optimizer.model._default_manager.all()
+            nested_filter_info = filter_info.get("children", {}).get(optimizer.name, {})
+            nested_results = optimizer.process(queryset, nested_filter_info)
+
+            prefetch = optimizer.process_prefetch(name, nested_results, nested_filter_info)
+            results.prefetch_related.append(prefetch)
+
+        return results
+
+    def optimize(self, results: OptimizationResults[TModel], filter_info: GraphQLFilterInfo) -> QuerySet[TModel]:
+        """Optimize the given queryset based on the optimization results."""
+        queryset = results.queryset
 
         if results.select_related:
             queryset = queryset.select_related(*results.select_related)
@@ -121,74 +170,29 @@ class QueryOptimizer:
         if self.annotations:
             queryset = queryset.annotate(**self.annotations)
 
+        queryset = self.filter_queryset(queryset, filter_info)
+
         mark_optimized(queryset)
         return queryset
 
-    def compile(self, *, filter_info: GraphQLFilterInfo) -> CompilationResults:
-        results = CompilationResults(only_fields=self.only_fields.copy(), related_fields=self.related_fields.copy())
+    def process_prefetch(self, to_attr: str, results: OptimizationResults, filter_info: GraphQLFilterInfo) -> Prefetch:
+        """Process a prefetch, optimizing its queryset based on the given filter info."""
+        queryset = self.optimize(results, filter_info)
+        queryset = self.paginate_prefetch_queryset(queryset, filter_info)
+        return Prefetch(self.name, queryset, to_attr=to_attr if to_attr != self.name else None)
 
-        for name, optimizer in self.select_related.items():
-            # Promote select related to prefetch related if any annotations are needed.
-            if optimizer.annotations:
-                self.compile_prefetch(name, optimizer, results, filter_info)
-            else:
-                self.compile_select(name, optimizer, results, filter_info)
-
-        for attr, optimizer in self.prefetch_related.items():
-            self.compile_prefetch(attr, optimizer, results, filter_info)
-
-        return results
-
-    def compile_select(
-        self,
-        name: str,
-        optimizer: QueryOptimizer,
-        results: CompilationResults,
-        filter_info: GraphQLFilterInfo,
-    ) -> None:
-        results.select_related.append(name)
-        nested_results = optimizer.compile(filter_info=filter_info)
-        results.only_fields.extend(f"{name}{LOOKUP_SEP}{only}" for only in nested_results.only_fields)
-        results.related_fields.extend(f"{name}{LOOKUP_SEP}{only}" for only in nested_results.related_fields)
-        results.select_related.extend(f"{name}{LOOKUP_SEP}{select}" for select in nested_results.select_related)
-        for prefetch in nested_results.prefetch_related:
-            if isinstance(prefetch, Prefetch):
-                prefetch.add_prefix(name)
-                results.prefetch_related.append(prefetch)
-
-    def compile_prefetch(
-        self,
-        attr: str,
-        optimizer: QueryOptimizer,
-        results: CompilationResults,
-        filter_info: GraphQLFilterInfo,
-    ) -> None:
-        if optimizer.model is None:  # generic foreign keys
-            results.prefetch_related.append(optimizer.name)
-            return
-
-        filter_info = filter_info.get("children", {}).get(optimizer.name, {})
-        queryset = optimizer.model._default_manager.all()
-        queryset = optimizer.optimize_queryset(queryset, filter_info=filter_info)
-        queryset = optimizer.paginate_prefetch_queryset(self.model, queryset, optimizer.name, filter_info=filter_info)
-        to_attr = attr if attr != optimizer.name else None
-        results.prefetch_related.append(Prefetch(optimizer.name, queryset, to_attr=to_attr))
-
-    def paginate_prefetch_queryset(
-        self,
-        parent_model: type[Model],
-        queryset: QuerySet[TModel],
-        name: str,
-        filter_info: GraphQLFilterInfo,
-    ) -> QuerySet[TModel]:
+    def paginate_prefetch_queryset(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
         """Paginate prefetch queryset based on the given filter info after it has been filtered."""
         # Only paginate nested connection fields.
         if not filter_info.get("is_connection", False):
             return queryset
 
-        field: Optional[ToManyField] = get_model_field(parent_model, name)
+        field: Optional[ToManyField] = get_model_field(self.parent.model, self.name)
         if field is None:  # pragma: no cover
-            msg = f"Cannot find field {name!r} on model {parent_model.__name__!r}. Cannot optimize nested pagination."
+            msg = (
+                f"Cannot find field {self.name!r} on model {self.parent.model.__name__!r}. "
+                f"Cannot optimize nested pagination."
+            )
             optimizer_logger.warning(msg)
             return queryset
 
@@ -267,11 +271,26 @@ class QueryOptimizer:
             )
         )
 
-    def get_filtered_queryset(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
+    def filter_queryset(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
+        """Run all filtering based on the object type matching the queryset's model."""
+        # Run filtering hooks on object types if they exist.
         object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
         if callable(getattr(object_type, "filter_queryset", None)):
-            return object_type.filter_queryset(queryset, self.info)  # type: ignore[union-attr]
-        return queryset  # pragma: no cover
+            queryset = object_type.filter_queryset(queryset, self.info)
+
+        # Lastly, run filterset filtering, if any.
+        if filter_info.get("filterset_class") is None:
+            return queryset
+
+        filterset = filter_info["filterset_class"](
+            data=self.process_filters(filter_info["filters"]),
+            queryset=queryset,
+            request=self.info.context,
+        )
+        if not filterset.is_valid():  # pragma: no cover
+            raise ValidationError(filterset.form.errors.as_json())
+
+        return filterset.qs
 
     def process_filters(self, input_data: dict[str, Any]) -> dict[str, Any]:
         from graphene_django.filter.fields import convert_enum
@@ -284,23 +303,13 @@ class QueryOptimizer:
             queryset = func(queryset, self, **filters)
         return queryset
 
-    def pre_compilation(self) -> None:
-        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(self.model)
-        if callable(getattr(object_type, "pre_compilation_hook", None)):
-            object_type.pre_compilation_hook(self)
-
-        # Run pre-compilation for all select related optimizers, since they might add annotations,
-        # which would promote the select related to prefetch related.
-        for optimizer in self.select_related.values():
-            optimizer.pre_compilation()
-
-    def has_child_optimizer(self, name: str) -> bool:
+    def has_child_optimizer(self, name: str) -> bool:  # pragma: no cover
         return name in self.select_related or name in self.prefetch_related
 
-    def get_child_optimizer(self, name: str) -> QueryOptimizer | None:
+    def get_child_optimizer(self, name: str) -> QueryOptimizer | None:  # pragma: no cover
         return self.select_related.get(name) or self.prefetch_related.get(name)
 
-    def get_or_set_child_optimizer(
+    def get_or_set_child_optimizer(  # pragma: no cover
         self,
         name: str,
         optimizer: QueryOptimizer,

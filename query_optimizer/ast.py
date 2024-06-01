@@ -150,7 +150,7 @@ class GraphQLASTWalker:
         field_type: GrapheneObjectType,
         field_node: FieldNode,
         related_field: ToOneField,
-        related_model: type[Model],
+        related_model: type[Model] | None,
     ) -> None:
         graphene_type = self.get_graphene_type(field_type, field_node)
         selections = get_selections(field_node)
@@ -162,7 +162,7 @@ class GraphQLASTWalker:
         field_type: GrapheneObjectType,
         field_node: FieldNode,
         related_field: ToManyField,
-        related_model: type[Model],
+        related_model: type[Model] | None,
     ) -> None:
         graphene_type = self.get_graphene_type(field_type, field_node)
         selections = get_selections(field_node)
@@ -279,7 +279,11 @@ def get_fragment_type(field_type: GrapheneUnionType, inline_fragment: InlineFrag
     return fragment_type
 
 
-def get_related_model(related_field: Union[ToOneField, ToManyField], model: type[Model]) -> type[Model]:
+def get_related_model(related_field: Union[ToOneField, ToManyField], model: type[Model]) -> type[Model] | None:
+    """
+    Get the related model for a field.
+    Note: For generic foreign keys, the related model is unknown (=None).
+    """
     related_model = related_field.related_model
     if related_model == "self":  # pragma: no cover
         return model

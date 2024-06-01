@@ -66,7 +66,7 @@ class FieldSelectionCompiler(GraphQLASTWalker):
         field_type: GrapheneObjectType,
         field_node: FieldNode,
         related_field: ToOneField,
-        related_model: type[models.Model],
+        related_model: type[models.Model] | None,
     ) -> None:
         with self.child_selections(field_node):
             return super().handle_to_many_field(field_type, field_node, related_field, related_model)
@@ -76,7 +76,7 @@ class FieldSelectionCompiler(GraphQLASTWalker):
         field_type: GrapheneObjectType,
         field_node: FieldNode,
         related_field: ToManyField,
-        related_model: type[models.Model],
+        related_model: type[models.Model] | None,
     ) -> None:
         with self.child_selections(field_node):
             return super().handle_to_one_field(field_type, field_node, related_field, related_model)

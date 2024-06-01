@@ -117,7 +117,7 @@ class FilterInfoCompiler(GraphQLASTWalker):
         field_type: GrapheneObjectType,
         field_node: FieldNode,
         related_field: ToOneField,
-        related_model: type[Model],
+        related_model: type[Model] | None,
     ) -> None:
         self.add_filter_info(field_type, field_node)
         with self.child_filter_info(field_node):
@@ -128,7 +128,7 @@ class FilterInfoCompiler(GraphQLASTWalker):
         field_type: GrapheneObjectType,
         field_node: FieldNode,
         related_field: ToManyField,
-        related_model: type[Model],
+        related_model: type[Model] | None,
     ) -> None:
         self.add_filter_info(field_type, field_node)
         with self.child_filter_info(field_node):
