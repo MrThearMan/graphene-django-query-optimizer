@@ -9,14 +9,7 @@ from graphene_django.utils import DJANGO_FILTER_INSTALLED
 from graphql import FieldNode, get_argument_values
 from graphql.execution.execute import get_field_def
 
-from .ast import (
-    GrapheneType,
-    GraphQLASTWalker,
-    Selections,
-    get_underlying_type,
-    is_connection,
-    is_node,
-)
+from .ast import GrapheneType, GraphQLASTWalker, Selections, get_underlying_type, is_connection, is_node
 from .typing import GQLInfo, GraphQLFilterInfo, ToManyField, ToOneField
 from .utils import swappable_by_subclassing
 

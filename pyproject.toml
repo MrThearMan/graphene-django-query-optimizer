@@ -12,6 +12,7 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://mrthearman.github.io/graphene-django-query-optimizer"
 repository = "https://github.com/MrThearMan/graphene-django-query-optimizer"
+documentation = "https://mrthearman.github.io/graphene-django-query-optimizer"
 keywords = [
     "django",
     "graphene",
@@ -53,7 +54,7 @@ python = ">=3.9,<4"
 Django = ">=4.2"
 graphene-django = ">=3.0.0"
 django-filter = { version = ">=21.1", optional = true }
-typing-extensions = { version = ">=4.7.1", python = "<3.10" }
+typing-extensions = { version = ">=4.12.1", python = "<3.10" }
 django-settings-holder = ">=0.1.2"
 
 [tool.poetry.extras]
@@ -61,12 +62,12 @@ filter = ["django-filter"]
 
 [tool.poetry.group.test.dependencies]
 pytest = "8.2.1"
-coverage = "7.5.2"
+coverage = "7.5.3"
 pytest-django = "4.8.0"
 pre-commit = "3.7.1"
 tox = "4.15.0"
 tox-gh-actions = "3.2.0"
-faker = "25.2.0"
+faker = "25.3.0"
 factory-boy = "3.3.0"
 sqlparse = "0.5.0"
 django-graphiql-debug-toolbar = "0.2.0"
@@ -79,20 +80,21 @@ mkdocs-mermaid2-plugin = "1.1.1"
 
 [tool.poetry.group.lint.dependencies]
 mypy = "1.10.0"
-django-stubs = "5.0.0"
+django-stubs = "5.0.2"
 
 [tool.ruff]
 fix = true
+unsafe-fixes = true
 line-length = 120
 extend-exclude = [
-    "tests/*",
+    "tests*",
 ]
-
-[tool.ruff.lint]
-typing-modules = [
+lint.typing-modules = [
     "query_optimizer.typing",
 ]
-select = [
+lint.explicit-preview-rules = true
+lint.preview = true
+lint.select = [
     "A",        # flake8-builtins
     "ANN",      # flake8-annotations
     "ARG",      # flake8-unused-arguments
@@ -106,14 +108,21 @@ select = [
     "D202",     # pydocstyle: No blank lines allowed after function docstring (found {num_lines})
     "D209",     # pydocstyle: Multi-line docstring closing quotes should be on a separate line
     "D213",     # pydocstyle: Multi-line docstring summary should start at the second line
+    "DJ",       # flake8-django
     "DTZ",      # flake8-datetimez
     "E",        # pycodestyle errors
     "EM",       # flake8-errmsg
     "F",        # pyflakes
+    "FA",       # flake8-future-annotations
     "FBT",      # flake8-boolean-trap
+    "FLY",      # flynt
+    "G",        # flake8-logging-format
     "I",        # isort
+    "ICN",      # flake8-import-conventions
     "INP",      # flake8-no-pep420
+    "INT",      # flake8-gettext
     "ISC",      # flake8-implicit-str-concat
+    "LOG",      # flake8-logging
     "N",        # pep8-naming
     "PERF",     # perflint
     "PGH",      # pygrep-hooks
@@ -123,18 +132,41 @@ select = [
     "PTH",      # flake8-use-pathlib
     "PYI",      # flake8-pyi
     "Q",        # flake8-quotes
+    "R",        # Refactor
     "RET",      # flake8-return
     "RSE",      # flake8-raise
     "RUF",      # ruff-specific rules
     "S",        # flake8-bandit
     "SIM",      # flake8-simplify
+    "SLF",      # flake8-self
     "T20",      # flake8-print
     "TCH",      # flake8-type-checking
+    "TID",      # flake8-tidy-imports
     "TRY",      # tryceratops
     "UP",       # pyupgrade
     "W",        # pycodestyle warnings
 ]
-ignore = [
+# Preview rules
+lint.extend-select = [
+    "B909",     # loop-iterator-mutation
+    "FURB110",  # if-exp-instead-of-or-operator
+    "FURB142",  # for-loop-set-mutations
+    "FURB145",  # slice-copy
+    "FURB171",  # single-item-membership-test
+    "FURB187",  # list-reverse-copy
+    "PLE0307",  # invalid-str-return-type
+    "PLR0916",  # too-many-boolean-expressions
+    "PLR1730",  # if-stmt-min-max
+    "PLR1733",  # unnecessary-dict-index-lookup
+    "PLR1736",  # unnecessary-list-index-lookup
+    "PLR6104",  # non-augmented-assignment
+    "PLW0211",  # bad-staticmethod-argument
+    "PLW0642",  # self-or-cls-assignment
+    "RUF021",   # parenthesize-chained-operators
+    "RUF022",   # unsorted-dunder-all
+    "UP042",    # replace-str-enum
+]
+lint.ignore = [
     "ANN101",   # Missing type annotation for `self` in method
     "ANN102",   # Missing type annotation for `cls` in method
     "ANN401",   # Any-typing allowed
@@ -143,6 +175,9 @@ ignore = [
     "N805",     # First argument of a method should be named `self`
     "SLF001",   # Accessing private members is allowed
     "UP007",    # Use `X | Y` for union type annotations
+    "G004",     # Logging statement uses f-string
+    "S602",     # Broken: https://github.com/astral-sh/ruff/issues/4045
+    "S603",     # Broken: https://github.com/astral-sh/ruff/issues/4045
     #
     # Conflicting with ruff-format
     #
@@ -164,15 +199,65 @@ ignore = [
 
 [tool.ruff.lint.extend-per-file-ignores]
 "test_*.py" = [
-    "S101",     # Assert is fine
-    "PLR2004",  # Allow constants
     "ANN",      # No need to annotate tests
+    "N801",     # Allow whatever class names in tests
+    "N802",     # Allow whatever function names in tests
+    "N815",     # Allow whatever variable names in tests
+    "PLR0915",  # Can have as many statements as needed
+    "PLR2004",  # Magic value comparisons are allowed in tests
+    "S101",     # Assert is fine
+    "S105",     # Hardcoded passwords are fine in tests
+    "S106",     # Hardcoded passwords are fine in tests
+    "S108",     # No need to care about insecure temp file usages in tests
+    "S311",     # Pseudo-random generators are fine here
+    "SLF",      # Allow accessing private members in tests
     "UP",       # No upgrade rules
 ]
 "conftest.py" = [
     "ARG",      # Fixtures can be unused
     "ANN",      # No need to annotate tests
     "UP",       # No upgrade rules
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = false
+split-on-trailing-comma = false
+known-third-party = [
+    "django",
+]
+known-first-party = [
+    "query_optimizer",
+]
+
+[tool.ruff.lint.flake8-import-conventions]
+banned-from = [
+    "base64",
+    "csv",
+    "datetime",
+    "hashlib",
+    "hmac",
+    "json",
+    "logging",
+    "math",
+    "os",
+    "pickle",
+    "random",
+    "re",
+    "shutil",
+    "subprocess",
+    "sys",
+    "tempfile",
+    "time",
+    "uuid",
+    "xml",
+    "yaml",
+]
+
+[tool.ruff.lint.flake8-self]
+extend-ignore-names = [
+    "_base_manager",
+    "_default_manager",
+    "_meta",
 ]
 
 [tool.ruff.lint.pylint]
@@ -204,6 +289,7 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "except ImportError:",
     "pragma: no cover",
+    "pass",
 ]
 
 [tool.pytest.ini_options]

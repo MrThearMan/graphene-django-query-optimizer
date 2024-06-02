@@ -16,8 +16,8 @@ if TYPE_CHECKING:
     from query_optimizer.typing import Optional, Union
 
 __all__ = [
-    "convert_to_one_field",
     "convert_to_many_field",
+    "convert_to_one_field",
 ]
 
 

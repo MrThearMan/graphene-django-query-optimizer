@@ -23,17 +23,7 @@ from graphql.execution.execute import get_field_def
 
 from .errors import OptimizerError
 from .settings import optimizer_settings
-from .typing import (
-    GRAPHQL_BUILTIN,
-    GQLInfo,
-    ModelField,
-    Optional,
-    ToManyField,
-    ToOneField,
-    TypeGuard,
-    Union,
-    overload,
-)
+from .typing import GRAPHQL_BUILTIN, GQLInfo, ModelField, Optional, ToManyField, ToOneField, TypeGuard, Union, overload
 
 __all__ = [
     "GraphQLASTWalker",

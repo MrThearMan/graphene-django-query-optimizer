@@ -19,7 +19,7 @@ __all__ = [
     "DjangoObjectType",
     "ManuallyOptimizedField",
     "MultiField",
+    "RelatedField",
     "optimize",
     "optimize_single",
-    "RelatedField",
 ]

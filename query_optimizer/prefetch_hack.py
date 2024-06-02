@@ -1,14 +1,19 @@
+from __future__ import annotations
+
 import contextlib
 from collections import defaultdict
 from contextlib import nullcontext
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 from weakref import WeakKeyDictionary
 
 from django.db import models
 from django.db.models.fields.related_descriptors import _filter_prefetch_queryset
-from graphql import OperationDefinitionNode
 
-from .typing import ContextManager, GQLInfo, TModel, ToManyField, TypeAlias
+if TYPE_CHECKING:
+    from graphql import OperationDefinitionNode
+
+    from .typing import ContextManager, GQLInfo, TModel, ToManyField, TypeAlias
 
 __all__ = [
     "_register_for_prefetch_hack",

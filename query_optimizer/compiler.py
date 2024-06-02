@@ -25,9 +25,9 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "OptimizationCompiler",
     "optimize",
     "optimize_single",
-    "OptimizationCompiler",
 ]
 
 

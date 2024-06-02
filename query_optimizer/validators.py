@@ -93,7 +93,7 @@ def validate_pagination_args(  # noqa: C901, PLR0912
 
     # Since `after` is also exclusive, we need to add 1 to it, so that slicing works correctly.
     if after is not None:
-        after = after + 1
+        after += 1
 
     # Size is changed later with `queryset.count()`.
     size = max_limit if isinstance(max_limit, int) else None
