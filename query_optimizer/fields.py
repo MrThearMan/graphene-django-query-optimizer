@@ -174,7 +174,18 @@ class DjangoListField(FilteringMixin, graphene.Field):
         return self.list_resolver
 
     def list_resolver(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
-        result = self.resolver(root, info, **kwargs)
+        # If field is aliased, a prefetch should have been done to that alias.
+        # If not, call the ObjectType's "resolve_{field_name}" method, if it exists.
+        # Otherwise, call the default resolver (usually `dict_or_attr_resolver`).
+        alias = getattr(info.field_nodes[0].alias, "value", None)
+        result = (
+            getattr(root, alias)
+            # Aliases don't matter at the root level, since we don't need to
+            # distinguish them from a parent model prefetches.
+            if root != info.root_value and alias is not None
+            else self.resolver(root, info, **kwargs)
+        )
+
         queryset = self.to_queryset(result)
         queryset = self.underlying_type.get_queryset(queryset, info)
 
@@ -252,9 +263,18 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
             max_limit=self.max_limit,
         )
 
-        # Call the ObjectType's "resolve_{field_name}" method if it exists.
+        # If field is aliased, a prefetch should have been done to that alias.
+        # If not, call the ObjectType's "resolve_{field_name}" method, if it exists.
         # Otherwise, call the default resolver (usually `dict_or_attr_resolver`).
-        result = self.resolver(root, info, **kwargs)
+        alias = getattr(info.field_nodes[0].alias, "value", None)
+        result = (
+            getattr(root, alias)
+            # Aliases don't matter at the root level, since we don't need to
+            # distinguish them from a parent model prefetches.
+            if root != info.root_value and alias is not None
+            else self.resolver(root, info, **kwargs)
+        )
+
         queryset = self.to_queryset(result)
         queryset = self.underlying_type.get_queryset(queryset, info)
 

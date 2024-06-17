@@ -160,7 +160,8 @@ class OptimizationCompiler(GraphQLASTWalker):
         related_model: type[Model] | None,
     ) -> None:
         name = related_field.get_cache_name() or related_field.name
-        key = self.to_attr if self.to_attr is not None else name
+        alias = getattr(field_node.alias, "value", None)
+        key = self.to_attr if self.to_attr is not None else alias if alias is not None else name
         self.to_attr = None
 
         optimizer = QueryOptimizer(model=related_model, info=self.info, name=name, parent=self.optimizer)

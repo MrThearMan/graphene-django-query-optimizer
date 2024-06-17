@@ -450,3 +450,114 @@ def test_filter__invalid_value(graphql_client):
 
     response = graphql_client(query)
     assert response.errors[0]["message"] == """Expected value of type 'Decimal', found "foo"."""
+
+
+def test_filter__aliased_queries(graphql_client):
+    building_1 = BuildingFactory.create(name="1")
+    apartment_1 = ApartmentFactory.create(street_address="A01", building=building_1)
+    apartment_2 = ApartmentFactory.create(street_address="B01", building=building_1)
+    ApartmentFactory.create(street_address="C01", building=building_1)
+
+    building_2 = BuildingFactory.create(name="2")
+    apartment_3 = ApartmentFactory.create(street_address="A10", building=building_2)
+    ApartmentFactory.create(street_address="C11", building=building_2)
+
+    building_3 = BuildingFactory.create(name="3")
+    apartment_4 = ApartmentFactory.create(street_address="B20", building=building_3)
+
+    query = """
+        query {
+          buildings: pagedBuildings(orderBy: "name") {
+            edges {
+              node {
+                pk
+                name
+                A: apartments(streetAddress_Istartswith: "A") {
+                  edges {
+                    node {
+                      pk
+                    }
+                  }
+                }
+                B: apartments(streetAddress_Istartswith: "B") {
+                  edges {
+                    node {
+                      pk
+                    }
+                  }
+                }
+              }
+            }
+          }
+          all: pagedBuildings(orderBy: "-name") {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.full_content == {
+        "data": {
+            "buildings": {
+                "edges": [
+                    {
+                        "node": {
+                            "pk": building_1.pk,
+                            "name": building_1.name,
+                            "A": {
+                                "edges": [
+                                    {"node": {"pk": apartment_1.pk}},
+                                ],
+                            },
+                            "B": {
+                                "edges": [
+                                    {"node": {"pk": apartment_2.pk}},
+                                ],
+                            },
+                        },
+                    },
+                    {
+                        "node": {
+                            "pk": building_2.pk,
+                            "name": building_2.name,
+                            "A": {
+                                "edges": [
+                                    {"node": {"pk": apartment_3.pk}},
+                                ],
+                            },
+                            "B": {
+                                "edges": [],
+                            },
+                        },
+                    },
+                    {
+                        "node": {
+                            "pk": building_3.pk,
+                            "name": building_3.name,
+                            "A": {
+                                "edges": [],
+                            },
+                            "B": {
+                                "edges": [
+                                    {"node": {"pk": apartment_4.pk}},
+                                ],
+                            },
+                        },
+                    },
+                ],
+            },
+            "all": {
+                "edges": [
+                    {"node": {"name": building_3.name}},
+                    {"node": {"name": building_2.name}},
+                    {"node": {"name": building_1.name}},
+                ]
+            },
+        }
+    }
+
+    assert response.queries.count == 6, response.queries.log

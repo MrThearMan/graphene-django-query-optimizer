@@ -128,7 +128,7 @@ class QueryOptimizer:
 
         for name, optimizer in self.select_related.items():
             queryset = optimizer.model._default_manager.all()
-            nested_filter_info = filter_info.get("children", {}).get(optimizer.name, {})
+            nested_filter_info = filter_info.get("children", {}).get(name, {})
             nested_results = optimizer.process(queryset, nested_filter_info)
 
             # Promote `select_related` to `prefetch_related` if any annotations are needed.
@@ -147,7 +147,7 @@ class QueryOptimizer:
                 continue
 
             queryset = optimizer.model._default_manager.all()
-            nested_filter_info = filter_info.get("children", {}).get(optimizer.name, {})
+            nested_filter_info = filter_info.get("children", {}).get(name, {})
             nested_results = optimizer.process(queryset, nested_filter_info)
 
             prefetch = optimizer.process_prefetch(name, nested_results, nested_filter_info)

@@ -601,10 +601,6 @@ def test_fields__alternate_field__many_to_many_related__with_original(graphql_cl
     )
     assert response.queries[2] == has(
         'FROM "example_developer"',
-        (
-            "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany_developers"."housingcompany_id" ORDER BY "example_developer"."id")'
-        ),
     )
     assert response.queries[3] == has(
         'FROM "example_developer"',
@@ -719,10 +715,6 @@ def test_fields__alternate_field__many_to_many_related__reverse__with_original(g
     )
     assert response.queries[2] == has(
         'FROM "example_housingcompany"',
-        (
-            "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany_developers"."developer_id" ORDER BY "example_housingcompany"."id"'
-        ),
     )
     assert response.queries[3] == has(
         'FROM "example_housingcompany"',

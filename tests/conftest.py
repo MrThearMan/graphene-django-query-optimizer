@@ -1,15 +1,21 @@
+from __future__ import annotations
+
 import json
+from typing import TYPE_CHECKING
 
 import pytest
-from django.test.client import Client
 from graphene_django.utils.testing import graphql_query
 
 from query_optimizer.typing import Any, Callable, NamedTuple, Optional, Union
 from tests.example.types import BuildingNode
 from tests.example.utils import QueryData, capture_database_queries
 
+if TYPE_CHECKING:
+    from django.test.client import Client
+
 
 class GraphQLResponse(NamedTuple):
+    full_content: dict[str, Any]
     content: Union[dict[str, Any], list[dict[str, Any]], None]
     errors: Optional[list[dict[str, Any]]]
     queries: QueryData
@@ -30,6 +36,7 @@ def graphql_client(client: Client) -> Callable[..., GraphQLResponse]:
         content = next(iter(full_content.get("data", {}).values()), None)
 
         return GraphQLResponse(
+            full_content=full_content,
             content=content,
             errors=errors,
             queries=queries,

@@ -195,6 +195,10 @@ class GraphQLASTWalker:
         graphql_field = get_field_def(self.info.schema, field_type, field_node)
         return get_underlying_type(graphql_field.type)
 
+    def get_field_name(self, field_node: FieldNode) -> str:
+        alias = getattr(field_node.alias, "value", None)
+        return alias or to_snake_case(field_node.name.value)
+
     @contextlib.contextmanager
     def use_model(self, model: type[Model]) -> GraphQLASTWalker:
         orig_model = self.model

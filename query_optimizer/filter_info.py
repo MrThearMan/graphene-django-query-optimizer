@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 from typing import TYPE_CHECKING
 
+import graphene
 from graphene.utils.str_converters import to_snake_case
 from graphene_django.settings import graphene_settings
 from graphene_django.utils import DJANGO_FILTER_INSTALLED
@@ -30,7 +31,8 @@ def get_filter_info(info: GQLInfo, model: type[Model]) -> GraphQLFilterInfo:
     compiler = FilterInfoCompiler(info, model)
     compiler.run()
     # Return the compiled filter info, or an empty dict if there is no filter info.
-    return compiler.filter_info.get(to_snake_case(info.field_name), {})
+    alias = getattr(info.field_nodes[0].alias, "value", None)
+    return compiler.filter_info.get(to_snake_case(alias or info.field_name), {})
 
 
 @swappable_by_subclassing
@@ -52,7 +54,8 @@ class FilterInfoCompiler(GraphQLASTWalker):
         graphql_field = get_field_def(self.info.schema, parent_type, field_node)
         graphene_type = get_underlying_type(graphql_field.type)
 
-        field_name = to_snake_case(field_node.name.value)
+        field_name = self.get_field_name(field_node)
+        orig_field_name = to_snake_case(field_node.name.value)
         filters = get_argument_values(graphql_field, field_node, self.info.variable_values)
 
         is_node_ = is_node(graphql_field)
@@ -60,7 +63,7 @@ class FilterInfoCompiler(GraphQLASTWalker):
 
         # Find the field-specific limit, or use the default limit.
         max_limit: Optional[int] = getattr(
-            getattr(parent_type.graphene_type, field_name, None),
+            getattr(parent_type.graphene_type, orig_field_name, None),
             "max_limit",
             graphene_settings.RELAY_CONNECTION_MAX_LIMIT,
         )
@@ -98,11 +101,9 @@ class FilterInfoCompiler(GraphQLASTWalker):
             super().handle_query_class(field_type, field_node)
 
     def handle_custom_field(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
-        from .fields import ManuallyOptimizedField
-
         field_name = to_snake_case(field_node.name.value)
         field = getattr(field_type.graphene_type, field_name, None)
-        if isinstance(field, ManuallyOptimizedField):
+        if isinstance(field, graphene.Field):
             self.add_filter_info(field_type, field_node)
 
     def handle_to_one_field(
@@ -129,7 +130,7 @@ class FilterInfoCompiler(GraphQLASTWalker):
 
     @contextlib.contextmanager
     def child_filter_info(self, field_node: FieldNode) -> None:
-        field_name = to_snake_case(field_node.name.value)
+        field_name = self.get_field_name(field_node)
         arguments: dict[str, GraphQLFilterInfo] = {}
         orig_arguments = self.filter_info
         try:

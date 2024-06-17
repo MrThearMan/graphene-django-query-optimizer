@@ -1,4 +1,5 @@
 # ruff: noqa: RUF012, I001
+from __future__ import annotations
 import graphene
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet, Value
@@ -17,7 +18,6 @@ from query_optimizer.fields import (
 )
 from query_optimizer.filter import FilterSet
 from query_optimizer.settings import optimizer_settings
-from query_optimizer.typing import GQLInfo, Any, Union
 from tests.example.models import (
     Apartment,
     ApartmentProxy,
@@ -65,6 +65,10 @@ from tests.example.models import (
     DeveloperProxy,
     Tag,
 )
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from query_optimizer.typing import GQLInfo, Any, Union
 
 __all__ = [
     "ApartmentNode",
@@ -73,8 +77,8 @@ __all__ = [
     "DeveloperType",
     "HousingCompanyNode",
     "HousingCompanyType",
-    "OwnershipType",
     "OwnerType",
+    "OwnershipType",
     "People",
     "PostalCodeType",
     "PropertyManagerType",
@@ -372,7 +376,7 @@ class ApartmentNode(IsTypeOfProxyPatch, DjangoObjectType):
         max_complexity = 10
         connection_class = CustomConnection
         filter_fields = {
-            "street_address": ["exact"],
+            "street_address": ["exact", "istartswith"],
             "building__name": ["exact"],
         }
         interfaces = (relay.Node,)
