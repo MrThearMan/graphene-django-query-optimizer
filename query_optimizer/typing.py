@@ -60,6 +60,7 @@ if TYPE_CHECKING:
     from django_filters import FilterSet
 
     from query_optimizer.optimizer import QueryOptimizer
+    from query_optimizer.validators import PaginationArgs
 
 __all__ = [
     "GRAPHQL_BUILTIN",
@@ -142,10 +143,10 @@ GRAPHQL_BUILTIN = (
 class UserHintedWSGIRequest(WSGIRequest):
     user: AnyUser
 
-    optimizer_pagination: dict[str, slice]
+    optimizer_pagination: dict[str, PaginationArgs]
     """
-    This attribute is only present if it was set in 'DjangoConnectionField',
-    which only happens if the field's 'max_limit' is not None.
+    This attribute is only present if it was set in 'DjangoConnectionField'.
+    The key is the field's name in 'snake_case'.
 
     The information is also not final, since the size of the slice depends on
     the number of items in the queryset after filtering.
