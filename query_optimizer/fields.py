@@ -263,6 +263,14 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
             max_limit=self.max_limit,
         )
 
+        # Save initial pagination information to the request. This can be used if the queryset
+        # is large and needs to be evaluated before the optimizer does so.
+        if self.max_limit is not None:
+            if not hasattr(info.context, "optimizer_pagination"):
+                info.context.optimizer_pagination = {}
+            name = to_snake_case(info.field_name)
+            info.context.optimizer_pagination[name] = calculate_queryset_slice(**pagination_args)
+
         # If field is aliased, a prefetch should have been done to that alias.
         # If not, call the ObjectType's "resolve_{field_name}" method, if it exists.
         # Otherwise, call the default resolver (usually `dict_or_attr_resolver`).

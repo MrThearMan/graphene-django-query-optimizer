@@ -92,6 +92,45 @@ def test_filter__to_many_relation(graphql_client):
     }
 
 
+def test_filter__custom_filter(graphql_client):
+    HousingCompanyFactory.create(name="1", street_address="Example", postal_code__code="00001", city="Helsinki")
+    HousingCompanyFactory.create(name="2", street_address="Other", postal_code__code="00002", city="London")
+    HousingCompanyFactory.create(name="3", street_address="Thing", postal_code__code="00003", city="Paris")
+
+    query = """
+        query {
+          pagedHousingCompanies(address: "00001") {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for counting housing companies.
+    # 1 query for fetching housing companies.
+    assert response.queries.count == 2, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "example_housingcompany"',
+    )
+    assert response.queries[1] == has(
+        'FROM "example_housingcompany"',
+    )
+
+    assert response.content == {
+        "edges": [
+            {"node": {"name": "1"}},
+        ],
+    }
+
+
 def test_filter__order_by(graphql_client):
     HousingCompanyFactory.create(name="1")
     HousingCompanyFactory.create(name="3")

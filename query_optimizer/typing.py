@@ -142,6 +142,17 @@ GRAPHQL_BUILTIN = (
 class UserHintedWSGIRequest(WSGIRequest):
     user: AnyUser
 
+    optimizer_pagination: dict[str, slice]
+    """
+    This attribute is only present if it was set in 'DjangoConnectionField',
+    which only happens if the field's 'max_limit' is not None.
+
+    The information is also not final, since the size of the slice depends on
+    the number of items in the queryset after filtering.
+    It is only meant to be used for optimization, if the queryset is large,
+    and needs to be evaluated before the optimizer does so.
+    """
+
 
 class GQLInfo(GraphQLResolveInfo):
     context: UserHintedWSGIRequest
