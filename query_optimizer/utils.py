@@ -202,8 +202,8 @@ def swappable_by_subclassing(obj: Ttype) -> Ttype:
 
         new_subcls: type = obj.__subclasses__()[-1]
 
-        def new(_: type, *args: Any, **kwargs: Any) -> Ttype:
-            return super(type, new_subcls).__new__(new_subcls, *args, **kwargs)
+        def new(_: type, *_args: Any, **_kwargs: Any) -> Ttype:
+            return super(type, new_subcls).__new__(new_subcls)  # type: ignore[arg-type]
 
         obj.__new__ = new
 

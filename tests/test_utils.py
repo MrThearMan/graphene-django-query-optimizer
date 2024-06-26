@@ -149,33 +149,33 @@ def test_calculate_slice_for_queryset(pagination_input: PaginationInput, start: 
 def test_swappable_by_subclassing():
     @swappable_by_subclassing
     class A:
-        def __init__(self) -> None:
-            self.one = 1
+        def __init__(self, arg: int = 1) -> None:
+            self.one = arg
 
     a = A()
     assert type(a) is A
     assert a.one == 1
 
     class B(A):
-        def __init__(self) -> None:
-            super().__init__()
-            self.two = 2
+        def __init__(self, arg: int = 1) -> None:
+            super().__init__(arg)
+            self.two = arg * 2
 
-    b = A()
+    b = A(2)
     assert type(b) is B
-    assert b.one == 1
-    assert b.two == 2
+    assert b.one == 2
+    assert b.two == 4
 
     class C(A):
-        def __init__(self) -> None:
-            super().__init__()
-            self.three = 3
+        def __init__(self, arg: int = 1, second_arg: int = 2) -> None:
+            super().__init__(arg)
+            self.three = second_arg * 3
 
-    c = A()
+    c = A(3, 4)
     assert type(c) is C
-    assert c.one == 1
+    assert c.one == 3
     assert not hasattr(c, "two")
-    assert c.three == 3
+    assert c.three == 12
 
     class D(B): ...
 
