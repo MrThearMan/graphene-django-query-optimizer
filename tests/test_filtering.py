@@ -511,14 +511,14 @@ def test_filter__aliased_queries(graphql_client):
               node {
                 pk
                 name
-                A: apartments(streetAddress_Istartswith: "A") {
+                apartmentsWithA: apartments(streetAddress_Istartswith: "A") {
                   edges {
                     node {
                       pk
                     }
                   }
                 }
-                B: apartments(streetAddress_Istartswith: "B") {
+                apartmentsWithB: apartments(streetAddress_Istartswith: "B") {
                   edges {
                     node {
                       pk
@@ -528,7 +528,7 @@ def test_filter__aliased_queries(graphql_client):
               }
             }
           }
-          all: pagedBuildings(orderBy: "-name") {
+          allBuildings: pagedBuildings(orderBy: "-name") {
             edges {
               node {
                 name
@@ -547,12 +547,12 @@ def test_filter__aliased_queries(graphql_client):
                         "node": {
                             "pk": building_1.pk,
                             "name": building_1.name,
-                            "A": {
+                            "apartmentsWithA": {
                                 "edges": [
                                     {"node": {"pk": apartment_1.pk}},
                                 ],
                             },
-                            "B": {
+                            "apartmentsWithB": {
                                 "edges": [
                                     {"node": {"pk": apartment_2.pk}},
                                 ],
@@ -563,12 +563,12 @@ def test_filter__aliased_queries(graphql_client):
                         "node": {
                             "pk": building_2.pk,
                             "name": building_2.name,
-                            "A": {
+                            "apartmentsWithA": {
                                 "edges": [
                                     {"node": {"pk": apartment_3.pk}},
                                 ],
                             },
-                            "B": {
+                            "apartmentsWithB": {
                                 "edges": [],
                             },
                         },
@@ -577,10 +577,10 @@ def test_filter__aliased_queries(graphql_client):
                         "node": {
                             "pk": building_3.pk,
                             "name": building_3.name,
-                            "A": {
+                            "apartmentsWithA": {
                                 "edges": [],
                             },
-                            "B": {
+                            "apartmentsWithB": {
                                 "edges": [
                                     {"node": {"pk": apartment_4.pk}},
                                 ],
@@ -589,7 +589,7 @@ def test_filter__aliased_queries(graphql_client):
                     },
                 ],
             },
-            "all": {
+            "allBuildings": {
                 "edges": [
                     {"node": {"name": building_3.name}},
                     {"node": {"name": building_2.name}},

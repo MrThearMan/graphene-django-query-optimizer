@@ -31,8 +31,8 @@ def get_filter_info(info: GQLInfo, model: type[Model]) -> GraphQLFilterInfo:
     compiler = FilterInfoCompiler(info, model)
     compiler.run()
     # Return the compiled filter info, or an empty dict if there is no filter info.
-    alias = getattr(info.field_nodes[0].alias, "value", None)
-    return compiler.filter_info.get(to_snake_case(alias or info.field_name), {})
+    name = getattr(info.field_nodes[0].alias, "value", None) or to_snake_case(info.field_name)
+    return compiler.filter_info.get(name, {})
 
 
 @swappable_by_subclassing
