@@ -8,4 +8,4 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
-    uses: MrThearMan/CI/.github/workflows/approve.yml@v0.4.11
+    uses: MrThearMan/CI/.github/workflows/approve.yml@v0.4.12

@@ -12,4 +12,4 @@ on:
 
 jobs:
   docs:
-    uses: MrThearMan/CI/.github/workflows/docs.yml@v0.4.11
+    uses: MrThearMan/CI/.github/workflows/docs.yml@v0.4.12

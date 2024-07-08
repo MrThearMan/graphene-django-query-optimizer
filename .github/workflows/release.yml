@@ -7,6 +7,6 @@ on:
 
 jobs:
   release:
-    uses: MrThearMan/CI/.github/workflows/release.yml@v0.4.11
+    uses: MrThearMan/CI/.github/workflows/release.yml@v0.4.12
     secrets:
       pypi-token: ${{ secrets.PYPI_API_TOKEN }}
