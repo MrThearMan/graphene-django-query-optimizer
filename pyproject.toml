@@ -61,15 +61,15 @@ django-settings-holder = ">=0.1.2"
 filter = ["django-filter"]
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.2.2"
-coverage = "7.5.4"
+pytest = "8.3.1"
+coverage = "7.6.0"
 pytest-django = "4.8.0"
 pre-commit = "3.7.1"
 tox = "4.16.0"
 tox-gh-actions = "3.2.0"
 faker = "26.0.0"
 factory-boy = "3.3.0"
-sqlparse = "0.5.0"
+sqlparse = "0.5.1"
 django-graphiql-debug-toolbar = "0.2.0"
 py-spy = "0.3.14"
 
@@ -79,7 +79,7 @@ pymdown-extensions = "10.8.1"
 mkdocs-mermaid2-plugin = "1.1.1"
 
 [tool.poetry.group.lint.dependencies]
-mypy = "1.10.1"
+mypy = "1.11.0"
 django-stubs = "5.0.2"
 
 [tool.ruff]
