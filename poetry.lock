@@ -317,13 +317,13 @@ files = [
 
 [[package]]
 name = "django"
-version = "4.2.14"
+version = "4.2.15"
 description = "A high-level Python web framework that encourages rapid development and clean, pragmatic design."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Django-4.2.14-py3-none-any.whl", hash = "sha256:3ec32bc2c616ab02834b9cac93143a7dc1cdcd5b822d78ac95fc20a38c534240"},
-    {file = "Django-4.2.14.tar.gz", hash = "sha256:fc6919875a6226c7ffcae1a7d51e0f2ceaf6f160393180818f6c95f51b1e7b96"},
+    {file = "Django-4.2.15-py3-none-any.whl", hash = "sha256:61ee4a130efb8c451ef3467c67ca99fdce400fedd768634efc86a68c18d80d30"},
+    {file = "Django-4.2.15.tar.gz", hash = "sha256:c77f926b81129493961e19c0e02188f8d07c112a1162df69bfab178ae447f94a"},
 ]
 
 [package.dependencies]
@@ -474,13 +474,13 @@ doc = ["Sphinx", "sphinx-rtd-theme", "sphinxcontrib-spelling"]
 
 [[package]]
 name = "faker"
-version = "26.1.0"
+version = "26.3.0"
 description = "Faker is a Python package that generates fake data for you."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Faker-26.1.0-py3-none-any.whl", hash = "sha256:e8c5ef795223e945d9166aea3c0ecaf85ac54b4ade2af068d8e3c6524c2c0aa7"},
-    {file = "Faker-26.1.0.tar.gz", hash = "sha256:33921b6fc3b83dd75fd42ec7f47ec87b50c00d3c5380fa7d8a507dab848b8229"},
+    {file = "Faker-26.3.0-py3-none-any.whl", hash = "sha256:97fe1e7e953dd640ca2cd4dfac4db7c4d2432dd1b7a244a3313517707f3b54e9"},
+    {file = "Faker-26.3.0.tar.gz", hash = "sha256:7c10ebdf74aaa0cc4fe6ec6db5a71e8598ec33503524bd4b5f4494785a5670dd"},
 ]
 
 [package.dependencies]
@@ -1277,17 +1277,17 @@ files = [
 
 [[package]]
 name = "tox"
-version = "4.16.0"
+version = "4.17.1"
 description = "tox is a generic virtualenv management and test command line tool"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "tox-4.16.0-py3-none-any.whl", hash = "sha256:61e101061b977b46cf00093d4319438055290ad0009f84497a07bf2d2d7a06d0"},
-    {file = "tox-4.16.0.tar.gz", hash = "sha256:43499656f9949edb681c0f907f86fbfee98677af9919d8b11ae5ad77cb800748"},
+    {file = "tox-4.17.1-py3-none-any.whl", hash = "sha256:2974597c0353577126ab014f52d1a399fb761049e165ff34427f84e8cfe6c990"},
+    {file = "tox-4.17.1.tar.gz", hash = "sha256:2c41565a571e34480bd401d668a4899806169a4633e972ac296c54406d2ded8a"},
 ]
 
 [package.dependencies]
-cachetools = ">=5.3.3"
+cachetools = ">=5.4"
 chardet = ">=5.2"
 colorama = ">=0.4.6"
 filelock = ">=3.15.4"
@@ -1299,8 +1299,8 @@ tomli = {version = ">=2.0.1", markers = "python_version < \"3.11\""}
 virtualenv = ">=20.26.3"
 
 [package.extras]
-docs = ["furo (>=2024.5.6)", "sphinx (>=7.3.7)", "sphinx-argparse-cli (>=1.16)", "sphinx-autodoc-typehints (>=2.2.2)", "sphinx-copybutton (>=0.5.2)", "sphinx-inline-tabs (>=2023.4.21)", "sphinxcontrib-towncrier (>=0.2.1a0)", "towncrier (>=23.11)"]
-testing = ["build[virtualenv] (>=1.2.1)", "covdefaults (>=2.3)", "detect-test-pollution (>=1.2)", "devpi-process (>=1)", "diff-cover (>=9.1)", "distlib (>=0.3.8)", "flaky (>=3.8.1)", "hatch-vcs (>=0.4)", "hatchling (>=1.25)", "psutil (>=6)", "pytest (>=8.2.2)", "pytest-cov (>=5)", "pytest-mock (>=3.14)", "pytest-xdist (>=3.6.1)", "re-assert (>=1.1)", "setuptools (>=70.2)", "time-machine (>=2.14.2)", "wheel (>=0.43)"]
+docs = ["furo (>=2024.7.18)", "sphinx (>=7.4.7)", "sphinx-argparse-cli (>=1.16)", "sphinx-autodoc-typehints (>=2.2.3)", "sphinx-copybutton (>=0.5.2)", "sphinx-inline-tabs (>=2023.4.21)", "sphinxcontrib-towncrier (>=0.2.1a0)", "towncrier (>=23.11)"]
+testing = ["build[virtualenv] (>=1.2.1)", "covdefaults (>=2.3)", "detect-test-pollution (>=1.2)", "devpi-process (>=1)", "diff-cover (>=9.1.1)", "distlib (>=0.3.8)", "flaky (>=3.8.1)", "hatch-vcs (>=0.4)", "hatchling (>=1.25)", "psutil (>=6)", "pytest (>=8.3.2)", "pytest-cov (>=5)", "pytest-mock (>=3.14)", "pytest-xdist (>=3.6.1)", "re-assert (>=1.1)", "setuptools (>=70.3)", "time-machine (>=2.14.2)", "wheel (>=0.43)"]
 
 [[package]]
 name = "tox-gh-actions"
@@ -1454,4 +1454,4 @@ filter = ["django-filter"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "7a272e013c06aa5b57bd6ec6e8e6a16046cb30dea9d82ee34c904fdac4c302bc"
+content-hash = "45258a8bfecd46058fb18518cbf3f71c11c62646e1052a9ab3a8f9bbe212a861"
