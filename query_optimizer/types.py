@@ -36,7 +36,7 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         cls,
         _meta: Optional[OptimizedDjangoOptions] = None,
         model: Optional[type[Model]] = None,
-        fields: Union[list[str], Literal["__all__"], None] = "__all__",
+        fields: Union[list[str], Literal["__all__"], None] = None,
         max_complexity: Optional[int] = None,
         **options: Any,
     ) -> None:
@@ -47,7 +47,7 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         if _meta is None:
             _meta = OptimizedDjangoOptions(cls)
 
-        if not hasattr(cls, "pk") and (fields == ALL_FIELDS or "pk" in fields):
+        if not hasattr(cls, "pk") and (fields == ALL_FIELDS or fields is None or "pk" in fields):
             cls.pk = graphene.Int() if model._meta.pk.name == "id" else graphene.ID()
             cls.resolve_pk = cls.resolve_id
 

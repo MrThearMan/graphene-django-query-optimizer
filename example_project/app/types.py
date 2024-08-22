@@ -254,12 +254,8 @@ class OwnerType(DjangoObjectType):
 
     class Meta:
         model = Owner
-        fields = [
-            "pk",
-            "name",
-            "email",
-            "ownerships",
-            "sales",
+        exclude = [
+            "pets",
         ]
 
     @staticmethod
