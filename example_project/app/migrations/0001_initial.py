@@ -279,6 +279,7 @@ class Migration(migrations.Migration):
                 ("identifier", models.CharField(blank=True, max_length=11, null=True)),
                 ("email", models.EmailField(blank=True, max_length=200, null=True)),
                 ("phone", models.CharField(blank=True, max_length=50, null=True)),
+                ("pets", models.PositiveIntegerField(blank=True, null=True)),
             ],
             options={
                 "verbose_name": "Owner",

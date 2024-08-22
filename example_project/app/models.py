@@ -235,6 +235,7 @@ class Owner(models.Model):
     email = models.EmailField(max_length=200, blank=True, null=True)
     phone = models.CharField(max_length=50, blank=True, null=True)
     sales = models.ManyToManyField(Sale, through="Ownership")
+    pets = models.PositiveIntegerField(blank=True, null=True)
 
     class Meta:
         ordering = ["pk"]
