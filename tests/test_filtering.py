@@ -40,10 +40,10 @@ def test_filter__to_one_relation(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
 
     assert response.content == {
@@ -79,10 +79,10 @@ def test_filter__to_many_relation(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
 
     assert response.content == {
@@ -118,10 +118,10 @@ def test_filter__custom_filter(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
 
     assert response.content == {
@@ -157,10 +157,10 @@ def test_filter__order_by(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
 
     assert response.content == {
@@ -192,7 +192,7 @@ def test_filter__list_field(graphql_client):
     assert response.queries.count == 1, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
 
     assert response.content == [{"streetAddress": "1"}]
@@ -221,10 +221,10 @@ def test_filter__nested_list_field(graphql_client):
     assert response.queries.count == 2, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_building"',
+        'FROM "app_building"',
     )
     assert response.queries[1] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
 
     assert response.content == [
@@ -273,18 +273,18 @@ def test_filter__nested_connection(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
     )
     assert response.queries[1] == has(
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
         "LIMIT 3",
     )
     # Check that the filter is actually applied
     assert response.queries[2] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany"."property_manager_id" ORDER BY "example_housingcompany"."id")'
+            '(PARTITION BY "app_housingcompany"."property_manager_id" ORDER BY "app_housingcompany"."id")'
         ),
     )
 
@@ -337,25 +337,22 @@ def test_filter__nested_connection__deep(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
     )
     assert response.queries[1] == has(
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
         "LIMIT 3",
     )
     assert response.queries[2] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany"."property_manager_id" ORDER BY "example_housingcompany"."id")'
+            '(PARTITION BY "app_housingcompany"."property_manager_id" ORDER BY "app_housingcompany"."id")'
         ),
     )
     assert response.queries[3] == has(
-        'FROM "example_realestate"',
-        (
-            "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_realestate"."housing_company_id" ORDER BY "example_realestate"."id")'
-        ),
+        'FROM "app_realestate"',
+        ("ROW_NUMBER() OVER " '(PARTITION BY "app_realestate"."housing_company_id" ORDER BY "app_realestate"."id")'),
     )
 
     assert response.content == {
@@ -447,17 +444,17 @@ def test_filter__nested_connection__fragment_spread(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
     )
     assert response.queries[1] == has(
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
         "LIMIT 3",
     )
     assert response.queries[2] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany"."property_manager_id" ORDER BY "example_housingcompany"."id")'
+            '(PARTITION BY "app_housingcompany"."property_manager_id" ORDER BY "app_housingcompany"."id")'
         ),
     )
 

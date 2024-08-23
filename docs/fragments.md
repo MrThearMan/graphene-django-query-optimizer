@@ -57,7 +57,7 @@ Here is how you would construct a resolver like this:
 ```python
 import itertools
 import graphene
-from tests.example.models import Developer, PropertyManager, Owner
+from example_project.app.models import Developer, PropertyManager, Owner
 
 from query_optimizer import DjangoObjectType, optimize
 

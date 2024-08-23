@@ -1,6 +1,6 @@
 from factory import fuzzy
 
-from tests.example.models import HousingCompany
+from example_project.app.models import HousingCompany
 
 from ._base import GenericDjangoModelFactory, ManyToManyFactory, NullableSubFactory, OneToManyFactory
 

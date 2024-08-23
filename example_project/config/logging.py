@@ -1,6 +1,7 @@
 import logging
 import traceback
 from pathlib import Path
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -8,7 +9,7 @@ BASE_PATH = str(Path(__file__).resolve().parent.parent)
 
 
 class DotPathFormatter(logging.Formatter):
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         record.module = self.get_dotpath(record)
         return super().format(record)
 
@@ -33,9 +34,9 @@ class DotPathFormatter(logging.Formatter):
 
 
 class TracebackMiddleware:
-    def resolve(self, next, root, info, **kwargs):
+    def resolve(self, next_func: Callable, root: Any, info: Any, **kwargs: Any) -> Any:
         try:
-            return next(root, info, **kwargs)
-        except Exception as err:
+            return next_func(root, info, **kwargs)
+        except Exception as err:  # noqa: BLE001
             logger.info(traceback.format_exc())
             return err

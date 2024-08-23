@@ -8,8 +8,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEBUG = True
 SECRET_KEY = get_random_secret_key()
-ROOT_URLCONF = "tests.project.urls"
-WSGI_APPLICATION = "tests.project.wsgi.application"
+ROOT_URLCONF = "example_project.config.urls"
+WSGI_APPLICATION = "example_project.config.wsgi.application"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 ALLOWED_HOSTS = []
@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     "debug_toolbar",
     "graphiql_debug_toolbar",
     "graphene_django",
-    "tests.example",
+    "example_project.app",
 ]
 
 MIDDLEWARE = [
@@ -63,7 +63,7 @@ TEMPLATES = [
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "project" / "testdb",
+        "NAME": BASE_DIR / "config" / "testdb",
     },
 }
 
@@ -86,7 +86,7 @@ LOGGING = {
     "filters": {},
     "formatters": {
         "common": {
-            "()": "tests.project.logging.DotPathFormatter",
+            "()": "example_project.config.logging.DotPathFormatter",
             "format": "{asctime} | {levelname} | {module}.{funcName}:{lineno} | {message}",
             "datefmt": "%Y-%m-%dT%H:%M:%S%z",
             "style": "{",
@@ -114,10 +114,10 @@ STATIC_URL = "/static/"
 # --- Third Party -----------------------------------------------
 
 GRAPHENE = {
-    "SCHEMA": "tests.example.schema.schema",
+    "SCHEMA": "example_project.app.schema.schema",
     "TESTING_ENDPOINT": "/graphql/",
     "MIDDLEWARE": [
-        "tests.project.logging.TracebackMiddleware",
+        "example_project.config.logging.TracebackMiddleware",
         "graphene_django.debug.DjangoDebugMiddleware",
     ],
 }

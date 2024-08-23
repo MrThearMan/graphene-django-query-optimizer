@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import traceback
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import sqlparse
 from django import db
@@ -12,8 +15,10 @@ from django.db.models.sql import query as _query
 from graphene_django import views as _views
 from graphene_django.debug.sql import tracking as _tracking
 
-from query_optimizer.typing import Any, Callable, Generator
-from tests.project import logging as _logging
+from example_project.config import logging as _logging
+
+if TYPE_CHECKING:
+    from query_optimizer.typing import Any, Callable, Generator
 
 # Paths for stack trace filtering.
 BASE_PATH = str(Path(__file__).parent.parent.parent.resolve())

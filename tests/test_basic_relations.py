@@ -36,11 +36,11 @@ def test_relations__to_one_relations(graphql_client):
     assert response.queries.count == 1, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_apartment"',
-        'INNER JOIN "example_building"',
-        'INNER JOIN "example_realestate"',
-        'INNER JOIN "example_housingcompany"',
-        'INNER JOIN "example_postalcode"',
+        'FROM "app_apartment"',
+        'INNER JOIN "app_building"',
+        'INNER JOIN "app_realestate"',
+        'INNER JOIN "app_housingcompany"',
+        'INNER JOIN "app_postalcode"',
     )
 
     assert response.content == [
@@ -77,9 +77,9 @@ def test_relations__one_to_many_relations(graphql_client):
     # 1 query for fetching Ownerships and related Owners
     assert response.queries.count == 3, response.queries.log
 
-    assert response.queries[0] == has('FROM "example_apartment"')
-    assert response.queries[1] == has('FROM "example_sale"')
-    assert response.queries[2] == has('FROM "example_ownership"', 'INNER JOIN "example_owner"')
+    assert response.queries[0] == has('FROM "app_apartment"')
+    assert response.queries[1] == has('FROM "app_sale"')
+    assert response.queries[2] == has('FROM "app_ownership"', 'INNER JOIN "app_owner"')
 
     # Check that limiting is not applied to the nested fields, since they are list fields
     assert response.queries[1] != has("ROW_NUMBER() OVER")
@@ -114,8 +114,8 @@ def test_relations__one_to_many_relations__no_related_name(graphql_client):
     # 1 query for fetching Buildings
     assert response.queries.count == 2, response.queries.log
 
-    assert response.queries[0] == has('FROM "example_realestate"')
-    assert response.queries[1] == has('FROM "example_building"')
+    assert response.queries[0] == has('FROM "app_realestate"')
+    assert response.queries[1] == has('FROM "app_building"')
 
     # Check that limiting is not applied to the nested fields, since they are list fields
     assert response.queries[1] != has("ROW_NUMBER() OVER")
@@ -149,8 +149,8 @@ def test_relations__many_to_many_relations(graphql_client):
     # 1 query for fetching Developers
     assert response.queries.count == 2, response.queries.log
 
-    assert response.queries[0] == has('FROM "example_housingcompany"')
-    assert response.queries[1] == has('FROM "example_developer"')
+    assert response.queries[0] == has('FROM "app_housingcompany"')
+    assert response.queries[1] == has('FROM "app_developer"')
 
     # Check that limiting is not applied to the nested fields, since they are list fields
     assert response.queries[1] != has("ROW_NUMBER() OVER")
@@ -184,8 +184,8 @@ def test_relations__many_to_many_relations__no_related_name(graphql_client):
     # 1 query for fetching HousingCompanies
     assert response.queries.count == 2, response.queries.log
 
-    assert response.queries[0] == has('FROM "example_developer"')
-    assert response.queries[1] == has('FROM "example_housingcompany"')
+    assert response.queries[0] == has('FROM "app_developer"')
+    assert response.queries[1] == has('FROM "app_housingcompany"')
 
     assert response.content == [
         {"housingcompanySet": [{"name": "1"}]},
@@ -223,8 +223,8 @@ def test_relations__many_to_many_relations__shared_entities(graphql_client):
     # 1 query for fetching Developers
     assert response.queries.count == 2, response.queries.log
 
-    assert response.queries[0] == has('FROM "example_housingcompany"')
-    assert response.queries[1] == has('FROM "example_developer"')
+    assert response.queries[0] == has('FROM "app_housingcompany"')
+    assert response.queries[1] == has('FROM "app_developer"')
 
     # Check that limiting is not applied to the nested fields, since they are list fields
     assert response.queries[1] != has("ROW_NUMBER() OVER")

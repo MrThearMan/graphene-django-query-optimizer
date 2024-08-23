@@ -8,7 +8,7 @@ per resolver basis:
 
 ```python
 import graphene
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 from query_optimizer import DjangoObjectType, optimize
 
@@ -30,7 +30,7 @@ schema = graphene.Schema(query=Query)
 ```python
 import graphene
 from graphene import relay
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 from query_optimizer import DjangoObjectType
 

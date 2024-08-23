@@ -2,7 +2,7 @@ import datetime
 
 from factory import fuzzy
 
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 from ._base import GenericDjangoModelFactory, NullableSubFactory, OneToManyFactory
 

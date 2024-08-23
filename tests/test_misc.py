@@ -46,13 +46,13 @@ def test_multiple_queries(graphql_client):
     assert response.queries.count == 2, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_apartment"',
-        'INNER JOIN "example_building"',
-        'INNER JOIN "example_realestate"',
+        'FROM "app_apartment"',
+        'INNER JOIN "app_building"',
+        'INNER JOIN "app_realestate"',
     )
     assert response.queries[1] == has(
-        'FROM "example_realestate"',
-        'INNER JOIN "example_housingcompany"',
+        'FROM "app_realestate"',
+        'INNER JOIN "app_housingcompany"',
     )
 
 
@@ -129,19 +129,19 @@ def test_misc__pk_fields(graphql_client):
     assert response.queries.count == 1, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_apartment"',
-        'INNER JOIN "example_building"',
-        'INNER JOIN "example_realestate"',
-        'INNER JOIN "example_housingcompany"',
-        'INNER JOIN "example_postalcode"',
+        'FROM "app_apartment"',
+        'INNER JOIN "app_building"',
+        'INNER JOIN "app_realestate"',
+        'INNER JOIN "app_housingcompany"',
+        'INNER JOIN "app_postalcode"',
         (
-            '"example_building"."id", '
-            '"example_building"."real_estate_id", '
-            '"example_realestate"."id", '
-            '"example_realestate"."housing_company_id", '
-            '"example_housingcompany"."id", '
-            '"example_housingcompany"."postal_code_id", '
-            '"example_postalcode"."code"'
+            '"app_building"."id", '
+            '"app_building"."real_estate_id", '
+            '"app_realestate"."id", '
+            '"app_realestate"."housing_company_id", '
+            '"app_housingcompany"."id", '
+            '"app_housingcompany"."postal_code_id", '
+            '"app_postalcode"."code"'
         ),
     )
 
@@ -174,11 +174,11 @@ def test_misc__to_many_objects_with_same_related_object(graphql_client):
     assert response.queries.count == 2, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_housingcompany"',
-        'INNER JOIN "example_postalcode"',
+        'FROM "app_housingcompany"',
+        'INNER JOIN "app_postalcode"',
     )
     assert response.queries[1] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
 
     assert response.content == [
@@ -231,15 +231,15 @@ def test_misc__same_related_object_selected_with_different_fields_in_same_query(
     assert response.queries.count == 3, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_realestate"',
+        'FROM "app_realestate"',
     )
     assert response.queries[1] == has(
-        'FROM "example_building"',
-        'INNER JOIN "example_realestate"',
+        'FROM "app_building"',
+        'INNER JOIN "app_realestate"',
     )
     assert response.queries[2] == has(
-        'FROM "example_building"',
-        b'INNER JOIN "example_realestate"',
+        'FROM "app_building"',
+        b'INNER JOIN "app_realestate"',
     )
 
     assert response.content == [
@@ -327,10 +327,10 @@ def test_misc__generic_relations(graphql_client):
     assert response.queries.count == 2, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_postalcode"',
+        'FROM "app_postalcode"',
     )
     assert response.queries[1] == has(
-        'FROM "example_tag"',
+        'FROM "app_tag"',
     )
 
     assert response.content == [
@@ -384,13 +384,13 @@ def test_misc__generic_foreign_key(graphql_client):
     assert response.queries.count == 3, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_tag"',
+        'FROM "app_tag"',
     )
     assert response.queries[1] == has(
-        'FROM "example_postalcode"',
+        'FROM "app_postalcode"',
     )
     assert response.queries[2] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
 
     assert response.content == [
@@ -446,19 +446,19 @@ def test_misc__generic_foreign_key__nested_relations(graphql_client):
     assert response.queries.count == 5, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_tag"',
+        'FROM "app_tag"',
     )
     assert response.queries[1] == has(
-        'FROM "example_postalcode"',
+        'FROM "app_postalcode"',
     )
     assert response.queries[2] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
     assert response.queries[3] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[4] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
 
     assert response.content == [
@@ -524,15 +524,15 @@ def test_same_relation_multiple_times(graphql_client):
     assert response.queries.count == 3, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
     assert response.queries[1] == has(
         "purchase_date",
         "purchase_price",
-        'FROM "example_sale"',
-        'INNER JOIN "example_apartment"',
+        'FROM "app_sale"',
+        'INNER JOIN "app_apartment"',
     )
     assert response.queries[2] == has(
-        'FROM "example_ownership"',
-        'INNER JOIN "example_owner"',
+        'FROM "app_ownership"',
+        'INNER JOIN "app_owner"',
     )

@@ -1,6 +1,6 @@
 import factory
 
-from tests.example.models import (
+from example_project.app.models import (
     Example,
     ForwardManyToMany,
     ForwardManyToManyForRelated,
@@ -31,13 +31,7 @@ from tests.example.models import (
     ReverseOneToOneToReverseOneToOne,
 )
 
-from ._base import (
-    GenericDjangoModelFactory,
-    ManyToManyFactory,
-    NullableSubFactory,
-    OneToManyFactory,
-    ReverseSubFactory,
-)
+from ._base import GenericDjangoModelFactory, ManyToManyFactory, NullableSubFactory, OneToManyFactory, ReverseSubFactory
 
 __all__ = [
     "ExampleFactory",

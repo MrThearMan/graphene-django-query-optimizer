@@ -4,7 +4,7 @@ GraphQL types can have non-model fields using custom resolvers.
 
 ```python
 import graphene
-from tests.example.models import HousingCompany
+from example_project.app.models import HousingCompany
 
 from query_optimizer import DjangoObjectType
 
@@ -28,7 +28,7 @@ This field can be used to add annotations to the queryset when the field is requ
 ```python
 import graphene
 from django.db.models import F, Value
-from tests.example.models import HousingCompany
+from example_project.app.models import HousingCompany
 
 from query_optimizer import DjangoObjectType, AnnotatedField  # new import
 
@@ -45,7 +45,7 @@ parameter to help with more complex annotations.
 ```python
 import graphene
 from django.db.models import F, Value
-from tests.example.models import HousingCompany
+from example_project.app.models import HousingCompany
 
 from query_optimizer import DjangoObjectType, AnnotatedField
 
@@ -66,7 +66,7 @@ This field can be used to add multiple fields to the queryset when the field is 
 
 ```python
 import graphene
-from tests.example.models import HousingCompany
+from example_project.app.models import HousingCompany
 
 from query_optimizer import DjangoObjectType, MultiField  # new import
 
@@ -94,7 +94,7 @@ strategies that are not possible with the other fields.
 ```python
 import graphene
 from django.db.models import QuerySet
-from tests.example.models import HousingCompany
+from example_project.app.models import HousingCompany
 
 from query_optimizer import DjangoObjectType, ManuallyOptimizedField  # new import
 from query_optimizer.optimizer import QueryOptimizer  # for type hinting
@@ -124,7 +124,7 @@ argument that can be used to specify the field name in the queryset if it's
 different from the field name in the model.
 
 ```python
-from tests.example.models import HousingCompany
+from example_project.app.models import HousingCompany
 
 from query_optimizer import DjangoObjectType, DjangoListField  # new import
 

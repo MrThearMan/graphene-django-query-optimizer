@@ -5,6 +5,6 @@
 *.pytest_cache
 *__pycache__
 *.coverage
-tests/project/testdb
+example_project/config/testdb
 pytest.ini
 profile.svg

@@ -6,7 +6,7 @@ is required.
 ```python
 import graphene
 from graphene import relay
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 from query_optimizer import DjangoObjectType, DjangoConnectionField
 
@@ -30,7 +30,7 @@ schema = graphene.Schema(query=Query)
 We can also implement a custom Filterset class to have more control over the filtering.
 
 ```python
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 from query_optimizer.filter import FilterSet
 

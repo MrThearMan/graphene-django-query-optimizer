@@ -10,7 +10,7 @@ Let's say we have the following node in out schema:
 import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 class ApartmentNode(DjangoObjectType):
     class Meta:
@@ -32,7 +32,7 @@ We can optimize this query by simply using `DjangoObjectType` from `query_optimi
 ```python
 import graphene
 from graphene import relay
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 from query_optimizer import DjangoObjectType
 
@@ -60,7 +60,7 @@ Given the following connection in our schema:
 ```python
 import graphene
 from graphene import relay
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 from graphene_django import DjangoObjectType, DjangoConnectionField
 
@@ -81,7 +81,7 @@ and `DjangoConnectionField` from `query_optimizer`, like this:
 ```python
 import graphene
 from graphene import relay
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 from query_optimizer import DjangoObjectType, DjangoConnectionField
 

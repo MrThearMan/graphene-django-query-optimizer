@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import itertools
+from typing import TYPE_CHECKING, Optional
 
 import graphene
 from django.db import models
@@ -9,16 +12,8 @@ from graphene_django.debug import DjangoDebug
 from query_optimizer import optimize
 from query_optimizer.fields import DjangoConnectionField, DjangoListField
 from query_optimizer.selections import get_field_selections
-from query_optimizer.typing import GQLInfo, Iterable, Union
 
-from .models import (
-    Apartment,
-    Developer,
-    Example,
-    HousingCompany,
-    Owner,
-    PropertyManager,
-)
+from .models import Apartment, Developer, Example, HousingCompany, Owner, PropertyManager
 from .types import (
     ApartmentNode,
     ApartmentType,
@@ -42,6 +37,9 @@ from .types import (
     SaleType,
     TagType,
 )
+
+if TYPE_CHECKING:
+    from query_optimizer.typing import GQLInfo, Iterable, Union
 
 
 class Query(graphene.ObjectType):
@@ -104,7 +102,7 @@ class Query(graphene.ObjectType):
     example = graphene.Field(ExampleType, pk=graphene.Int(required=True))
     examples = DjangoListField(ExampleType)
 
-    def resolve_example(root: None, info: GQLInfo, pk: int = None):
+    def resolve_example(root: None, info: GQLInfo, pk: Optional[int] = None):
         return optimize(Example.objects.filter(pk=pk), info).first()
 
     # --------------------------------------------------------------------

@@ -1,3 +1,7 @@
+# ruff: noqa: S311
+
+from __future__ import annotations
+
 import random
 import string
 from itertools import cycle
@@ -6,7 +10,7 @@ from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandParser
 from faker import Faker
 
-from tests.example.models import (
+from example_project.app.models import (
     Apartment,
     Building,
     Developer,
@@ -57,7 +61,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
         pass
 
-    def handle(self, *args, **options) -> None:  # noqa: ANN002, ANN003
+    def handle(self, *args, **options) -> None:
         create_test_data()
 
 
@@ -259,7 +263,7 @@ def create_ownerships(owners: list[Owner], sales: list[Sale]) -> list[Ownership]
     return Ownership.objects.bulk_create(ownerships)
 
 
-def create_examples() -> None:
+def create_examples() -> None:  # noqa: PLR0915
     # example
     #   <-> symmetrical
     #   --> forward_one_to_one

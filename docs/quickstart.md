@@ -7,7 +7,7 @@ Let's say we have defined a graphql schema like this:
 ```python
 import graphene
 from graphene_django import DjangoObjectType, DjangoListField
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 class ApartmentType(DjangoObjectType):
     class Meta:
@@ -79,7 +79,7 @@ instead of `graphene_django`
 
 ```python
 import graphene
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 from query_optimizer import DjangoListField, DjangoObjectType
 
@@ -98,7 +98,7 @@ We could also use the `optimize` function to wrap a custom resolver queryset:
 ```python
 import graphene
 from query_optimizer import DjangoObjectType, optimize  # new import
-from tests.example.models import Apartment
+from example_project.app.models import Apartment
 
 class ApartmentType(DjangoObjectType):
     class Meta:

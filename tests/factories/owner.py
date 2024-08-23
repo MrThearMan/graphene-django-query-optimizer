@@ -1,6 +1,6 @@
 from factory import Faker, fuzzy
 
-from tests.example.models import Owner
+from example_project.app.models import Owner
 
 from ._base import GenericDjangoModelFactory, OneToManyFactory
 

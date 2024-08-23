@@ -1,7 +1,7 @@
 import factory
 from factory import fuzzy
 
-from tests.example.models import PropertyManager
+from example_project.app.models import PropertyManager
 
 from ._base import GenericDjangoModelFactory, OneToManyFactory
 

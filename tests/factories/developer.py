@@ -1,6 +1,6 @@
 from factory import fuzzy
 
-from tests.example.models import Developer
+from example_project.app.models import Developer
 
 from ._base import GenericDjangoModelFactory, ManyToManyFactory
 

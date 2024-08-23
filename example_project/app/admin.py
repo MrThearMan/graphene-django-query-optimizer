@@ -2,7 +2,7 @@ from django import forms
 from django.contrib import admin
 from django.contrib.admin import TabularInline
 
-from tests.example.models import (
+from example_project.app.models import (
     Apartment,
     Building,
     Developer,
@@ -17,13 +17,13 @@ from tests.example.models import (
 
 
 class PermMixin:
-    def has_add_permission(self, *args, **kwargs):
+    def has_add_permission(self, *args, **kwargs) -> bool:
         return False
 
-    def has_change_permission(self, *args, **kwargs):
+    def has_change_permission(self, *args, **kwargs) -> bool:
         return False
 
-    def has_delete_permission(self, *args, **kwargs):
+    def has_delete_permission(self, *args, **kwargs) -> bool:
         return False
 
 

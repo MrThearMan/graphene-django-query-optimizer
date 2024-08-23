@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 import contextlib
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
 
 from query_optimizer.selections import get_field_selections
-from query_optimizer.typing import GQLInfo
 from tests.factories import HousingCompanyFactory
+
+if TYPE_CHECKING:
+    from query_optimizer.typing import GQLInfo
 
 pytestmark = [
     pytest.mark.django_db,
@@ -20,7 +25,7 @@ def mock_selections():
         selections.extend(get_field_selections(info))
         return selections
 
-    path = "tests.example.schema.get_field_selections"
+    path = "example_project.app.schema.get_field_selections"
     with patch(path, side_effect=tracker):
         yield selections
 

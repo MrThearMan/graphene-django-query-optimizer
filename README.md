@@ -32,7 +32,7 @@ method calls to your QuerySets to fetch _only_ what you need.
 
 ```python
 import graphene
-from tests.example.models import Example
+from example_project.app.models import Example
 
 from query_optimizer import DjangoObjectType, DjangoListField
 

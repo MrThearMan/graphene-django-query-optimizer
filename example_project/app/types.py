@@ -18,7 +18,7 @@ from query_optimizer.fields import (
 )
 from query_optimizer.filter import FilterSet
 from query_optimizer.settings import optimizer_settings
-from tests.example.models import (
+from example_project.app.models import (
     Apartment,
     ApartmentProxy,
     Building,
@@ -113,7 +113,7 @@ class PostalCodeType(DjangoObjectType):
 
 
 class DeveloperType(DjangoObjectType):
-    housingcompany_set = DjangoListField("tests.example.types.HousingCompanyType")
+    housingcompany_set = DjangoListField("example_project.app.types.HousingCompanyType")
 
     class Meta:
         model = Developer
@@ -350,7 +350,7 @@ class IsTypeOfProxyPatch:
 
 class DeveloperNode(IsTypeOfProxyPatch, DjangoObjectType):
     housingcompany_set = DjangoConnectionField(lambda: HousingCompanyNode)
-    housing_companies = DjangoListField("tests.example.types.HousingCompanyType", field_name="housingcompany_set")
+    housing_companies = DjangoListField("example_project.app.types.HousingCompanyType", field_name="housingcompany_set")
 
     idx = graphene.Field(graphene.Int)
 

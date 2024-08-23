@@ -4,13 +4,19 @@ from django.db import models
 from django.db.models import DecimalField
 
 __all__ = [
-    "Tag",
     "Apartment",
     "ApartmentProxy",
     "Building",
     "BuildingProxy",
     "Developer",
     "DeveloperProxy",
+    "Example",
+    "ForwardManyToMany",
+    "ForwardManyToManyForRelated",
+    "ForwardManyToOne",
+    "ForwardManyToOneForRelated",
+    "ForwardOneToOne",
+    "ForwardOneToOneForRelated",
     "HousingCompany",
     "HousingCompanyProxy",
     "Owner",
@@ -20,36 +26,29 @@ __all__ = [
     "PropertyManagerProxy",
     "RealEstate",
     "RealEstateProxy",
-    "Sale",
-    #
-    "Example",
-    "ForwardOneToOne",
-    "ForwardManyToOne",
-    "ForwardManyToMany",
-    "ReverseOneToOne",
-    "ReverseOneToMany",
     "ReverseManyToMany",
-    "ForwardOneToOneForRelated",
-    "ForwardManyToOneForRelated",
-    "ForwardManyToManyForRelated",
-    "ReverseOneToOneToForwardOneToOne",
-    "ReverseOneToOneToForwardManyToOne",
-    "ReverseOneToOneToForwardManyToMany",
-    "ReverseOneToOneToReverseOneToOne",
-    "ReverseOneToOneToReverseOneToMany",
-    "ReverseOneToOneToReverseManyToMany",
-    "ReverseOneToManyToForwardOneToOne",
-    "ReverseOneToManyToForwardManyToOne",
-    "ReverseOneToManyToForwardManyToMany",
-    "ReverseOneToManyToReverseOneToOne",
-    "ReverseOneToManyToReverseOneToMany",
-    "ReverseOneToManyToReverseManyToMany",
-    "ReverseManyToManyToForwardOneToOne",
-    "ReverseManyToManyToForwardManyToOne",
     "ReverseManyToManyToForwardManyToMany",
-    "ReverseManyToManyToReverseOneToOne",
-    "ReverseManyToManyToReverseOneToMany",
+    "ReverseManyToManyToForwardManyToOne",
+    "ReverseManyToManyToForwardOneToOne",
     "ReverseManyToManyToReverseManyToMany",
+    "ReverseManyToManyToReverseOneToMany",
+    "ReverseManyToManyToReverseOneToOne",
+    "ReverseOneToMany",
+    "ReverseOneToManyToForwardManyToMany",
+    "ReverseOneToManyToForwardManyToOne",
+    "ReverseOneToManyToForwardOneToOne",
+    "ReverseOneToManyToReverseManyToMany",
+    "ReverseOneToManyToReverseOneToMany",
+    "ReverseOneToManyToReverseOneToOne",
+    "ReverseOneToOne",
+    "ReverseOneToOneToForwardManyToMany",
+    "ReverseOneToOneToForwardManyToOne",
+    "ReverseOneToOneToForwardOneToOne",
+    "ReverseOneToOneToReverseManyToMany",
+    "ReverseOneToOneToReverseOneToMany",
+    "ReverseOneToOneToReverseOneToOne",
+    "Sale",
+    "Tag",
 ]
 
 
@@ -59,13 +58,13 @@ class Tag(models.Model):
     object_id = models.CharField(max_length=255)
     content_object = GenericForeignKey()
 
-    def __str__(self) -> str:
-        return self.tag
-
     class Meta:
         indexes = [
             models.Index(fields=["content_type", "object_id"]),
         ]
+
+    def __str__(self) -> str:
+        return self.tag
 
 
 class PostalCode(models.Model):
@@ -137,12 +136,12 @@ class HousingCompany(models.Model):
             models.Index(fields=["name"]),
         ]
 
+    def __str__(self) -> str:
+        return self.name
+
     @property
     def address(self) -> str:
         return f"{self.street_address}, {self.postal_code} {self.city}"
-
-    def __str__(self) -> str:
-        return self.name
 
 
 class RealEstate(models.Model):
@@ -205,12 +204,12 @@ class Apartment(models.Model):
             models.Index(fields=["street_address", "stair", "-apartment_number"]),
         ]
 
+    def __str__(self) -> str:
+        return self.address
+
     @property
     def address(self) -> str:
         return f"{self.street_address} {self.stair} {self.apartment_number}"
-
-    def __str__(self) -> str:
-        return self.address
 
 
 class Sale(models.Model):

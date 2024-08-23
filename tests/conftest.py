@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 import pytest
 from graphene_django.utils.testing import graphql_query
 
+from example_project.app.types import BuildingNode
+from example_project.app.utils import QueryData, capture_database_queries
 from query_optimizer.typing import Any, Callable, NamedTuple, Optional, Union
-from tests.example.types import BuildingNode
-from tests.example.utils import QueryData, capture_database_queries
 
 if TYPE_CHECKING:
     from django.test.client import Client

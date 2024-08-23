@@ -33,9 +33,9 @@ def test_fragment_spread(graphql_client):
     assert response.queries.count == 1, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_apartment"',
-        '"example_apartment"."shares_start"',
-        '"example_apartment"."shares_end"',
+        'FROM "app_apartment"',
+        '"app_apartment"."shares_start"',
+        '"app_apartment"."shares_end"',
     )
 
     assert response.content == [
@@ -77,11 +77,11 @@ def test_fragment_spread__relations(graphql_client):
     assert response.queries.count == 1, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_apartment"',
-        'INNER JOIN "example_building"',
-        'INNER JOIN "example_realestate"',
-        'INNER JOIN "example_housingcompany"',
-        'INNER JOIN "example_postalcode"',
+        'FROM "app_apartment"',
+        'INNER JOIN "app_building"',
+        'INNER JOIN "app_realestate"',
+        'INNER JOIN "app_housingcompany"',
+        'INNER JOIN "app_postalcode"',
     )
 
     assert response.content == [
@@ -123,14 +123,14 @@ def test_fragment_spread__one_to_many_relations(graphql_client):
     assert response.queries.count == 3, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
     assert response.queries[1] == has(
-        'FROM "example_sale"',
+        'FROM "app_sale"',
     )
     assert response.queries[2] == has(
-        'FROM "example_ownership"',
-        'INNER JOIN "example_owner"',
+        'FROM "app_ownership"',
+        'INNER JOIN "app_owner"',
     )
 
     assert response.content == [
@@ -201,17 +201,17 @@ def test_fragment_spread__same_relation_in_multiple_fragments(graphql_client):
     assert response.queries.count == 3, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
     assert response.queries[1] == has(
         "purchase_date",
         "purchase_price",
-        'FROM "example_sale"',
-        'INNER JOIN "example_apartment"',
+        'FROM "app_sale"',
+        'INNER JOIN "app_apartment"',
     )
     assert response.queries[2] == has(
-        'FROM "example_ownership"',
-        'INNER JOIN "example_owner"',
+        'FROM "app_ownership"',
+        'INNER JOIN "app_owner"',
     )
 
 
@@ -260,20 +260,20 @@ def test_inline_fragment(graphql_client):
     assert response.queries.count == 6, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[2] == has(
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
     )
     assert response.queries[3] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[4] == has(
-        'FROM "example_owner"',
+        'FROM "app_owner"',
     )
     assert response.queries[5] == has(
-        'FROM "example_ownership"',
+        'FROM "app_ownership"',
     )

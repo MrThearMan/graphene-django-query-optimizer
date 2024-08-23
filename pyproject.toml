@@ -178,6 +178,8 @@ lint.ignore = [
     "G004",     # Logging statement uses f-string
     "S602",     # Broken: https://github.com/astral-sh/ruff/issues/4045
     "S603",     # Broken: https://github.com/astral-sh/ruff/issues/4045
+    "RUF012",   # Mutable class attributes
+    "DJ001",    # Avoid using `django.db.models.Model.objects.create`
     #
     # Conflicting with ruff-format
     #
@@ -212,6 +214,11 @@ lint.ignore = [
     "S311",     # Pseudo-random generators are fine here
     "SLF",      # Allow accessing private members in tests
     "UP",       # No upgrade rules
+]
+"example_project*" = [
+    "ANN",      # No need to annotate tests
+    "ARG",      # Fixtures can be unused
+    "DJ",       # Ignore Django-specific rules
 ]
 "conftest.py" = [
     "ARG",      # Fixtures can be unused
@@ -273,7 +280,7 @@ plugins = [
 ]
 
 [tool.django-stubs]
-django_settings_module = "tests.project.settings"
+django_settings_module = "example_project.config.settings"
 
 [tool.coverage.run]
 relative_files = true
@@ -293,7 +300,7 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "tests.project.settings"
+DJANGO_SETTINGS_MODULE = "example_project.config.settings"
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
@@ -316,7 +323,7 @@ allowlist_externals =
     poetry
 setenv =
     PYTHONPATH = {toxinidir}
-    DJANGO_SETTINGS_MODULE = tests.project.settings
+    DJANGO_SETTINGS_MODULE = example_project.config.settings
 deps =
     django42: Django >=4.2,<4.3
 

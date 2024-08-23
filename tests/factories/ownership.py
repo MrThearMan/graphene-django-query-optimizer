@@ -1,6 +1,6 @@
 from factory import fuzzy
 
-from tests.example.models import Ownership
+from example_project.app.models import Ownership
 
 from ._base import GenericDjangoModelFactory, NullableSubFactory
 

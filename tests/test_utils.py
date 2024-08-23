@@ -1,10 +1,10 @@
 import pytest
 from django.db import models
 
+from example_project.app.models import Example
 from query_optimizer.settings import optimizer_settings
 from query_optimizer.typing import NamedTuple, Optional
 from query_optimizer.utils import calculate_queryset_slice, calculate_slice_for_queryset, swappable_by_subclassing
-from tests.example.models import Example
 from tests.factories.example import ExampleFactory
 from tests.helpers import parametrize_helper
 

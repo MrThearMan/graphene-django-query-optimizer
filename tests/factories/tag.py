@@ -3,7 +3,7 @@ from typing import Any
 from django.db.models import Model
 from factory import fuzzy
 
-from tests.example.models import Tag
+from example_project.app.models import Tag
 
 from ._base import GenericDjangoModelFactory
 

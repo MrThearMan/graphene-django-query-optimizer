@@ -42,11 +42,11 @@ def test_pagination__first(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_building"',
+        'FROM "app_building"',
     )
 
     assert response.queries[1] == has(
-        'FROM "example_building"',
+        'FROM "app_building"',
         "LIMIT 2",
     )
 
@@ -86,11 +86,11 @@ def test_pagination__last(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_building"',
+        'FROM "app_building"',
     )
 
     assert response.queries[1] == has(
-        'FROM "example_building"',
+        'FROM "app_building"',
         "LIMIT 2 OFFSET 3",
     )
 
@@ -130,11 +130,11 @@ def test_pagination__offset(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_building"',
+        'FROM "app_building"',
     )
 
     assert response.queries[1] == has(
-        'FROM "example_building"',
+        'FROM "app_building"',
         "LIMIT 3 OFFSET 2",
     )
 
@@ -185,17 +185,17 @@ def test_pagination__nested__one_to_many__first(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_building"',
+        'FROM "app_building"',
     )
 
     assert response.queries[1] == has(
-        'FROM "example_building"',
+        'FROM "app_building"',
         "LIMIT 3",
     )
 
     assert response.queries[2] == has(
-        'FROM "example_apartment"',
-        'ROW_NUMBER() OVER (PARTITION BY "example_apartment"."building_id" ORDER BY "example_apartment"."id")',
+        'FROM "app_apartment"',
+        'ROW_NUMBER() OVER (PARTITION BY "app_apartment"."building_id" ORDER BY "app_apartment"."id")',
         '0 AS "qual2"',
         '2 AS "qual0"',
     )
@@ -273,17 +273,17 @@ def test_pagination__nested__one_to_many__last(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_building"',
+        'FROM "app_building"',
     )
 
     assert response.queries[1] == has(
-        'FROM "example_building"',
+        'FROM "app_building"',
         "LIMIT 3",
     )
 
     assert response.queries[2] == has(
-        'FROM "example_apartment"',
-        'ROW_NUMBER() OVER (PARTITION BY "example_apartment"."building_id" ORDER BY "example_apartment"."id")',
+        'FROM "app_apartment"',
+        'ROW_NUMBER() OVER (PARTITION BY "app_apartment"."building_id" ORDER BY "app_apartment"."id")',
         # Since the last argument is used, the total count needs to be calculated for each partition.
         'AS "_optimizer_count"',
     )
@@ -366,17 +366,17 @@ def test_pagination__nested__one_to_many__offset(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_building"',
+        'FROM "app_building"',
     )
 
     assert response.queries[1] == has(
-        'FROM "example_building"',
+        'FROM "app_building"',
         "LIMIT 3",
     )
 
     assert response.queries[2] == has(
-        'FROM "example_apartment"',
-        'ROW_NUMBER() OVER (PARTITION BY "example_apartment"."building_id" ORDER BY "example_apartment"."id")',
+        'FROM "app_apartment"',
+        'ROW_NUMBER() OVER (PARTITION BY "app_apartment"."building_id" ORDER BY "app_apartment"."id")',
     )
 
     assert response.content == {
@@ -446,17 +446,17 @@ def test_pagination__nested__many_to_many(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         "LIMIT 3",
     )
     assert response.queries[2] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany_developers"."housingcompany_id" ORDER BY "example_developer"."id")'
+            '(PARTITION BY "app_housingcompany_developers"."housingcompany_id" ORDER BY "app_developer"."id")'
         ),
     )
 
@@ -533,17 +533,17 @@ def test_pagination__nested__many_to_many__reverse(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
     assert response.queries[1] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
         "LIMIT 3",
     )
     assert response.queries[2] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany_developers"."developer_id" ORDER BY "example_housingcompany"."id")'
+            '(PARTITION BY "app_housingcompany_developers"."developer_id" ORDER BY "app_housingcompany"."id")'
         ),
     )
 
@@ -619,18 +619,18 @@ def test_pagination__nested__custom_ordering__asc(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
     )
     assert response.queries[1] == has(
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
         "LIMIT 2",
     )
     assert response.queries[2] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany"."property_manager_id" '
-            'ORDER BY "example_housingcompany"."street_address")'
+            '(PARTITION BY "app_housingcompany"."property_manager_id" '
+            'ORDER BY "app_housingcompany"."street_address")'
         ),
     )
 
@@ -695,18 +695,18 @@ def test_pagination__nested__custom_ordering__desc(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
     )
     assert response.queries[1] == has(
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
         "LIMIT 2",
     )
     assert response.queries[2] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany"."property_manager_id" '
-            'ORDER BY "example_housingcompany"."street_address" DESC)'
+            '(PARTITION BY "app_housingcompany"."property_manager_id" '
+            'ORDER BY "app_housingcompany"."street_address" DESC)'
         ),
     )
 
@@ -771,17 +771,17 @@ def test_pagination__nested__implicit_limit(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_building"',
+        'FROM "app_building"',
     )
 
     assert response.queries[1] == has(
-        'FROM "example_building"',
+        'FROM "app_building"',
         "LIMIT 3",
     )
 
     assert response.queries[2] == has(
-        'FROM "example_apartment"',
-        'ROW_NUMBER() OVER (PARTITION BY "example_apartment"."building_id" ORDER BY "example_apartment"."id")',
+        'FROM "app_apartment"',
+        'ROW_NUMBER() OVER (PARTITION BY "app_apartment"."building_id" ORDER BY "app_apartment"."id")',
         '1 AS "qual0"',
         '0 AS "qual2"',
     )
@@ -832,22 +832,22 @@ def test_pagination__nested__limit_first(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_building"',
+        'FROM "app_building"',
     )
 
     assert response.queries[1] == has(
-        'FROM "example_building"',
+        'FROM "app_building"',
         "LIMIT 3",
     )
 
     assert response.queries[2] == has(
-        'FROM "example_apartment"',
-        'ROW_NUMBER() OVER (PARTITION BY "example_apartment"."building_id" ORDER BY "example_apartment"."id")',
+        'FROM "app_apartment"',
+        'ROW_NUMBER() OVER (PARTITION BY "app_apartment"."building_id" ORDER BY "app_apartment"."id")',
     )
 
     # The actual total count is calculated for the nested connection.
     assert response.queries[2] == like(
-        r'.*\(SELECT COUNT\(\*\) FROM \(SELECT .* FROM "example_apartment" .*\) _count\) AS "_optimizer_count".*'
+        r'.*\(SELECT COUNT\(\*\) FROM \(SELECT .* FROM "app_apartment" .*\) _count\) AS "_optimizer_count".*'
     )
 
     assert response.content == {
@@ -897,26 +897,26 @@ def test_pagination__nested__limit__total_count(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_building"',
+        'FROM "app_building"',
     )
 
     assert response.queries[1] == has(
-        'FROM "example_building"',
+        'FROM "app_building"',
         "LIMIT 3",
     )
 
     assert response.queries[2] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
 
     # Since max_limit=None, and there is no limit arguments, don't limit the connection with the window function.
     assert response.queries[2] != has(
-        'ROW_NUMBER() OVER (PARTITION BY "example_apartment"."building_id" ORDER BY "example_apartment"."id")',
+        'ROW_NUMBER() OVER (PARTITION BY "app_apartment"."building_id" ORDER BY "app_apartment"."id")',
     )
 
     # The actual total count is calculated for the nested connection.
     assert response.queries[2] == like(
-        r'.*\(SELECT COUNT\(\*\) FROM \(SELECT .* FROM "example_apartment" .*\) _count\) AS "_optimizer_count".*'
+        r'.*\(SELECT COUNT\(\*\) FROM \(SELECT .* FROM "app_apartment" .*\) _count\) AS "_optimizer_count".*'
     )
 
     assert response.content == {

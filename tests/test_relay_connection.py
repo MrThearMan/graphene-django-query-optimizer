@@ -41,10 +41,10 @@ def test_relay__connection(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
     assert response.queries[1] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
         "LIMIT 3",
     )
 
@@ -91,18 +91,18 @@ def test_relay__connection__deep(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
     assert response.queries[1] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
         "LIMIT 3",
     )
     assert response.queries[2] == has(
-        'FROM "example_sale"',
+        'FROM "app_sale"',
     )
     assert response.queries[3] == has(
-        'FROM "example_ownership"',
-        'INNER JOIN "example_owner"',
+        'FROM "app_ownership"',
+        'INNER JOIN "app_owner"',
     )
 
     assert response.content == {
@@ -135,10 +135,10 @@ def test_relay__connection__only_counts(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
     assert response.queries[1] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
         "LIMIT 100",
     )
 
@@ -169,10 +169,10 @@ def test_relay__connection__only_counts__filter(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
     assert response.queries[1] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
         "LIMIT 1",
     )
 
@@ -202,10 +202,10 @@ def test_relay__connection__only_cursor(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
     assert response.queries[1] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
         "LIMIT 3",
     )
 
@@ -245,10 +245,10 @@ def test_relay__connection__cursor_before_node(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
     assert response.queries[1] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
         "LIMIT 3",
     )
 
@@ -287,10 +287,10 @@ def test_relay__connection__counts_before_edges(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
     )
     assert response.queries[1] == has(
-        'FROM "example_apartment"',
+        'FROM "app_apartment"',
         "LIMIT 100",
     )
 
@@ -334,19 +334,16 @@ def test_relay__connection__nested__one_to_many(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         "LIMIT 3",
     )
     assert response.queries[2] == has(
-        'FROM "example_realestate"',
+        'FROM "app_realestate"',
         # Nested connections are limited via a window function.
-        (
-            "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_realestate"."housing_company_id" ORDER BY "example_realestate"."id")'
-        ),
+        ("ROW_NUMBER() OVER " '(PARTITION BY "app_realestate"."housing_company_id" ORDER BY "app_realestate"."id")'),
     )
 
     assert response.content == {
@@ -391,18 +388,18 @@ def test_relay__connection__nested__many_to_many(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         "LIMIT 3",
     )
     assert response.queries[2] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
         # Nested connections are limited via a window function.
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany_developers"."housingcompany_id" ORDER BY "example_developer"."id")'
+            '(PARTITION BY "app_housingcompany_developers"."housingcompany_id" ORDER BY "app_developer"."id")'
         ),
     )
 
@@ -448,18 +445,18 @@ def test_relay__connection__nested__many_to_many__reverse(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
     assert response.queries[1] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
         "LIMIT 3",
     )
     assert response.queries[2] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         # Nested connections are limited via a window function.
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany_developers"."developer_id" ORDER BY "example_housingcompany"."id")'
+            '(PARTITION BY "app_housingcompany_developers"."developer_id" ORDER BY "app_housingcompany"."id")'
         ),
     )
 
@@ -505,16 +502,16 @@ def test_relay__connection__nested__no_related_name(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_realestate"',
+        'FROM "app_realestate"',
     )
     assert response.queries[1] == has(
-        'FROM "example_realestate"',
+        'FROM "app_realestate"',
         "LIMIT 3",
     )
     assert response.queries[2] == has(
-        'FROM "example_building"',
+        'FROM "app_building"',
         # Nested connections are limited via a window function.
-        'ROW_NUMBER() OVER (PARTITION BY "example_building"."real_estate_id" ORDER BY "example_building"."id")',
+        'ROW_NUMBER() OVER (PARTITION BY "app_building"."real_estate_id" ORDER BY "app_building"."id")',
     )
 
     assert response.content == {
@@ -566,18 +563,18 @@ def test_relay__connection__nested__many_to_many__shared_entities(graphql_client
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         "LIMIT 3",
     )
     assert response.queries[2] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
         # Nested connections are limited via a window function.
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany_developers"."housingcompany_id" ORDER BY "example_developer"."id")'
+            '(PARTITION BY "app_housingcompany_developers"."housingcompany_id" ORDER BY "app_developer"."id")'
         ),
     )
 
@@ -656,25 +653,25 @@ def test_relay__connection__nested__counts(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
     )
 
     assert response.queries[1] == has(
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
         "LIMIT 3",
     )
 
     assert response.queries[2] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany"."property_manager_id" ORDER BY "example_housingcompany"."id")'
+            '(PARTITION BY "app_housingcompany"."property_manager_id" ORDER BY "app_housingcompany"."id")'
         ),
     )
 
     # Check that total count is calculated if selected in the query.
     assert response.queries[2] == like(
-        r'.*\(SELECT COUNT\(\*\) FROM \(SELECT .* FROM "example_housingcompany" .*\) _count\) AS "_optimizer_count".*'
+        r'.*\(SELECT COUNT\(\*\) FROM \(SELECT .* FROM "app_housingcompany" .*\) _count\) AS "_optimizer_count".*'
     )
 
 
@@ -711,5 +708,5 @@ def test_relay__connection__nested__no_counts(graphql_client):
 
     # Check that total count is not calculated if not selected in the query.
     assert response.queries[2] != like(
-        r'.*\(SELECT COUNT\(\*\) FROM \(SELECT .* FROM "example_housingcompany" .*\) _count\) AS "_optimizer_count".*'
+        r'.*\(SELECT COUNT\(\*\) FROM \(SELECT .* FROM "app_housingcompany" .*\) _count\) AS "_optimizer_count".*'
     )

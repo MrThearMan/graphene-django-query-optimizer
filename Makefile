@@ -1,4 +1,4 @@
-export DJANGO_SETTINGS_MODULE = tests.project.settings
+export DJANGO_SETTINGS_MODULE = example_project.config.settings
 
 .PHONY: Makefile
 .PHONY: create-user

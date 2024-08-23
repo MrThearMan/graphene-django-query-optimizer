@@ -40,8 +40,8 @@ def test_fields__annotated_field(graphql_client):
     assert response.queries.count == 1, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_housingcompany"',
-        '"example_housingcompany"."name" AS "greeting"',
+        'FROM "app_housingcompany"',
+        '"app_housingcompany"."name" AS "greeting"',
     )
 
     assert response.content == [
@@ -71,8 +71,8 @@ def test_fields__annotated_field__annotation_needs_joins(graphql_client):
     assert response.queries.count == 1, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_building"',
-        'INNER JOIN "example_realestate"',
+        'FROM "app_building"',
+        'INNER JOIN "app_realestate"',
     )
 
     assert response.content == [
@@ -105,12 +105,12 @@ def test_fields__annotated_field__in_relations(graphql_client):
     assert response.queries.count == 2, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
-        'INNER JOIN "example_housingcompany_developers"',
-        '"example_housingcompany"."name" AS "greeting"',
+        'FROM "app_housingcompany"',
+        'INNER JOIN "app_housingcompany_developers"',
+        '"app_housingcompany"."name" AS "greeting"',
     )
 
     assert response.content == [
@@ -153,11 +153,11 @@ def test_fields__annotated_field__select_related_promoted_to_prefetch(graphql_cl
     assert response.queries.count == 2, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_sale"',
+        'FROM "app_sale"',
     )
     assert response.queries[1] == has(
-        'FROM "example_apartment"',
-        'django_date_extract(year, "example_apartment"."completion_date") AS "completion_year"',
+        'FROM "app_apartment"',
+        'django_date_extract(year, "app_apartment"."completion_date") AS "completion_year"',
     )
 
     assert response.content == [
@@ -215,12 +215,12 @@ def test_fields__annotated_field__select_related_promoted_to_prefetch__in_relate
     assert response.queries.count == 2, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_ownership"',
-        'INNER JOIN "example_sale"',
+        'FROM "app_ownership"',
+        'INNER JOIN "app_sale"',
     )
     assert response.queries[1] == has(
-        'FROM "example_apartment"',
-        'django_date_extract(year, "example_apartment"."completion_date") AS "completion_year"',
+        'FROM "app_apartment"',
+        'django_date_extract(year, "app_apartment"."completion_date") AS "completion_year"',
     )
 
     assert response.content == [
@@ -268,8 +268,8 @@ def test_fields__annotated_field__aliases(graphql_client):
     assert response.queries.count == 1, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_housingcompany"',
-        '"example_housingcompany"."name" AS "alias_greeting"',
+        'FROM "app_housingcompany"',
+        '"app_housingcompany"."name" AS "alias_greeting"',
     )
 
     assert response.content == [
@@ -307,11 +307,11 @@ def test_fields__alternate_field__to_one_related(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
-        'INNER JOIN "example_propertymanager"',
+        'FROM "app_housingcompany"',
+        'INNER JOIN "app_propertymanager"',
     )
 
     assert response.content == {
@@ -358,13 +358,13 @@ def test_fields__alternate_field__one_to_many_related(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[2] == has(
-        'FROM "example_realestate"',
+        'FROM "app_realestate"',
     )
 
     assert response.content == {
@@ -432,13 +432,13 @@ def test_fields__alternate_field__many_to_many_related(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[2] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
 
     assert response.content == {
@@ -508,13 +508,13 @@ def test_fields__alternate_field__many_to_many_related__reverse(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
     assert response.queries[1] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
     assert response.queries[2] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
 
     assert response.content == {
@@ -594,19 +594,19 @@ def test_fields__alternate_field__many_to_many_related__with_original(graphql_cl
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[1] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[2] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
     assert response.queries[3] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany_developers"."housingcompany_id" ORDER BY "example_developer"."id")'
+            '(PARTITION BY "app_housingcompany_developers"."housingcompany_id" ORDER BY "app_developer"."id")'
         ),
     )
 
@@ -708,19 +708,19 @@ def test_fields__alternate_field__many_to_many_related__reverse__with_original(g
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
     assert response.queries[1] == has(
-        'FROM "example_developer"',
+        'FROM "app_developer"',
     )
     assert response.queries[2] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
     assert response.queries[3] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
         (
             "ROW_NUMBER() OVER "
-            '(PARTITION BY "example_housingcompany_developers"."developer_id" ORDER BY "example_housingcompany"."id"'
+            '(PARTITION BY "app_housingcompany_developers"."developer_id" ORDER BY "app_housingcompany"."id"'
         ),
     )
 
@@ -811,13 +811,13 @@ def test_fields__alternate_field__connection(graphql_client):
 
     assert response.queries[0] == has(
         "COUNT(*)",
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
     )
     assert response.queries[1] == has(
-        'FROM "example_propertymanager"',
+        'FROM "app_propertymanager"',
     )
     assert response.queries[2] == has(
-        'FROM "example_housingcompany"',
+        'FROM "app_housingcompany"',
     )
 
     assert response.content == {
@@ -849,9 +849,9 @@ def test_fields__multi_field(graphql_client):
     assert response.queries.count == 1, response.queries.log
 
     assert response.queries[0] == has(
-        'FROM "example_apartment"',
-        '"example_apartment"."shares_start"',
-        '"example_apartment"."shares_end"',
+        'FROM "app_apartment"',
+        '"app_apartment"."shares_start"',
+        '"app_apartment"."shares_end"',
     )
 
     assert response.content == [
