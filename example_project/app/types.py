@@ -259,6 +259,7 @@ class OwnerType(DjangoObjectType):
             "name",
             "email",
             "ownerships",
+            "sales",
         ]
 
     @staticmethod
