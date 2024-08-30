@@ -199,6 +199,11 @@ class GraphQLASTWalker:
         alias = getattr(field_node.alias, "value", None)
         return alias or to_snake_case(field_node.name.value)
 
+    def get_related_field_name(self, related_field: ToOneField | ToManyField) -> str:  # pragma: no cover
+        if hasattr(related_field, "cache_name"):  # New in Django 5.1
+            return related_field.cache_name or related_field.name
+        return related_field.get_cache_name() or related_field.name
+
     @contextlib.contextmanager
     def use_model(self, model: type[Model]) -> GraphQLASTWalker:
         orig_model = self.model

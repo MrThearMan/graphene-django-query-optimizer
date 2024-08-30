@@ -16,5 +16,4 @@ jobs:
   test:
     uses: MrThearMan/CI/.github/workflows/test.yml@v0.4.12
     with:
-      python-version: '["3.9", "3.10", "3.11", "3.12"]'
-
+      python-version: '["3.10", "3.11", "3.12"]'

@@ -31,12 +31,12 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Framework :: Django :: 4.2",
     "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
 ]
 include = [
     "README.md",
@@ -50,7 +50,7 @@ exclude = [
 "Bug Tracker" = "https://github.com/MrThearMan/graphene-django-query-optimizer/issues"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4"
+python = ">=3.10,<4"
 Django = ">=4.2"
 graphene-django = ">=3.0.0"
 django-filter = { version = ">=21.1", optional = true }
@@ -308,12 +308,11 @@ filterwarnings = [
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py{39, 310, 311, 312}-django{42, 50}-gd{30, 31, 32}
+envlist = py{310, 311, 312}-django{42, 50, 51}-gd{30, 31, 32}
 isolated_build = true
 
 [gh-actions]
 python =
-    3.9: py39
     3.10: py310
     3.11: py311
     3.12: py312
@@ -326,9 +325,8 @@ setenv =
     DJANGO_SETTINGS_MODULE = example_project.config.settings
 deps =
     django42: Django >=4.2,<4.3
-
-    py39-django50: Django >=4.2,<4.3
-    py{310, 311, 312}-django50: Django >=5.0,<5.1
+    django50: Django >=5.0,<5.1
+    django51: Django >=5.1,<5.2
 
     gd30: graphene-django >=3.0.0,<3.1.0
     gd31: graphene-django >=3.1.0,<3.2.0

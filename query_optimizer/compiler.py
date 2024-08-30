@@ -134,7 +134,7 @@ class OptimizationCompiler(GraphQLASTWalker):
         related_field: ToOneField,
         related_model: type[Model] | None,
     ) -> None:
-        name = related_field.get_cache_name() or related_field.name
+        name = self.get_related_field_name(related_field)
         optimizer = QueryOptimizer(model=related_model, info=self.info, name=name, parent=self.optimizer)
 
         if isinstance(related_field, GenericForeignKey):
@@ -159,7 +159,7 @@ class OptimizationCompiler(GraphQLASTWalker):
         related_field: ToManyField,
         related_model: type[Model] | None,
     ) -> None:
-        name = related_field.get_cache_name() or related_field.name
+        name = self.get_related_field_name(related_field)
         alias = getattr(field_node.alias, "value", None)
         key = self.to_attr if self.to_attr is not None else alias if alias is not None else name
         self.to_attr = None
