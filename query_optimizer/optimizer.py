@@ -201,7 +201,7 @@ class QueryOptimizer:
 
         order_by: list[str] = (
             # Use the `order_by` from the filter info, if available
-            [x for x in filter_info.get("filters", {}).get("order_by", "").split(",") if x]
+            [x.split(",") for x in filter_info.get("filters", {}).get("order_by", "") if x and isinstance(x, str)]
             # Use the model's `Meta.ordering` if no `order_by` is given
             or copy(queryset.model._meta.ordering)
             # No ordering if neither is available
