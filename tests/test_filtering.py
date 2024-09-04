@@ -3,6 +3,7 @@ import pytest
 from tests.factories import (
     ApartmentFactory,
     BuildingFactory,
+    DeveloperFactory,
     HousingCompanyFactory,
     PropertyManagerFactory,
     RealEstateFactory,
@@ -169,6 +170,302 @@ def test_filter__order_by(graphql_client):
             {"node": {"name": "2"}},
             {"node": {"name": "3"}},
         ],
+    }
+
+
+def test_filter__order_by__multiple(graphql_client):
+    HousingCompanyFactory.create(name="1", street_address="1")
+    HousingCompanyFactory.create(name="3", street_address="1")
+    HousingCompanyFactory.create(name="2", street_address="1")
+
+    query = """
+        query {
+          pagedHousingCompanies(orderBy: "street_address,name") {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for counting housing companies.
+    # 1 query for fetching housing companies.
+    assert response.queries.count == 2, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "app_housingcompany"',
+    )
+    assert response.queries[1] == has(
+        'FROM "app_housingcompany"',
+    )
+
+    assert response.content == {
+        "edges": [
+            {"node": {"name": "1"}},
+            {"node": {"name": "2"}},
+            {"node": {"name": "3"}},
+        ],
+    }
+
+
+def test_filter__order_by__nested__asc(graphql_client):
+    developer_1 = DeveloperFactory.create(name="1")
+    developer_2 = DeveloperFactory.create(name="3")
+    developer_3 = DeveloperFactory.create(name="2")
+    HousingCompanyFactory.create(name="1", developers=[developer_1, developer_2])
+    HousingCompanyFactory.create(name="2", developers=[developer_3, developer_2])
+    HousingCompanyFactory.create(name="3", developers=[developer_1, developer_3])
+
+    query = """
+        query {
+          pagedDevelopers {
+            edges {
+              node {
+                name
+                housingcompanySet(orderBy: "name") {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for counting developers.
+    # 1 query for fetching housing companies.
+    # 1 query for fetching housing companies.
+    assert response.queries.count == 3, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "app_developer"',
+    )
+    assert response.queries[1] == has(
+        'FROM "app_developer"',
+    )
+    assert response.queries[2] == has(
+        'FROM "app_housingcompany"',
+    )
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "name": "1",
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "1"}},
+                            {"node": {"name": "3"}},
+                        ],
+                    },
+                }
+            },
+            {
+                "node": {
+                    "name": "3",
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "1"}},
+                            {"node": {"name": "2"}},
+                        ],
+                    },
+                }
+            },
+            {
+                "node": {
+                    "name": "2",
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "2"}},
+                            {"node": {"name": "3"}},
+                        ],
+                    },
+                }
+            },
+        ]
+    }
+
+
+def test_filter__order_by__nested__desc(graphql_client):
+    developer_1 = DeveloperFactory.create(name="1")
+    developer_2 = DeveloperFactory.create(name="3")
+    developer_3 = DeveloperFactory.create(name="2")
+    HousingCompanyFactory.create(name="1", developers=[developer_1, developer_2])
+    HousingCompanyFactory.create(name="2", developers=[developer_3, developer_2])
+    HousingCompanyFactory.create(name="3", developers=[developer_1, developer_3])
+
+    query = """
+        query {
+          pagedDevelopers {
+            edges {
+              node {
+                name
+                housingcompanySet(orderBy: "-name") {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for counting developers.
+    # 1 query for fetching housing companies.
+    # 1 query for fetching housing companies.
+    assert response.queries.count == 3, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "app_developer"',
+    )
+    assert response.queries[1] == has(
+        'FROM "app_developer"',
+    )
+    assert response.queries[2] == has(
+        'FROM "app_housingcompany"',
+    )
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "name": "1",
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "3"}},
+                            {"node": {"name": "1"}},
+                        ],
+                    },
+                }
+            },
+            {
+                "node": {
+                    "name": "3",
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "2"}},
+                            {"node": {"name": "1"}},
+                        ],
+                    },
+                }
+            },
+            {
+                "node": {
+                    "name": "2",
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "3"}},
+                            {"node": {"name": "2"}},
+                        ],
+                    },
+                }
+            },
+        ]
+    }
+
+
+def test_filter__order_by__nested__multiple(graphql_client):
+    developer_1 = DeveloperFactory.create(name="1")
+    developer_2 = DeveloperFactory.create(name="3")
+    developer_3 = DeveloperFactory.create(name="2")
+    HousingCompanyFactory.create(name="1", developers=[developer_1, developer_2])
+    HousingCompanyFactory.create(name="2", developers=[developer_3, developer_2])
+    HousingCompanyFactory.create(name="3", developers=[developer_1, developer_3])
+
+    query = """
+        query {
+          pagedDevelopers {
+            edges {
+              node {
+                name
+                housingcompanySet(orderBy: "name,street_address") {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for counting developers.
+    # 1 query for fetching housing companies.
+    # 1 query for fetching housing companies.
+    assert response.queries.count == 3, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "app_developer"',
+    )
+    assert response.queries[1] == has(
+        'FROM "app_developer"',
+    )
+    assert response.queries[2] == has(
+        'FROM "app_housingcompany"',
+    )
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "name": "1",
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "1"}},
+                            {"node": {"name": "3"}},
+                        ],
+                    },
+                }
+            },
+            {
+                "node": {
+                    "name": "3",
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "1"}},
+                            {"node": {"name": "2"}},
+                        ],
+                    },
+                }
+            },
+            {
+                "node": {
+                    "name": "2",
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "2"}},
+                            {"node": {"name": "3"}},
+                        ],
+                    },
+                }
+            },
+        ]
     }
 
 
