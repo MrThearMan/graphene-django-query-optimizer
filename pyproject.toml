@@ -291,6 +291,7 @@ omit = [
     "docs/*",
     ".venv/*",
     ".tox/*",
+    "example_project/*",
 ]
 exclude_lines = [
     "if TYPE_CHECKING:",
