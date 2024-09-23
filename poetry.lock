@@ -474,13 +474,13 @@ doc = ["Sphinx", "sphinx-rtd-theme", "sphinxcontrib-spelling"]
 
 [[package]]
 name = "faker"
-version = "28.4.1"
+version = "29.0.0"
 description = "Faker is a Python package that generates fake data for you."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Faker-28.4.1-py3-none-any.whl", hash = "sha256:e59c01d1e8b8e20a83255ab8232c143cb2af3b4f5ab6a3f5ce495f385ad8ab4c"},
-    {file = "faker-28.4.1.tar.gz", hash = "sha256:4294d169255a045990720d6f3fa4134b764a4cdf46ef0d3c7553d2506f1adaa1"},
+    {file = "Faker-29.0.0-py3-none-any.whl", hash = "sha256:32d0ee7d42925ff06e4a7d906ee7efbf34f5052a41a2a1eb8bb174a422a5498f"},
+    {file = "faker-29.0.0.tar.gz", hash = "sha256:34e89aec594cad9773431ca479ee95c7ce03dd9f22fda2524e2373b880a2fa77"},
 ]
 
 [package.dependencies]
@@ -992,13 +992,13 @@ files = [
 
 [[package]]
 name = "pymdown-extensions"
-version = "10.9"
+version = "10.10.1"
 description = "Extension pack for Python Markdown."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pymdown_extensions-10.9-py3-none-any.whl", hash = "sha256:d323f7e90d83c86113ee78f3fe62fc9dee5f56b54d912660703ea1816fed5626"},
-    {file = "pymdown_extensions-10.9.tar.gz", hash = "sha256:6ff740bcd99ec4172a938970d42b96128bdc9d4b9bcad72494f29921dc69b753"},
+    {file = "pymdown_extensions-10.10.1-py3-none-any.whl", hash = "sha256:6c74ea6c2e2285186a241417480fc2d3cc52941b3ec2dced4014c84dc78c5493"},
+    {file = "pymdown_extensions-10.10.1.tar.gz", hash = "sha256:ad277ee4739ced051c3b6328d22ce782358a3bec39bc6ca52815ccbf44f7acdc"},
 ]
 
 [package.dependencies]
@@ -1259,13 +1259,13 @@ files = [
 
 [[package]]
 name = "tox"
-version = "4.18.1"
+version = "4.20.0"
 description = "tox is a generic virtualenv management and test command line tool"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "tox-4.18.1-py3-none-any.whl", hash = "sha256:35d472032ee1f73fe20c3e0e73d7073a4e85075c86ff02c576f9fc7c6a15a578"},
-    {file = "tox-4.18.1.tar.gz", hash = "sha256:3c0c96bc3a568a5c7e66387a4cfcf8c875b52e09f4d47c9f7a277ec82f1a0b11"},
+    {file = "tox-4.20.0-py3-none-any.whl", hash = "sha256:21a8005e3d3fe5658a8e36b8ca3ed13a4230429063c5cc2a2fdac6ee5aa0de34"},
+    {file = "tox-4.20.0.tar.gz", hash = "sha256:5b78a49b6eaaeab3ae4186415e7c97d524f762ae967c63562687c3e5f0ec23d5"},
 ]
 
 [package.dependencies]
@@ -1419,4 +1419,4 @@ filter = ["django-filter"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4"
-content-hash = "652912999d51b791d3359c13ec5ca7d13cae22a0876ffb76a371b56c17cd0117"
+content-hash = "a96d78944fb40af9b6db6741d8f43322d8063208ba7b2c914876831feee7617d"
