@@ -51,7 +51,7 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
             cls.pk = graphene.Int() if model._meta.pk.name == "id" else graphene.ID()
             cls.resolve_pk = cls.resolve_id
 
-        filterset_class = options.get("filterset_class", None)
+        filterset_class = options.get("filterset_class")
         filter_fields: Optional[dict[str, list[str]]] = options.pop("filter_fields", None)
 
         if filterset_class is None and filter_fields is not None:
