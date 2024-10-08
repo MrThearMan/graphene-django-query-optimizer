@@ -32,7 +32,7 @@ We can also implement a custom Filterset class to have more control over the fil
 ```python
 from example_project.app.models import Apartment
 
-from query_optimizer.filter import FilterSet
+from django_filters import FilterSet
 
 class ApartmentFilterSet(FilterSet):
     # Custom filters can be added here

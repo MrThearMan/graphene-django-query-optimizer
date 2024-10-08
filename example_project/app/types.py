@@ -4,7 +4,7 @@ import graphene
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet, Value
 from django.db.models.functions import Concat, ExtractYear
-from django_filters import CharFilter, OrderingFilter
+from django_filters import CharFilter, FilterSet, OrderingFilter
 from graphene import relay, Connection, ObjectType
 
 from query_optimizer import DjangoObjectType
@@ -16,7 +16,6 @@ from query_optimizer.fields import (
     RelatedField,
     ManuallyOptimizedField,
 )
-from query_optimizer.filter import FilterSet
 from query_optimizer.settings import optimizer_settings
 from example_project.app.models import (
     Apartment,
@@ -259,7 +258,7 @@ class OwnerType(DjangoObjectType):
         ]
 
     @staticmethod
-    def optimize_pre_field(queryset: QuerySet, info: GQLInfo, foo: int, bar: str = "") -> int:
+    def optimize_pre_field(queryset: QuerySet, info: GQLInfo, foo: int, bar: str = "") -> QuerySet:
         return queryset.annotate(pre_field=Concat("name", Value(f"-{foo}{bar}")))
 
 
