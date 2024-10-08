@@ -351,6 +351,67 @@ def test_misc__generic_relations(graphql_client):
     ]
 
 
+def test_misc__generic_relations__paginated(graphql_client):
+    postal_code_1 = PostalCodeFactory.create(code="00001")
+    postal_code_2 = PostalCodeFactory.create(code="00002")
+    developer_1 = DeveloperFactory.create(name="foo")
+    TagFactory.create(tag="1", content_object=postal_code_1)
+    TagFactory.create(tag="2", content_object=postal_code_1)
+    TagFactory.create(tag="3", content_object=postal_code_1)
+    TagFactory.create(tag="4", content_object=postal_code_2)
+    TagFactory.create(tag="5", content_object=developer_1)
+    TagFactory.create(tag="6", content_object=developer_1)
+
+    query = """
+        query {
+          allPostalCodes {
+            code
+            pagedTags {
+              edges {
+                node {
+                  tag
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    assert response.queries.count == 2, response.queries.log
+
+    assert response.queries[0] == has(
+        'FROM "app_postalcode"',
+    )
+    assert response.queries[1] == has(
+        'FROM "app_tag"',
+        '(ROW_NUMBER() OVER (PARTITION BY "app_developer"."id") - 1)',
+    )
+
+    assert response.content == [
+        {
+            "code": "00001",
+            "pagedTags": {
+                "edges": [
+                    {"node": {"tag": "1"}},
+                    {"node": {"tag": "2"}},
+                    {"node": {"tag": "3"}},
+                ],
+            },
+        },
+        {
+            "code": "00002",
+            "pagedTags": {
+                "edges": [
+                    {"node": {"tag": "4"}},
+                ],
+            },
+        },
+    ]
+
+
 def test_misc__generic_foreign_key(graphql_client):
     postal_code_1 = PostalCodeFactory.create(code="00001")
     postal_code_2 = PostalCodeFactory.create(code="00002")

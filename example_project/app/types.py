@@ -100,6 +100,7 @@ class PlainObjectType(ObjectType):
 
 class PostalCodeType(DjangoObjectType):
     tags = DjangoListField(lambda: TagType)
+    paged_tags = DjangoConnectionField(lambda: TagType, field_name="tags")
 
     class Meta:
         model = PostalCode
@@ -317,6 +318,7 @@ class TagType(DjangoObjectType):
             "content_type",
             "content_object",
         ]
+        interfaces = (relay.Node,)
 
 
 # Relay / Django-filters

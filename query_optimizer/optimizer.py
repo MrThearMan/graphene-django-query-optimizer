@@ -4,6 +4,7 @@ import dataclasses
 from copy import copy
 from typing import TYPE_CHECKING
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Model, Prefetch, QuerySet
@@ -197,7 +198,11 @@ class QueryOptimizer:
             return queryset
 
         remote_field = field.remote_field
-        field_name = remote_field.name if isinstance(field, models.ManyToManyField) else remote_field.attname
+        field_name = (
+            remote_field.name  # .
+            if isinstance(field, (models.ManyToManyField, GenericRelation))
+            else remote_field.attname
+        )
 
         order_by = self.get_prefetch_ordering(filter_info, model=queryset.model)
 
