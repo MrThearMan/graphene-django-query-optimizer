@@ -9,6 +9,25 @@ pytestmark = [
     pytest.mark.django_db,
 ]
 
+def test_global_relay_node(graphql_client):
+    apartment = ApartmentFactory.create(building__name="1")
+    global_id = to_global_id(str(ApartmentNode), apartment.pk)
+
+    query = """
+        query {
+          node(id: "%s") {
+            ... on ApartmentType {
+              building {
+                name
+              }
+            }
+          }
+        }
+    """ % (global_id,)
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
 
 def test_relay__node(graphql_client):
     apartment = ApartmentFactory.create(building__name="1")

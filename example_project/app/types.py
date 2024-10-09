@@ -213,6 +213,7 @@ class ApartmentType(DjangoObjectType):
             "street_address": ["exact"],
             "building__name": ["exact"],
         }
+        interfaces = (relay.Node,)
         max_complexity = 10
 
     completion_year = AnnotatedField(graphene.Int, ExtractYear("completion_date"))
