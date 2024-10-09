@@ -10,6 +10,36 @@ pytestmark = [
 ]
 
 
+def test_relay__global_node(graphql_client):
+    apartment = ApartmentFactory.create(building__name="1")
+    global_id = to_global_id(str(ApartmentNode), apartment.pk)
+
+    query = """
+        query {
+          node(id: "%s") {
+            ... on ApartmentNode {
+              building {
+                name
+              }
+            }
+          }
+        }
+    """ % (global_id,)
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for fetching apartment and related buildings
+    assert response.queries.count == 1, response.queries.log
+
+    assert response.queries[0] == has(
+        'FROM "app_apartment"',
+        'INNER JOIN "app_building"',
+    )
+
+    assert response.content == {"building": {"name": "1"}}
+
+
 def test_relay__node(graphql_client):
     apartment = ApartmentFactory.create(building__name="1")
     global_id = to_global_id(str(ApartmentNode), apartment.pk)
@@ -32,6 +62,7 @@ def test_relay__node(graphql_client):
 
     assert response.queries[0] == has(
         'FROM "app_apartment"',
+        'INNER JOIN "app_building"',
     )
 
     assert response.content == {"building": {"name": "1"}}

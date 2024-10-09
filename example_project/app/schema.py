@@ -43,6 +43,8 @@ if TYPE_CHECKING:
 
 
 class Query(graphene.ObjectType):
+    node = relay.Node.Field()
+
     all_postal_codes = DjangoListField(PostalCodeType)
     all_developers = DjangoListField(DeveloperType)
     all_property_managers = DjangoListField(PropertyManagerType)

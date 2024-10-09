@@ -7,7 +7,7 @@ from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Field, ForeignKey, Model
 from graphene import Connection, ObjectType, PageInfo
 from graphene.relay.node import AbstractNode
-from graphene.types.definitions import GrapheneObjectType, GrapheneUnionType
+from graphene.types.definitions import GrapheneInterfaceType, GrapheneObjectType, GrapheneUnionType
 from graphene.utils.str_converters import to_snake_case
 from graphene_django import DjangoObjectType
 from graphql import (
@@ -16,6 +16,7 @@ from graphql import (
     FragmentSpreadNode,
     GraphQLField,
     GraphQLOutputType,
+    GraphQLSchema,
     InlineFragmentNode,
     SelectionNode,
 )
@@ -182,14 +183,17 @@ class GraphQLASTWalker:
         selections = get_selections(fragment_definition)
         return self.handle_selections(field_type, selections)
 
-    def handle_inline_fragment(self, field_type: GrapheneUnionType, inline_fragment: InlineFragmentNode) -> None:
-        fragment_type = get_fragment_type(field_type, inline_fragment)
+    def handle_inline_fragment(
+        self,
+        field_type: GrapheneUnionType | GrapheneInterfaceType,
+        inline_fragment: InlineFragmentNode,
+    ) -> None:
+        fragment_type = get_fragment_type(field_type, inline_fragment, self.info.schema)
         fragment_model: type[Model] = fragment_type.graphene_type._meta.model
-        if fragment_model != self.model:
-            return None
-
-        selections = get_selections(inline_fragment)
-        return self.handle_selections(fragment_type, selections)
+        if fragment_model == self.model:
+            selections = get_selections(inline_fragment)
+            return self.handle_selections(fragment_type, selections)
+        return None
 
     def get_graphene_type(self, field_type: GrapheneObjectType, field_node: FieldNode) -> GrapheneType:
         graphql_field = get_field_def(self.info.schema, field_type, field_node)
@@ -266,14 +270,27 @@ def is_to_one(field: Field) -> TypeGuard[ToOneField]:
     return bool(field.many_to_one or field.one_to_one)
 
 
-def get_fragment_type(field_type: GrapheneUnionType, inline_fragment: InlineFragmentNode) -> GrapheneObjectType:
+def get_fragment_type(
+    field_type: GrapheneUnionType | GrapheneInterfaceType,
+    inline_fragment: InlineFragmentNode,
+    schema: GraphQLSchema,
+) -> GrapheneObjectType:
     fragment_type_name = inline_fragment.type_condition.name.value
-    gen = (t for t in field_type.types if t.name == fragment_type_name)
-    fragment_type: Optional[GrapheneObjectType] = next(gen, None)
 
-    if fragment_type is None:  # pragma: no cover
-        msg = f"Fragment type '{fragment_type_name}' not found in union '{field_type}'"
-        raise OptimizerError(msg)
+    # For unions, fetch the type from in the union.
+    if isinstance(field_type, GrapheneUnionType):
+        gen = (t for t in field_type.types if t.name == fragment_type_name)
+        fragment_type: Optional[GrapheneObjectType] = next(gen, None)
+        if fragment_type is None:  # pragma: no cover
+            msg = f"Fragment type '{fragment_type_name}' not found in union '{field_type}'"
+            raise OptimizerError(msg)
+
+    # For interfaces, fetch the type from in the schema.
+    else:
+        fragment_type: Optional[GrapheneObjectType] = schema.get_type(fragment_type_name)
+        if fragment_type is None:  # pragma: no cover
+            msg = f"Fragment type '{fragment_type_name}' not found in schema."
+            raise OptimizerError(msg)
 
     return fragment_type
 
