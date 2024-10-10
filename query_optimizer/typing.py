@@ -13,31 +13,20 @@ from typing import (
     Literal,
     NamedTuple,
     Optional,
+    ParamSpec,
     Protocol,
     Type,
+    TypeAlias,
     TypedDict,
+    TypeGuard,
     TypeVar,
     Union,
     cast,
     overload,
 )
 
-from django.db import models
-from graphene import Argument, Dynamic
-from graphene.types.structures import Structure
-from graphene.types.unmountedtype import UnmountedType
-from graphene_django import DjangoObjectType
-from graphene_django.types import DjangoObjectTypeOptions
-from graphql_relay import ConnectionType
-
-# New in version 3.10
-try:
-    from typing import ParamSpec, TypeAlias, TypeGuard
-except ImportError:
-    from typing_extensions import ParamSpec, TypeAlias, TypeGuard
-
-
 from django.core.handlers.wsgi import WSGIRequest
+from django.db import models
 from django.db.models import (
     Field,
     ForeignKey,
@@ -51,7 +40,13 @@ from django.db.models import (
     OneToOneField,
     QuerySet,
 )
+from graphene import Argument, Dynamic
+from graphene.types.structures import Structure
+from graphene.types.unmountedtype import UnmountedType
+from graphene_django import DjangoObjectType
+from graphene_django.types import DjangoObjectTypeOptions
 from graphql import GraphQLResolveInfo
+from graphql_relay import ConnectionType
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser, User
