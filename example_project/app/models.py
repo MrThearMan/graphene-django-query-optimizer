@@ -10,6 +10,8 @@ __all__ = [
     "BuildingProxy",
     "Developer",
     "DeveloperProxy",
+    "Employee",
+    "EmployeeProxy",
     "Example",
     "ForwardManyToMany",
     "ForwardManyToManyForRelated",
@@ -53,6 +55,12 @@ __all__ = [
 ]
 
 
+class EmployeeRole(models.TextChoices):
+    MANAGER = "manager", "Manager"
+    EMPLOYEE = "employee", "Employee"
+    CONTRACTOR = "contractor", "Contractor"
+
+
 class Tag(models.Model):
     tag = models.SlugField()
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -85,6 +93,14 @@ class PostalCode(models.Model):
         return self.code
 
 
+class Employee(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    role = models.CharField(max_length=100, choices=EmployeeRole.choices, default=EmployeeRole.EMPLOYEE)
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class Shareholder(models.Model):
     name = models.CharField(max_length=100, unique=True)
     share = models.DecimalField(max_digits=3, decimal_places=0, default=0)
@@ -96,6 +112,8 @@ class Shareholder(models.Model):
 class Developer(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
+
+    employees = models.ManyToManyField(Employee, related_name="developers")
 
     tags = GenericRelation(Tag)
 
@@ -285,6 +303,11 @@ class Ownership(models.Model):
 
 
 # Proxies
+
+
+class EmployeeProxy(Employee):
+    class Meta:
+        proxy = True
 
 
 class ShareholderProxy(Shareholder):

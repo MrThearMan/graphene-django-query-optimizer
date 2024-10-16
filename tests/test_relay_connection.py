@@ -4,6 +4,7 @@ from graphql_relay import offset_to_cursor
 from tests.factories import (
     ApartmentFactory,
     DeveloperFactory,
+    EmployeeFactory,
     HousingCompanyFactory,
     PropertyManagerFactory,
     RealEstateFactory,
@@ -498,7 +499,7 @@ def test_relay__connection__nested__many_to_many__multiple(graphql_client):
     }
 
 
-def test_relay__connection__nested__many_to_many__two_levels_of_nesting(graphql_client):
+def test_relay__connection__nested__many_to_many__second_level_is_generic_relation(graphql_client):
     dev_1 = DeveloperFactory.create(name="1")
     dev_2 = DeveloperFactory.create(name="2")
     dev_3 = DeveloperFactory.create(name="3")
@@ -510,9 +511,9 @@ def test_relay__connection__nested__many_to_many__two_levels_of_nesting(graphql_
     TagFactory.create(tag="5", content_object=dev_3)
     TagFactory.create(tag="6", content_object=dev_3)
 
-    HousingCompanyFactory.create(developers=[dev_1])
+    HousingCompanyFactory.create(developers=[dev_1, dev_2])
     HousingCompanyFactory.create(developers=[dev_2])
-    HousingCompanyFactory.create(developers=[dev_3])
+    HousingCompanyFactory.create(developers=[dev_3, dev_1])
 
     query = """
         query {
@@ -585,6 +586,17 @@ def test_relay__connection__nested__many_to_many__two_levels_of_nesting(graphql_
                                             {"node": {"tag": "2"}},
                                         ],
                                     },
+                                }
+                            },
+                            {
+                                "node": {
+                                    "name": "2",
+                                    "tags": {
+                                        "edges": [
+                                            {"node": {"tag": "3"}},
+                                            {"node": {"tag": "4"}},
+                                        ],
+                                    },
                                 },
                             },
                         ],
@@ -616,11 +628,173 @@ def test_relay__connection__nested__many_to_many__two_levels_of_nesting(graphql_
                         "edges": [
                             {
                                 "node": {
+                                    "name": "1",
+                                    "tags": {
+                                        "edges": [
+                                            {"node": {"tag": "1"}},
+                                            {"node": {"tag": "2"}},
+                                        ],
+                                    },
+                                }
+                            },
+                            {
+                                "node": {
                                     "name": "3",
                                     "tags": {
                                         "edges": [
                                             {"node": {"tag": "5"}},
                                             {"node": {"tag": "6"}},
+                                        ],
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+        ],
+    }
+
+
+def test_relay__connection__nested__many_to_many__second_level_is_many_to_many(graphql_client):
+    dev_1 = DeveloperFactory.create(name="1")
+    dev_2 = DeveloperFactory.create(name="2")
+    dev_3 = DeveloperFactory.create(name="3")
+
+    EmployeeFactory.create(name="1", developers=[dev_1])
+    EmployeeFactory.create(name="2", developers=[dev_1])
+    EmployeeFactory.create(name="3", developers=[dev_2])
+    EmployeeFactory.create(name="4", developers=[dev_2])
+    EmployeeFactory.create(name="5", developers=[dev_3])
+    EmployeeFactory.create(name="6", developers=[dev_3])
+
+    HousingCompanyFactory.create(developers=[dev_1, dev_2])
+    HousingCompanyFactory.create(developers=[dev_2])
+    HousingCompanyFactory.create(developers=[dev_3, dev_1])
+
+    query = """
+        query {
+          pagedHousingCompanies {
+            edges {
+              node {
+                developers {
+                  edges {
+                    node {
+                      employees {
+                        edges {
+                          node {
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query to count housing companies.
+    # 1 query to fetch housing companies.
+    # 1 query to fetch related developers.
+    # 1 query to fetch related employees.
+    assert response.queries.count == 4, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "app_housingcompany"',
+    )
+    assert response.queries[1] == has(
+        'FROM "app_housingcompany"',
+        "LIMIT 3",
+    )
+    assert response.queries[2] == has(
+        'FROM "app_developer"',
+        # Nested connections are limited via a window function.
+        (
+            "ROW_NUMBER() OVER "
+            '(PARTITION BY "app_housingcompany_developers"."housingcompany_id" ORDER BY "app_developer"."id")'
+        ),
+    )
+    assert response.queries[3] == has(
+        'FROM "app_employee"',
+        # Nested connections are limited via a window function.
+        'ROW_NUMBER() OVER (PARTITION BY "app_developer_employees"."developer_id")',
+    )
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "employees": {
+                                        "edges": [
+                                            {"node": {"name": "1"}},
+                                            {"node": {"name": "2"}},
+                                        ],
+                                    },
+                                },
+                            },
+                            {
+                                "node": {
+                                    "employees": {
+                                        "edges": [
+                                            {"node": {"name": "3"}},
+                                            {"node": {"name": "4"}},
+                                        ],
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "employees": {
+                                        "edges": [
+                                            {"node": {"name": "3"}},
+                                            {"node": {"name": "4"}},
+                                        ],
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "employees": {
+                                        "edges": [
+                                            {"node": {"name": "1"}},
+                                            {"node": {"name": "2"}},
+                                        ],
+                                    },
+                                },
+                            },
+                            {
+                                "node": {
+                                    "employees": {
+                                        "edges": [
+                                            {"node": {"name": "5"}},
+                                            {"node": {"name": "6"}},
                                         ],
                                     },
                                 },

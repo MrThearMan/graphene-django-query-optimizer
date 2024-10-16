@@ -13,3 +13,5 @@ class DeveloperFactory(GenericDjangoModelFactory[Developer]):
     name = fuzzy.FuzzyText()
     description = fuzzy.FuzzyText()
     housingcompany_set = ManyToManyFactory("tests.factories.housing_company.HousingCompanyFactory")
+
+    employees = ManyToManyFactory("tests.factories.employee.EmployeeFactory")

@@ -23,6 +23,9 @@ from example_project.app.models import (
     Building,
     BuildingProxy,
     Developer,
+    Employee,
+    EmployeeProxy,
+    EmployeeRole,
     Example,
     ForwardManyToMany,
     ForwardManyToManyForRelated,
@@ -62,6 +65,7 @@ from example_project.app.models import (
     ReverseOneToOneToReverseOneToOne,
     Sale,
     DeveloperProxy,
+    Shareholder,
     ShareholderProxy,
     Tag,
 )
@@ -75,6 +79,8 @@ __all__ = [
     "ApartmentType",
     "BuildingType",
     "DeveloperType",
+    "EmployeeNode",
+    "EmployeeType",
     "HousingCompanyNode",
     "HousingCompanyType",
     "OwnerType",
@@ -115,9 +121,19 @@ class PostalCodeType(DjangoObjectType):
         ]
 
 
+class EmployeeType(DjangoObjectType):
+    class Meta:
+        model = Employee
+        fields = [
+            "pk",
+            "name",
+            "role",
+        ]
+
+
 class ShareholderType(DjangoObjectType):
     class Meta:
-        model = ShareholderProxy
+        model = Shareholder
         fields = [
             "pk",
             "name",
@@ -359,6 +375,16 @@ class IsTypeOfProxyPatch:
         return super().is_type_of(root, info)
 
 
+class EmployeeNode(IsTypeOfProxyPatch, DjangoObjectType):
+    name = graphene.String()
+    role = graphene.Field(graphene.Enum.from_enum(EmployeeRole))
+
+    class Meta:
+        model = EmployeeProxy
+        interfaces = (relay.Node,)
+        connection_class = CustomConnection
+
+
 class ShareholderNode(IsTypeOfProxyPatch, DjangoObjectType):
     name = graphene.String()
     share = graphene.Decimal()
@@ -374,6 +400,7 @@ class DeveloperNode(IsTypeOfProxyPatch, DjangoObjectType):
     housing_companies = DjangoListField("example_project.app.types.HousingCompanyType", field_name="housingcompany_set")
 
     tags = DjangoConnectionField(TagType)
+    employees = DjangoConnectionField(EmployeeNode)
 
     idx = graphene.Field(graphene.Int)
 

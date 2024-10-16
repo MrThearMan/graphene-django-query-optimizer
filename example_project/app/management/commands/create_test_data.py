@@ -14,6 +14,8 @@ from example_project.app.models import (
     Apartment,
     Building,
     Developer,
+    Employee,
+    EmployeeRole,
     Example,
     ForwardManyToMany,
     ForwardManyToManyForRelated,
@@ -69,7 +71,8 @@ class Command(BaseCommand):
 def create_test_data() -> None:
     clear_database()
     postal_codes = create_postal_codes()
-    developers = create_developers()
+    employees = create_employees()
+    developers = create_developers(employees)
     shareholders = create_shareholders()
     create_tags(postal_codes, developers)
     property_managers = create_property_managers()
@@ -117,7 +120,19 @@ def create_tags(postal_codes: list[PostalCode], developers: list[Developer]) -> 
     ]
 
 
-def create_developers(*, number: int = 10) -> list[Developer]:
+def create_employees(*, number: int = 10) -> list[Employee]:
+    employees: list[Employee] = [
+        Employee(
+            name=faker.name(),
+            role=random.choice(EmployeeRole.values),
+        )
+        for _ in range(number)
+    ]
+
+    return Employee.objects.bulk_create(employees)
+
+
+def create_developers(employees: list[Employee], *, number: int = 10) -> list[Developer]:
     developers: list[Developer] = [
         Developer(
             name=faker.name(),
@@ -126,7 +141,11 @@ def create_developers(*, number: int = 10) -> list[Developer]:
         for _ in range(number)
     ]
 
-    return Developer.objects.bulk_create(developers)
+    developers = Developer.objects.bulk_create(developers)
+    for developer in developers:
+        developer.employees.add(*random.sample(employees, k=random.randint(1, 3)))
+
+    return developers
 
 
 def create_shareholders(*, number: int = 10) -> list[Shareholder]:
