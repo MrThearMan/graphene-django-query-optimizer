@@ -15,5 +15,6 @@ class HousingCompanyFactory(GenericDjangoModelFactory[HousingCompany]):
     postal_code = NullableSubFactory("tests.factories.postal_code.PostalCodeFactory")
     city = fuzzy.FuzzyText()
     developers = ManyToManyFactory("tests.factories.developer.DeveloperFactory")
+    shareholders = ManyToManyFactory("tests.factories.shareholder.ShareholderFactory")
     property_manager = NullableSubFactory("tests.factories.property_manager.PropertyManagerFactory")
     real_estates = OneToManyFactory("tests.factories.real_estate.RealEstateFactory")

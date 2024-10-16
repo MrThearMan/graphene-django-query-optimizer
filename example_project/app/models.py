@@ -48,6 +48,7 @@ __all__ = [
     "ReverseOneToOneToReverseOneToMany",
     "ReverseOneToOneToReverseOneToOne",
     "Sale",
+    "Shareholder",
     "Tag",
 ]
 
@@ -82,6 +83,14 @@ class PostalCode(models.Model):
 
     def __str__(self) -> str:
         return self.code
+
+
+class Shareholder(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    share = models.DecimalField(max_digits=3, decimal_places=0, default=0)
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Developer(models.Model):
@@ -126,6 +135,7 @@ class HousingCompany(models.Model):
     city = models.CharField(max_length=200)
 
     developers = models.ManyToManyField(Developer)  # No related name on purpose!
+    shareholders = models.ManyToManyField(Shareholder, related_name="housing_companies")
     property_manager = models.ForeignKey(PropertyManager, on_delete=models.PROTECT, related_name="housing_companies")
 
     class Meta:
@@ -275,6 +285,11 @@ class Ownership(models.Model):
 
 
 # Proxies
+
+
+class ShareholderProxy(Shareholder):
+    class Meta:
+        proxy = True
 
 
 class DeveloperProxy(Developer):

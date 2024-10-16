@@ -49,6 +49,7 @@ from example_project.app.models import (
     ReverseOneToOneToReverseOneToMany,
     ReverseOneToOneToReverseOneToOne,
     Sale,
+    Shareholder,
     Tag,
 )
 
@@ -69,9 +70,10 @@ def create_test_data() -> None:
     clear_database()
     postal_codes = create_postal_codes()
     developers = create_developers()
+    shareholders = create_shareholders()
     create_tags(postal_codes, developers)
     property_managers = create_property_managers()
-    housing_companies = create_housing_companies(postal_codes, developers, property_managers)
+    housing_companies = create_housing_companies(postal_codes, developers, shareholders, property_managers)
     real_estates = create_real_estates(housing_companies)
     buildings = create_buildings(real_estates)
     apartments = create_apartments(buildings)
@@ -127,6 +129,18 @@ def create_developers(*, number: int = 10) -> list[Developer]:
     return Developer.objects.bulk_create(developers)
 
 
+def create_shareholders(*, number: int = 10) -> list[Shareholder]:
+    shareholders: list[Shareholder] = [
+        Shareholder(
+            name=faker.name(),
+            share=faker.pydecimal(min_value=0, max_value=100),
+        )
+        for _ in range(number)
+    ]
+
+    return Shareholder.objects.bulk_create(shareholders)
+
+
 def create_property_managers(*, number: int = 10) -> list[PropertyManager]:
     property_managers: list[PropertyManager] = [
         PropertyManager(
@@ -142,6 +156,7 @@ def create_property_managers(*, number: int = 10) -> list[PropertyManager]:
 def create_housing_companies(
     postal_codes: list[PostalCode],
     developers: list[Developer],
+    shareholders: list[Shareholder],
     property_managers: list[PropertyManager],
     *,
     number: int = 20,
@@ -167,6 +182,7 @@ def create_housing_companies(
     housing_companies = HousingCompany.objects.bulk_create(housing_companies)
     for housing_company in housing_companies:
         housing_company.developers.add(*random.sample(developers, k=random.randint(1, 3)))
+        housing_company.shareholders.add(*random.sample(shareholders, k=random.randint(1, 3)))
 
     return housing_companies
 

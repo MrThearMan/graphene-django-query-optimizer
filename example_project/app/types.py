@@ -62,6 +62,7 @@ from example_project.app.models import (
     ReverseOneToOneToReverseOneToOne,
     Sale,
     DeveloperProxy,
+    ShareholderProxy,
     Tag,
 )
 from typing import TYPE_CHECKING
@@ -83,6 +84,8 @@ __all__ = [
     "PropertyManagerType",
     "RealEstateType",
     "SaleType",
+    "ShareholderNode",
+    "ShareholderType",
 ]
 
 
@@ -109,6 +112,16 @@ class PostalCodeType(DjangoObjectType):
             "code",
             "housing_companies",
             "tags",
+        ]
+
+
+class ShareholderType(DjangoObjectType):
+    class Meta:
+        model = ShareholderProxy
+        fields = [
+            "pk",
+            "name",
+            "share",
         ]
 
 
@@ -346,6 +359,16 @@ class IsTypeOfProxyPatch:
         return super().is_type_of(root, info)
 
 
+class ShareholderNode(IsTypeOfProxyPatch, DjangoObjectType):
+    name = graphene.String()
+    share = graphene.Decimal()
+
+    class Meta:
+        model = ShareholderProxy
+        interfaces = (relay.Node,)
+        connection_class = CustomConnection
+
+
 class DeveloperNode(IsTypeOfProxyPatch, DjangoObjectType):
     housingcompany_set = DjangoConnectionField(lambda: HousingCompanyNode)
     housing_companies = DjangoListField("example_project.app.types.HousingCompanyType", field_name="housingcompany_set")
@@ -451,6 +474,8 @@ class HousingCompanyNode(IsTypeOfProxyPatch, DjangoObjectType):
     developers_alt = DjangoListField(DeveloperNode, field_name="developers")
     property_manager_alt = RelatedField(lambda: PropertyManagerNode, field_name="property_manager")
     real_estates_alt = DjangoListField(RealEstateNode, field_name="real_estates")
+
+    shareholders = DjangoConnectionField(ShareholderNode)
 
     idx = graphene.Field(graphene.Int)
 

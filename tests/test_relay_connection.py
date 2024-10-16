@@ -383,7 +383,7 @@ def test_relay__connection__nested__many_to_many(graphql_client):
 
     # 1 query to count housing companies.
     # 1 query to fetch housing companies.
-    # 1 query to fetch related real estates.
+    # 1 query to fetch related developers.
     assert response.queries.count == 3, response.queries.log
 
     assert response.queries[0] == has(
@@ -408,6 +408,91 @@ def test_relay__connection__nested__many_to_many(graphql_client):
             {"node": {"developers": {"edges": [{"node": {"name": "1"}}]}}},
             {"node": {"developers": {"edges": [{"node": {"name": "2"}}]}}},
             {"node": {"developers": {"edges": [{"node": {"name": "3"}}]}}},
+        ]
+    }
+
+
+def test_relay__connection__nested__many_to_many__multiple(graphql_client):
+    HousingCompanyFactory.create(developers__name="1", shareholders__name="1")
+    HousingCompanyFactory.create(developers__name="2", shareholders__name="1")
+    HousingCompanyFactory.create(developers__name="3", shareholders__name="1")
+
+    query = """
+        query {
+          pagedHousingCompanies {
+            edges {
+              node {
+                developers {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+                shareholders {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query to count housing companies.
+    # 1 query to fetch housing companies.
+    # 1 query to fetch related developers.
+    # 1 query to fetch related shareholders.
+    assert response.queries.count == 4, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "app_housingcompany"',
+    )
+    assert response.queries[1] == has(
+        'FROM "app_housingcompany"',
+        "LIMIT 3",
+    )
+    assert response.queries[2] == has(
+        'FROM "app_developer"',
+        # Nested connections are limited via a window function.
+        (
+            "ROW_NUMBER() OVER "
+            '(PARTITION BY "app_housingcompany_developers"."housingcompany_id" ORDER BY "app_developer"."id")'
+        ),
+    )
+    assert response.queries[3] == has(
+        'FROM "app_shareholder"',
+        # Nested connections are limited via a window function.
+        'ROW_NUMBER() OVER (PARTITION BY "app_housingcompany_shareholders"."housingcompany_id")',
+    )
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "developers": {"edges": [{"node": {"name": "1"}}]},
+                    "shareholders": {"edges": [{"node": {"name": "1"}}]},
+                }
+            },
+            {
+                "node": {
+                    "developers": {"edges": [{"node": {"name": "2"}}]},
+                    "shareholders": {"edges": [{"node": {"name": "1"}}]},
+                }
+            },
+            {
+                "node": {
+                    "developers": {"edges": [{"node": {"name": "3"}}]},
+                    "shareholders": {"edges": [{"node": {"name": "1"}}]},
+                }
+            },
         ]
     }
 
