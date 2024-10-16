@@ -73,17 +73,18 @@ def _prefetch_hack(queryset: models.QuerySet, field_name: str, instances: list[m
     return _filter_prefetch_queryset(queryset, field_name, instances)
 
 
-_HACK_CONTEXT = patch(
-    f"{_filter_prefetch_queryset.__module__}.{_filter_prefetch_queryset.__name__}",
-    side_effect=_prefetch_hack,
-)
+def _hack_context() -> patch:
+    return patch(
+        f"{_filter_prefetch_queryset.__module__}.{_filter_prefetch_queryset.__name__}",
+        side_effect=_prefetch_hack,
+    )
 
 
 @contextlib.contextmanager
 def fetch_context() -> ContextManager:
     """Patches the prefetch mechanism if required."""
     try:
-        with _HACK_CONTEXT if _PREFETCH_HACK_CACHE else nullcontext():
+        with _hack_context() if _PREFETCH_HACK_CACHE else nullcontext():
             yield
     finally:
         _PREFETCH_HACK_CACHE.clear()
