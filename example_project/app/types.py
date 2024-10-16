@@ -373,6 +373,8 @@ class DeveloperNode(IsTypeOfProxyPatch, DjangoObjectType):
     housingcompany_set = DjangoConnectionField(lambda: HousingCompanyNode)
     housing_companies = DjangoListField("example_project.app.types.HousingCompanyType", field_name="housingcompany_set")
 
+    tags = DjangoConnectionField(TagType)
+
     idx = graphene.Field(graphene.Int)
 
     def resolve_idx(root: DeveloperProxy, info: GQLInfo) -> int:

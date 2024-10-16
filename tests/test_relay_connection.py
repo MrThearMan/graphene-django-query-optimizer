@@ -7,6 +7,7 @@ from tests.factories import (
     HousingCompanyFactory,
     PropertyManagerFactory,
     RealEstateFactory,
+    TagFactory,
 )
 from tests.helpers import has, like
 
@@ -479,21 +480,156 @@ def test_relay__connection__nested__many_to_many__multiple(graphql_client):
                 "node": {
                     "developers": {"edges": [{"node": {"name": "1"}}]},
                     "shareholders": {"edges": [{"node": {"name": "1"}}]},
-                }
+                },
             },
             {
                 "node": {
                     "developers": {"edges": [{"node": {"name": "2"}}]},
                     "shareholders": {"edges": [{"node": {"name": "1"}}]},
-                }
+                },
             },
             {
                 "node": {
                     "developers": {"edges": [{"node": {"name": "3"}}]},
                     "shareholders": {"edges": [{"node": {"name": "1"}}]},
-                }
+                },
             },
-        ]
+        ],
+    }
+
+
+def test_relay__connection__nested__many_to_many__two_levels_of_nesting(graphql_client):
+    dev_1 = DeveloperFactory.create(name="1")
+    dev_2 = DeveloperFactory.create(name="2")
+    dev_3 = DeveloperFactory.create(name="3")
+
+    TagFactory.create(tag="1", content_object=dev_1)
+    TagFactory.create(tag="2", content_object=dev_1)
+    TagFactory.create(tag="3", content_object=dev_2)
+    TagFactory.create(tag="4", content_object=dev_2)
+    TagFactory.create(tag="5", content_object=dev_3)
+    TagFactory.create(tag="6", content_object=dev_3)
+
+    HousingCompanyFactory.create(developers=[dev_1])
+    HousingCompanyFactory.create(developers=[dev_2])
+    HousingCompanyFactory.create(developers=[dev_3])
+
+    query = """
+        query {
+          pagedHousingCompanies {
+            edges {
+              node {
+                developers {
+                  edges {
+                    node {
+                      name
+                      tags {
+                        edges {
+                          node {
+                            tag
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query to count housing companies.
+    # 1 query to fetch housing companies.
+    # 1 query to fetch related developers.
+    # 1 query to fetch related tags.
+    assert response.queries.count == 4, response.queries.log
+
+    assert response.queries[0] == has(
+        "COUNT(*)",
+        'FROM "app_housingcompany"',
+    )
+    assert response.queries[1] == has(
+        'FROM "app_housingcompany"',
+        "LIMIT 3",
+    )
+    assert response.queries[2] == has(
+        'FROM "app_developer"',
+        # Nested connections are limited via a window function.
+        (
+            "ROW_NUMBER() OVER "
+            '(PARTITION BY "app_housingcompany_developers"."housingcompany_id" ORDER BY "app_developer"."id")'
+        ),
+    )
+    assert response.queries[3] == has(
+        'FROM "app_tag"',
+        # Nested connections are limited via a window function.
+        'ROW_NUMBER() OVER (PARTITION BY "app_developer"."id")',
+    )
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "name": "1",
+                                    "tags": {
+                                        "edges": [
+                                            {"node": {"tag": "1"}},
+                                            {"node": {"tag": "2"}},
+                                        ],
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "name": "2",
+                                    "tags": {
+                                        "edges": [
+                                            {"node": {"tag": "3"}},
+                                            {"node": {"tag": "4"}},
+                                        ],
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            {
+                "node": {
+                    "developers": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "name": "3",
+                                    "tags": {
+                                        "edges": [
+                                            {"node": {"tag": "5"}},
+                                            {"node": {"tag": "6"}},
+                                        ],
+                                    },
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+        ],
     }
 
 
