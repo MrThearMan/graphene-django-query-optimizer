@@ -35,6 +35,7 @@ body:
         If you are not using the latest version, please try to also reproduce the bug
         on the latest version before opening the issue.
       options:
+        - "0.10.5"
         - "0.10.4"
         - "0.10.3"
         - "0.10.2"
