@@ -41,7 +41,7 @@ def optimize(
     optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
     if optimizer is not None:
         queryset = optimizer.optimize_queryset(queryset)
-        fetch_in_context(queryset)
+        fetch_in_context(queryset, info)
 
     return queryset
 
@@ -59,7 +59,7 @@ def optimize_single(
         return queryset.filter(pk=pk).first()
 
     queryset = optimizer.optimize_queryset(queryset.filter(pk=pk))
-    fetch_in_context(queryset)
+    fetch_in_context(queryset, info)
 
     # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
     # The queryset should have the right model instance, since we started by filtering by its pk,

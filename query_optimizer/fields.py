@@ -319,7 +319,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         edges: list[EdgeType] = [
             # Create a connection from the sliced queryset.
             self.connection_type.Edge(node=value, cursor=offset_to_cursor(cut.start + index))
-            for index, value in enumerate(fetch_in_context(queryset))
+            for index, value in enumerate(fetch_in_context(queryset, info))
         ]
 
         connection = connection_adapter(

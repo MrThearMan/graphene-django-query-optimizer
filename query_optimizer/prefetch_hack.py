@@ -3,6 +3,8 @@ from __future__ import annotations
 import contextlib
 from collections import defaultdict
 from contextlib import nullcontext
+from copy import deepcopy
+from functools import partial
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 from weakref import WeakKeyDictionary
@@ -41,7 +43,13 @@ def _register_for_prefetch_hack(info: GQLInfo, field: ToManyField) -> None:
     cache[db_table][field_name].add(through)
 
 
-def _prefetch_hack(queryset: models.QuerySet, field_name: str, instances: list[models.Model]) -> models.QuerySet:
+def _prefetch_hack(
+    queryset: models.QuerySet,
+    field_name: str,
+    instances: list[models.Model],
+    *,
+    cache: _PrefetchCacheType,
+) -> models.QuerySet:
     """
     Patches the prefetch mechanism to not create duplicate joins in the SQL query.
     This is needed due to how filtering with many-to-many relations is implemented in Django,
@@ -61,9 +69,6 @@ def _prefetch_hack(queryset: models.QuerySet, field_name: str, instances: list[m
     # See: `django.db.models.sql.query.Query.chain`.
     queryset.query.filter_is_sticky = True
     #
-    # Cache is stored per-operation, so there should only be one top-level value.
-    cache: _PrefetchCacheType = next(iter(_PREFETCH_HACK_CACHE.values()))
-    #
     # Add the registered through tables for a given model and field to the Query's `used_aliases`.
     # This is passed along during the filtering that happens as a part of `_filter_prefetch_queryset`,
     # until `django.db.models.sql.query.Query.join`, which has access to it with its `reuse` argument.
@@ -73,24 +78,28 @@ def _prefetch_hack(queryset: models.QuerySet, field_name: str, instances: list[m
     return _filter_prefetch_queryset(queryset, field_name, instances)
 
 
-def _hack_context() -> patch:
+def _hack_context(cache: _PrefetchCacheType) -> patch:
     return patch(
         f"{_filter_prefetch_queryset.__module__}.{_filter_prefetch_queryset.__name__}",
-        side_effect=_prefetch_hack,
+        side_effect=partial(_prefetch_hack, cache=cache),
     )
 
 
 @contextlib.contextmanager
-def fetch_context() -> ContextManager:
+def fetch_context(info: GQLInfo) -> ContextManager:
     """Patches the prefetch mechanism if required."""
+    context = nullcontext()
+    if info.operation in _PREFETCH_HACK_CACHE:
+        context = _hack_context(cache=deepcopy(_PREFETCH_HACK_CACHE[info.operation]))
+
     try:
-        with _hack_context() if _PREFETCH_HACK_CACHE else nullcontext():
+        with context:
             yield
     finally:
         _PREFETCH_HACK_CACHE.clear()
 
 
-def fetch_in_context(queryset: models.QuerySet[TModel]) -> list[TModel]:
+def fetch_in_context(queryset: models.QuerySet[TModel], info: GQLInfo) -> list[TModel]:
     """Evaluates the queryset with the prefetch hack applied."""
-    with fetch_context():
+    with fetch_context(info):
         return list(queryset)  # the database query is executed here
