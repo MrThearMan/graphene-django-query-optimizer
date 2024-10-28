@@ -64,9 +64,9 @@ filter = ["django-filter"]
 pytest = "8.3.3"
 coverage = "7.6.4"
 pytest-django = "4.9.0"
-tox = "4.23.0"
+tox = "4.23.2"
 tox-gh-actions = "3.2.0"
-faker = "30.6.0"
+faker = "30.8.1"
 factory-boy = "3.3.1"
 sqlparse = "0.5.1"
 django-graphiql-debug-toolbar = "0.2.0"
@@ -78,9 +78,9 @@ pymdown-extensions = "10.11.2"
 mkdocs-mermaid2-plugin = "1.1.1"
 
 [tool.poetry.group.lint.dependencies]
-mypy = "1.12.1"
+mypy = "1.13.0"
 pre-commit = "4.0.1"
-django-stubs = "5.1.0"
+django-stubs = "5.1.1"
 
 [tool.ruff]
 fix = true
