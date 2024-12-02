@@ -1,15 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Collection, Generator, Hashable, Iterable
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Collection,
     ContextManager,
-    Generator,
     Generic,
-    Hashable,
-    Iterable,
     Literal,
     NamedTuple,
     Optional,
