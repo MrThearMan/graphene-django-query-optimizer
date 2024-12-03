@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import warnings
 from functools import cached_property, partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type  # noqa: UP035
 
 import graphene
 from graphene.relay.connection import connection_adapter, page_info_adapter
@@ -43,7 +43,6 @@ if TYPE_CHECKING:
         ObjectTypeInput,
         Optional,
         QuerySetResolver,
-        Type,
         Union,
         UnmountedTypeInput,
     )

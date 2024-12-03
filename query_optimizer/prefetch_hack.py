@@ -15,7 +15,7 @@ from django.db.models.fields.related_descriptors import _filter_prefetch_queryse
 if TYPE_CHECKING:
     from graphql import OperationDefinitionNode
 
-    from .typing import ContextManager, GQLInfo, TModel, ToManyField, TypeAlias
+    from .typing import GQLInfo, TModel, ToManyField, TypeAlias
 
 __all__ = [
     "_register_for_prefetch_hack",
@@ -86,7 +86,7 @@ def _hack_context(cache: _PrefetchCacheType) -> patch:
 
 
 @contextlib.contextmanager
-def fetch_context(info: GQLInfo) -> ContextManager:
+def fetch_context(info: GQLInfo) -> contextlib.AbstractContextManager:
     """Patches the prefetch mechanism if required."""
     context = nullcontext()
     if info.operation in _PREFETCH_HACK_CACHE:
