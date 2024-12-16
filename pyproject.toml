@@ -68,7 +68,7 @@ tox = "4.23.2"
 tox-gh-actions = "3.2.0"
 faker = "33.1.0"
 factory-boy = "3.3.1"
-sqlparse = "0.5.2"
+sqlparse = "0.5.3"
 django-graphiql-debug-toolbar = "0.2.0"
 py-spy = "0.4.0"
 
