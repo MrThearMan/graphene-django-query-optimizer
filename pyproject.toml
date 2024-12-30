@@ -62,7 +62,7 @@ filter = ["django-filter"]
 
 [tool.poetry.group.test.dependencies]
 pytest = "8.3.4"
-coverage = "7.6.9"
+coverage = "7.6.10"
 pytest-django = "4.9.0"
 tox = "4.23.2"
 tox-gh-actions = "3.2.0"
@@ -74,7 +74,7 @@ py-spy = "0.4.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
-pymdown-extensions = "10.12"
+pymdown-extensions = "10.13"
 mkdocs-mermaid2-plugin = "1.2.1"
 
 [tool.poetry.group.lint.dependencies]
