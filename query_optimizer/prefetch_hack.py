@@ -30,7 +30,7 @@ _PREFETCH_HACK_CACHE: WeakKeyDictionary[OperationDefinitionNode, _PrefetchCacheT
 def _register_for_prefetch_hack(info: GQLInfo, field: ToManyField) -> None:
     # Registers the through table of a many-to-many field for the prefetch hack.
     # See `_prefetch_hack` for more information.
-    if not isinstance(field, (models.ManyToManyField, models.ManyToManyRel)):
+    if not isinstance(field, models.ManyToManyField | models.ManyToManyRel):
         return
 
     forward_field: models.ManyToManyField = field.remote_field if isinstance(field, models.ManyToManyRel) else field

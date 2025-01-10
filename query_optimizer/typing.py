@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Collection, Generator, Hashable, Iterable
+from collections.abc import Callable, Collection, Generator, Hashable, Iterable
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Generic,
     Literal,
     NamedTuple,

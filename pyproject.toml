@@ -1,18 +1,12 @@
-[tool.poetry]
+[project]
 name = "graphene-django-query-optimizer"
 version = "0.10.5"
 description = "Automatically optimize SQL queries in Graphene-Django schemas."
 authors = [
-    "Matti Lamppu <lamppu.matti.akseli@gmail.com>",
-]
-packages = [
-    { include = "query_optimizer" },
+    { name = "Matti Lamppu", email = "lamppu.matti.akseli@gmail.com" },
 ]
 license = "MIT"
 readme = "README.md"
-homepage = "https://mrthearman.github.io/graphene-django-query-optimizer"
-repository = "https://github.com/MrThearMan/graphene-django-query-optimizer"
-documentation = "https://mrthearman.github.io/graphene-django-query-optimizer"
 keywords = [
     "django",
     "graphene",
@@ -39,26 +33,28 @@ classifiers = [
     "Framework :: Django :: 5.0",
     "Framework :: Django :: 5.1",
 ]
-include = [
-    "README.md",
-    "LICENSE",
-]
-exclude = [
-    "tests",
+requires-python = ">=3.10,<4"
+dynamic = [
+    "dependencies",
 ]
 
-[tool.poetry.urls]
+[project.urls]
+"Homepage" = "https://mrthearman.github.io/graphene-django-query-optimizer"
+"Repository" = "https://github.com/MrThearMan/graphene-django-query-optimizer"
 "Bug Tracker" = "https://github.com/MrThearMan/graphene-django-query-optimizer/issues"
+"Documentation" = "https://mrthearman.github.io/graphene-django-query-optimizer"
+
+[tool.poetry]
+requires-poetry = ">=2.0.0"
+packages = [
+    { include = "query_optimizer" },
+]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<4"
 Django = ">=4.2"
 graphene-django = ">=3.0.0"
 django-settings-holder = ">=0.1.2"
 django-filter = { version = ">=21.1", optional = true }
-
-[tool.poetry.extras]
-filter = ["django-filter"]
 
 [tool.poetry.group.test.dependencies]
 pytest = "8.3.4"
@@ -66,21 +62,20 @@ coverage = "7.6.10"
 pytest-django = "4.9.0"
 tox = "4.23.2"
 tox-gh-actions = "3.2.0"
-faker = "33.3.0"
+faker = "33.3.1"
 factory-boy = "3.3.1"
 sqlparse = "0.5.3"
 django-graphiql-debug-toolbar = "0.2.0"
 py-spy = "0.4.0"
+django-filter = "24.3"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
-pymdown-extensions = "10.13"
+pymdown-extensions = "10.14"
 mkdocs-mermaid2-plugin = "1.2.1"
 
 [tool.poetry.group.lint.dependencies]
-mypy = "1.14.1"
 pre-commit = "4.0.1"
-django-stubs = "5.1.1"
 
 [tool.ruff]
 fix = true
@@ -167,6 +162,7 @@ lint.extend-select = [
     "UP042",    # replace-str-enum
 ]
 lint.ignore = [
+    "A005",     # Allow shadowing builtin modules
     "ANN401",   # Any-typing allowed
     "ARG002",   # Unused method argument
     "ARG003",   # Unused class method argument
@@ -267,18 +263,6 @@ extend-ignore-names = [
 
 [tool.ruff.lint.pylint]
 max-args = 7
-
-[tool.mypy]
-python_version = "3.13"
-warn_return_any = true
-warn_unused_configs = true
-ignore_missing_imports = true
-plugins = [
-    "mypy_django_plugin.main",
-]
-
-[tool.django-stubs]
-django_settings_module = "example_project.config.settings"
 
 [tool.coverage.run]
 relative_files = true

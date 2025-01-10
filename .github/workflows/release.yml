@@ -10,3 +10,5 @@ jobs:
     uses: MrThearMan/CI/.github/workflows/release.yml@v0.4.12
     secrets:
       pypi-token: ${{ secrets.PYPI_API_TOKEN }}
+    with:
+      poetry-version: "2.0.0"

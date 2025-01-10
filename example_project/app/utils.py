@@ -54,7 +54,7 @@ class QueryData:
 
         query: str
         summary: str
-        for index, (query, summary) in enumerate(zip(self.queries, self.stacks)):
+        for index, (query, summary) in enumerate(zip(self.queries, self.stacks, strict=False)):
             message += f"{index + 1})"
             message += "\n\n"
             message += "--- Query ".ljust(75, "-")

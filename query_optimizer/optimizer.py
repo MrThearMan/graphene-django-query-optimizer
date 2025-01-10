@@ -200,7 +200,7 @@ class QueryOptimizer:
         remote_field = field.remote_field
         field_name = (
             remote_field.name  # .
-            if isinstance(field, (models.ManyToManyField, GenericRelation))
+            if isinstance(field, models.ManyToManyField | GenericRelation)
             else remote_field.attname
         )
 

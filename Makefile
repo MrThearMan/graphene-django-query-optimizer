@@ -11,7 +11,6 @@ export DJANGO_SETTINGS_MODULE = example_project.config.settings
 .PHONY: lint
 .PHONY: migrate
 .PHONY: migrations
-.PHONY: mypy
 .PHONY: profile
 .PHONY: setup
 .PHONY: test
@@ -39,7 +38,6 @@ define helptext
   lint                 Run pre-commit hooks on all files.
   migrate              Migrate database.
   migrations           Make migrations.
-  mypy                 Run mypy on all files.
   profile <pid>        Run py-spy for a given PID.
   setup                Make migrations, apply them, and add a superuser
   test <name>          Run all tests maching the given <name>
@@ -80,9 +78,6 @@ migrate:
 
 migrations:
 	@poetry run python manage.py makemigrations
-
-mypy:
-	@poetry run mypy query_optimizer/
 
 profile:
 	@poetry run py-spy record -o profile.svg --pid $(call args, "")
