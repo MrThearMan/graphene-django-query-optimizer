@@ -215,7 +215,12 @@ class QueryOptimizer:
             max_limit=filter_info.get("max_limit", graphene_settings.RELAY_CONNECTION_MAX_LIMIT),
         )
 
-        if self.total_count or pagination_args.get("last") is not None or pagination_args.get("size") is None:
+        if (
+            self.total_count
+            or pagination_args.get("last") is not None
+            or pagination_args.get("after") is not None
+            or pagination_args.get("size") is None
+        ):
             # If the query asks for total count for a nested connection field,
             # or is trying to limit the number of items from the end of the list,
             # or the user has set the `max_size` for the field to None (=no limit),
@@ -234,7 +239,11 @@ class QueryOptimizer:
         if all(value is None for value in pagination_args.values()):  # pragma: no cover
             return queryset
 
-        if pagination_args.get("last") is not None or pagination_args.get("size") is None:
+        if (
+            pagination_args.get("last") is not None
+            or pagination_args.get("after") is not None
+            or pagination_args.get("size") is None
+        ):
             queryset = calculate_slice_for_queryset(queryset, **pagination_args)
         else:
             cut = calculate_queryset_slice(**pagination_args)

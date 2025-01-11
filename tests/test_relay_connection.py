@@ -1,6 +1,8 @@
 import pytest
 from graphql_relay import offset_to_cursor
 
+from example_project.app.schema import Query
+from example_project.app.types import DeveloperNode
 from tests.factories import (
     ApartmentFactory,
     DeveloperFactory,
@@ -300,6 +302,78 @@ def test_relay__connection__counts_before_edges(graphql_client):
     assert response.content["totalCount"] == 120
 
 
+def test_relay__connection__more_than_max_limit(graphql_client):
+    ApartmentFactory.create(street_address="1")
+    ApartmentFactory.create(street_address="2")
+    ApartmentFactory.create(street_address="3")
+    ApartmentFactory.create(street_address="4")
+
+    query = """
+        query {
+          pagedApartments {
+            edges {
+              node {
+                streetAddress
+              }
+            }
+          }
+        }
+    """
+
+    max_limit = Query.paged_apartments.max_limit
+    try:
+        Query.paged_apartments.max_limit = 2
+        response = graphql_client(query)
+    finally:
+        # Reset the limit
+        Query.paged_apartments.max_limit = max_limit
+
+    assert response.no_errors, response.errors
+
+    assert response.content == {
+        "edges": [
+            {"node": {"streetAddress": "1"}},
+            {"node": {"streetAddress": "2"}},
+        ],
+    }
+
+
+def test_relay__connection__more_than_max_limit__after(graphql_client):
+    ApartmentFactory.create(street_address="1")
+    ApartmentFactory.create(street_address="2")
+    ApartmentFactory.create(street_address="3")
+    ApartmentFactory.create(street_address="4")
+
+    query = """
+        query {
+          pagedApartments(after: "YXJyYXljb25uZWN0aW9uOjE=") {
+            edges {
+              node {
+                streetAddress
+              }
+            }
+          }
+        }
+    """
+
+    max_limit = Query.paged_apartments.max_limit
+    try:
+        Query.paged_apartments.max_limit = 2
+        response = graphql_client(query)
+    finally:
+        # Reset the limit
+        Query.paged_apartments.max_limit = max_limit
+
+    assert response.no_errors, response.errors
+
+    assert response.content == {
+        "edges": [
+            {"node": {"streetAddress": "3"}},
+            {"node": {"streetAddress": "4"}},
+        ],
+    }
+
+
 # Nested connections
 
 
@@ -345,7 +419,7 @@ def test_relay__connection__nested__one_to_many(graphql_client):
     assert response.queries[2] == has(
         'FROM "app_realestate"',
         # Nested connections are limited via a window function.
-        ("ROW_NUMBER() OVER " '(PARTITION BY "app_realestate"."housing_company_id" ORDER BY "app_realestate"."id")'),
+        ('ROW_NUMBER() OVER (PARTITION BY "app_realestate"."housing_company_id" ORDER BY "app_realestate"."id")'),
     )
 
     assert response.content == {
@@ -1105,3 +1179,134 @@ def test_relay__connection__nested__no_counts(graphql_client):
     assert response.queries[2] != like(
         r'.*\(SELECT COUNT\(\*\) FROM \(SELECT .* FROM "app_housingcompany" .*\) _count\) AS "_optimizer_count".*'
     )
+
+
+def test_relay__connection__nested__more_than_max_limit(graphql_client):
+    developer_1 = DeveloperFactory.create()
+    HousingCompanyFactory.create(name="1", developers=[developer_1])
+    HousingCompanyFactory.create(name="2", developers=[developer_1])
+    HousingCompanyFactory.create(name="3", developers=[developer_1])
+    HousingCompanyFactory.create(name="4", developers=[developer_1])
+
+    developer_2 = DeveloperFactory.create()
+    HousingCompanyFactory.create(name="5", developers=[developer_2])
+    HousingCompanyFactory.create(name="6", developers=[developer_2])
+    HousingCompanyFactory.create(name="7", developers=[developer_2])
+
+    query = """
+        query {
+          pagedDevelopers {
+            edges {
+              node {
+                housingcompanySet {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    max_limit = DeveloperNode.housingcompany_set.max_limit
+    try:
+        DeveloperNode.housingcompany_set.max_limit = 2
+        response = graphql_client(query)
+    finally:
+        # Reset the limit
+        DeveloperNode.housingcompany_set.max_limit = max_limit
+
+    assert response.no_errors, response.errors
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "1"}},
+                            {"node": {"name": "2"}},
+                        ]
+                    }
+                }
+            },
+            {
+                "node": {
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "5"}},
+                            {"node": {"name": "6"}},
+                        ],
+                    },
+                },
+            },
+        ]
+    }
+
+
+def test_relay__connection__nested__more_than_max_limit__after(graphql_client):
+    developer_1 = DeveloperFactory.create()
+    HousingCompanyFactory.create(name="1", developers=[developer_1])
+    HousingCompanyFactory.create(name="2", developers=[developer_1])
+    HousingCompanyFactory.create(name="3", developers=[developer_1])
+    HousingCompanyFactory.create(name="4", developers=[developer_1])
+
+    developer_2 = DeveloperFactory.create()
+    HousingCompanyFactory.create(name="5", developers=[developer_2])
+    HousingCompanyFactory.create(name="6", developers=[developer_2])
+    HousingCompanyFactory.create(name="7", developers=[developer_2])
+
+    query = """
+        query {
+          pagedDevelopers {
+            edges {
+              node {
+                housingcompanySet(after: "YXJyYXljb25uZWN0aW9uOjE=") {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    max_limit = DeveloperNode.housingcompany_set.max_limit
+    try:
+        DeveloperNode.housingcompany_set.max_limit = 2
+        response = graphql_client(query)
+    finally:
+        # Reset the limit
+        DeveloperNode.housingcompany_set.max_limit = max_limit
+
+    assert response.no_errors, response.errors
+
+    assert response.content == {
+        "edges": [
+            {
+                "node": {
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "3"}},
+                            {"node": {"name": "4"}},
+                        ]
+                    }
+                }
+            },
+            {
+                "node": {
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"name": "7"}},
+                        ],
+                    },
+                },
+            },
+        ]
+    }
