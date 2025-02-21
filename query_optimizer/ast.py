@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 from contextlib import suppress
+from typing import TYPE_CHECKING
 
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Field, ForeignKey, Model
@@ -19,12 +20,16 @@ from graphql import (
     GraphQLSchema,
     InlineFragmentNode,
     SelectionNode,
+    Undefined,
 )
 from graphql.execution.execute import get_field_def
 
 from .errors import OptimizerError
 from .settings import optimizer_settings
 from .typing import GRAPHQL_BUILTIN, GQLInfo, ModelField, Optional, ToManyField, ToOneField, TypeGuard, Union, overload
+
+if TYPE_CHECKING:
+    from graphene.types.base import BaseOptions
 
 __all__ = [
     "GraphQLASTWalker",
@@ -189,11 +194,14 @@ class GraphQLASTWalker:
         inline_fragment: InlineFragmentNode,
     ) -> None:
         fragment_type = get_fragment_type(field_type, inline_fragment, self.info.schema)
-        fragment_model: type[Model] = fragment_type.graphene_type._meta.model
-        if fragment_model == self.model:
-            selections = get_selections(inline_fragment)
-            return self.handle_selections(fragment_type, selections)
-        return None
+        graphene_options: BaseOptions = fragment_type.graphene_type._meta
+        fragment_model: type[Model] | Undefined = getattr(graphene_options, "model", Undefined)
+
+        if fragment_model != self.model:
+            return None
+
+        selections = get_selections(inline_fragment)
+        return self.handle_selections(fragment_type, selections)
 
     def get_graphene_type(self, field_type: GrapheneObjectType, field_node: FieldNode) -> GrapheneType:
         graphql_field = get_field_def(self.info.schema, field_type, field_node)
