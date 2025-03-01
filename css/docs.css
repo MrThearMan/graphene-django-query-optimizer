@@ -1,0 +1,298 @@
+body {
+    color: #bbbbbb;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    background: #222222!important;
+}
+
+::-webkit-scrollbar-track {
+    border-radius: 5px;
+    background: #202020!important;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+    background: #424242!important;
+}
+
+.wy-nav-content {
+    max-width: 1024px;
+    margin: auto;
+}
+
+.wy-side-scroll {
+    overflow-y: auto;
+    height: auto;
+}
+
+div.wy-nav-content,
+.wy-nav-content-wrap,
+.wy-side-nav-search input[type=text] {
+    background: #222222;
+}
+
+.wy-menu-vertical li.toctree-l2 a,
+.wy-menu-vertical a {
+    color: #bbbbbb;
+    background: #343131;
+}
+
+.wy-menu-vertical li.toctree-l2 a:hover,
+.wy-menu-vertical a:hover {
+    background: #2d2d2d;
+}
+
+.wy-side-nav-search input[type=text] {
+    color: #bbbbbb;
+    box-shadow: none;
+    caret-color : #bbbbbb;
+}
+
+.rst-content div[class^=highlight] pre {
+    background: #121212;
+}
+
+.wy-menu-vertical li.current,
+.wy-menu-vertical li.current > a,
+.wy-menu-vertical li.toctree-l1.current > a,
+.wy-menu-vertical li.toctree-l2.current > a,
+.wy-menu-vertical li.toctree-l2.current li.toctree-l3 > a,
+.wy-menu-vertical li.toctree-l3.current > a,
+.wy-menu-vertical li.toctree-l3.current li.toctree-l4 > a {
+    color: #bbbbbb;
+    background: #343131!important;
+    border-bottom: 1px solid #343131;
+    border-top: 1px solid #343131;
+}
+
+.wy-menu-vertical li.current,
+.wy-menu-vertical li.current > a:hover,
+.wy-menu-vertical li.toctree-l1.current > a:hover,
+.wy-menu-vertical li.toctree-l2.current > a:hover,
+.wy-menu-vertical li.toctree-l2.current li.toctree-l3 > a:hover,
+.wy-menu-vertical li.toctree-l3.current > a:hover,
+.wy-menu-vertical li.toctree-l3.current li.toctree-l4 > a:hover {
+    color: #bbbbbb;
+    background: #2d2d2d!important;
+    border-bottom: 1px solid #343131;
+    border-top: 1px solid #343131;
+}
+
+.rst-content pre code,
+.rst-content code,
+.rst-content tt,
+code {
+    color: #bbbbbb;
+    background: #121212;
+    border: none;
+    box-shadow: none;
+    border-radius: 3px;
+}
+
+code > span.hll {
+    background: #1c1c1c;
+}
+
+/*First highlighted code line that is followed by another highlighted code line*/
+code > span.hll:not(span.hll + a + span.hll):has(+ a + span.hll) {
+    /*background: blue;*/
+    border-top-right-radius: 3px;
+    border-top-left-radius: 3px;
+}
+
+/*Last highlighted code line that is preceded by another highlighted code line*/
+code > span.hll:not(span.hll:has(+ a + span.hll)) {
+    /*background: red;*/
+    border-bottom-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+}
+
+/*Highlighted code line that is not followed or preceded by another highlighted code line*/
+code > span.hll:not(span.hll + a + span.hll):not(:has(+ a + span.hll)) {
+    /*background: yellow;*/
+    border-radius: 3px;
+}
+
+div.highlight > span.filename {
+    /*background: red;*/
+    padding: 8px;
+    line-height: 1.8rem;
+}
+
+.hljs-attribute,
+.hljs-name,
+.hljs-tag,
+.hljs-keyword,
+.hljs-literal {
+    color: coral;
+}
+
+.hljs-built_in {
+    color: #8484d5;
+}
+
+.hljs-string {
+    color: #667e49;
+}
+
+.hljs-title {
+    color: #f3c069;
+}
+
+.hljs-class .hljs-title {
+    color: #cccccc;
+}
+
+.rst-content .section .docutils {
+    display: inline-table;
+}
+
+.rst-content div[class^=highlight],
+.rst-content pre.literal-block {
+    border: 1px solid #626262;
+    border-radius: 5px;
+}
+
+.rst-content table.docutils thead,
+.rst-content table.field-list thead,
+.wy-table thead {
+    color: #bbbbbb;
+    background: #121212;
+    border-color: #121212!important;
+}
+
+html.writer-html5 .rst-content table.docutils th {
+    color: #bbbbbb;
+    background: #121212;
+    border-color: #121212!important;
+}
+
+.rst-content table.docutils:not(.field-list) tr:nth-child(2n-1) td,
+.wy-table-backed,
+.wy-table-odd td,
+.wy-table-striped tr:nth-child(2n-1) td {
+    color: #bbbbbb;
+    background: #414141;
+    border-color: #121212!important;
+}
+
+.rst-content table.docutils tbody>tr:last-child td,
+.wy-table-bordered-all tbody>tr:last-child td,
+.rst-content table.docutils td {
+    color: #bbbbbb;
+    background: #343131;
+    border-color: #121212!important;
+}
+
+.rst-content table.docutils thead,
+.rst-content table.field-list thead,
+.wy-table thead {
+    color: #bbbbbb;
+    background: #343131;
+    border-color: #121212!important;
+}
+
+.rst-versions {
+    margin-top: 6px;
+}
+
+blockquote {
+    background: #323232;
+    border: 2px solid #363636;
+    border-left: 4px solid #2980b9;
+    margin-left: 0 !important;
+    padding: 16px 12px 16px 24px;
+}
+
+blockquote > p {
+    margin: 0;
+}
+
+.rst-content table.docutils td {
+    white-space: break-spaces;
+}
+
+blockquote code {
+    line-height: normal;
+}
+
+li p {
+    margin: 0 !important;
+}
+
+
+/*
+Change mermaid via css here since
+mkdocs does not know how to read
+style definitions from the mermaid
+config
+*/
+
+div.mermaid {
+    display: flex;
+    justify-content: center;
+}
+
+div.mermaid svg {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    padding: 12px 0;
+}
+
+.edgeLabel {
+    background-color: transparent!important;
+    color: #bbbbbb!important;
+}
+
+.messageText {
+    fill: #bbbbbb!important;
+    stroke: none!important;
+}
+
+g rect {
+    fill: #DAE8FC !important;
+    stroke: #6C8EBF !important;
+}
+
+g polygon {
+    fill: #FFF2CC !important;
+    stroke: #E5D092 !important;
+}
+
+g[id*="success__"] rect {
+    fill: #D5E8D4 !important;
+    stroke: #82B366 !important;
+}
+
+g[id*="fail__"] rect {
+    fill: #F8CECC !important;
+    stroke: #B85450 !important;
+}
+
+g[id*="warn__"] rect {
+    fill: #FFF2CC !important;
+    stroke: #E5D092 !important;
+}
+
+g[id*="primary__"] rect {
+    fill: #DAE8FC !important;
+    stroke: #6C8EBF !important;
+}
+
+g[id*="secondary__"] rect {
+    fill: #F5F5F5 !important;
+    stroke: #666666 !important;
+}
+
+g[id*="start__"] rect {
+    fill: #000000 !important;
+    stroke: #666666 !important;
+}
+
+g[id*="start__"] span {
+    color: #ffffff !important;
+}

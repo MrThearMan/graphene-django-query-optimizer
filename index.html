@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="None" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>Graphene Django Query Optimizer</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="css/docs.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Home";
+        var mkdocs_page_input_path = "index.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/console.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> Graphene Django Query Optimizer
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Home</a>
+    <ul class="current">
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="quickstart/">Quickstart</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="relay/">Relay</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="filtering/">Filtering</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="depth/">Depth Limiting</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="fragments/">Fragments</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="custom/">Custom Fields</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="settings/">Settings</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="technical/">Technical Details</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">Graphene Django Query Optimizer</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Home</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="graphene-django-query-optimizer">Graphene Django Query Optimizer</h1>
+<p><a href="https://coveralls.io/github/MrThearMan/graphene-django-query-optimizer?branch=main"><img alt="Coverage Status" src="https://coveralls.io/repos/github/MrThearMan/graphene-django-query-optimizer/badge.svg?branch=main" /></a>
+<a href="https://github.com/MrThearMan/graphene-django-query-optimizer/actions/workflows/test.yml"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/MrThearMan/graphene-django-query-optimizer/test.yml?branch=main" /></a>
+<a href="https://pypi.org/project/graphene-django-query-optimizer"><img alt="PyPI" src="https://img.shields.io/pypi/v/graphene-django-query-optimizer" /></a>
+<a href="https://github.com/MrThearMan/graphene-django-query-optimizer/blob/main/LICENSE"><img alt="GitHub" src="https://img.shields.io/github/license/MrThearMan/graphene-django-query-optimizer" /></a>
+<a href="https://github.com/MrThearMan/graphene-django-query-optimizer/commits/main"><img alt="GitHub Last Commit" src="https://img.shields.io/github/last-commit/MrThearMan/graphene-django-query-optimizer" /></a>
+<a href="https://github.com/MrThearMan/graphene-django-query-optimizer/issues"><img alt="GitHub Issues" src="https://img.shields.io/github/issues-raw/MrThearMan/graphene-django-query-optimizer" /></a>
+<a href="https://pypi.org/project/graphene-django-query-optimizer"><img alt="Downloads" src="https://img.shields.io/pypi/dm/graphene-django-query-optimizer" /></a>
+<a href="https://pypi.org/project/graphene-django-query-optimizer"><img alt="Python Version" src="https://img.shields.io/pypi/pyversions/graphene-django-query-optimizer" /></a></p>
+<pre class="highlight"><code class="language-shell">pip install graphene-django-query-optimizer</code></pre>
+<hr />
+<p><strong>Documentation</strong>: <a href="https://mrthearman.github.io/graphene-django-query-optimizer/">https://mrthearman.github.io/graphene-django-query-optimizer/</a></p>
+<p><strong>Source Code</strong>: <a href="https://github.com/MrThearMan/graphene-django-query-optimizer/">https://github.com/MrThearMan/graphene-django-query-optimizer/</a></p>
+<p><strong>Contributing</strong>: <a href="https://github.com/MrThearMan/graphene-django-query-optimizer/blob/main/CONTRIBUTING.md">https://github.com/MrThearMan/graphene-django-query-optimizer/blob/main/CONTRIBUTING.md</a></p>
+<hr />
+<p>Solve the GraphQL <a href="https://stackoverflow.com/a/97253">N+1 problem</a> in <a href="https://github.com/graphql-python/graphene-django">graphene-django</a> applications
+just by changing a few imports, automatically adding the appropriate
+<a href="https://docs.djangoproject.com/en/dev/ref/models/querysets/#only"><code>only</code></a>,
+<a href="https://docs.djangoproject.com/en/dev/ref/models/querysets/#select-related"><code>select_related</code></a>,
+and <a href="https://docs.djangoproject.com/en/dev/ref/models/querysets/#prefetch-related"><code>prefetch_related</code></a>
+method calls to your QuerySets to fetch <em>only</em> what you need.</p>
+<pre class="highlight"><code class="language-python">import graphene
+from example_project.app.models import Example
+
+from query_optimizer import DjangoObjectType, DjangoListField
+
+class ExampleType(DjangoObjectType):
+    class Meta:
+        model = Example
+
+class Query(graphene.ObjectType):
+    all_examples = DjangoListField(ExampleType)
+
+schema = graphene.Schema(query=Query)</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="quickstart/" class="btn btn-neutral float-right" title="Quickstart">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+      <span><a href="quickstart/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 1.6.1
+Build Date UTC : 2025-03-01 07:41:39.846988+00:00
+-->

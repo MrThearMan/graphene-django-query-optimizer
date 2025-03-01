@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Fragments - Graphene Django Query Optimizer</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../css/docs.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Fragments";
+        var mkdocs_page_input_path = "fragments.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/console.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/json.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Graphene Django Query Optimizer
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../quickstart/">Quickstart</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../relay/">Relay</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../filtering/">Filtering</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../depth/">Depth Limiting</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Fragments</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#fragment-spreads">Fragment spreads</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#inline-fragments">Inline fragments</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../custom/">Custom Fields</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../settings/">Settings</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../technical/">Technical Details</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Graphene Django Query Optimizer</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Fragments</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="fragments">Fragments</h1>
+<h2 id="fragment-spreads">Fragment spreads</h2>
+<p>Example query:</p>
+<pre class="highlight"><code class="language-graphql">query {
+  allApartments {
+    ...Shares
+  }
+}
+
+fragment Shares on ApartmentType {
+  sharesStart
+  sharesEnd
+}</code></pre>
+<p>Fragments spreads like these are optimized without any additional setup.</p>
+<h2 id="inline-fragments">Inline fragments</h2>
+<p>Example query:</p>
+<pre class="highlight"><code class="language-graphql">query {
+  allPeople {
+    ... on DeveloperType {
+      name
+      housingCompanies {
+        name
+      }
+      __typename
+    }
+    ... on PropertyManagerType {
+      name
+      housingCompanies {
+        name
+      }
+      __typename
+    }
+    ... on OwnerType {
+      name
+      ownerships {
+        percentage
+      }
+      __typename
+    }
+  }
+}</code></pre>
+<p>Inline fragments like these can also be optimized.
+Here is how you would construct a resolver like this:</p>
+<pre class="highlight"><code class="language-python">import itertools
+import graphene
+from example_project.app.models import Developer, PropertyManager, Owner
+
+from query_optimizer import DjangoObjectType, optimize
+
+class DeveloperType(DjangoObjectType):
+    class Meta:
+        model = Developer
+
+class PropertyManagerType(DjangoObjectType):
+    class Meta:
+        model = PropertyManager
+
+class OwnerType(DjangoObjectType):
+    class Meta:
+        model = Owner
+
+class People(graphene.Union):
+    class Meta:
+        types = (
+            DeveloperType,
+            PropertyManagerType,
+            OwnerType,
+        )
+
+class Query(graphene.ObjectType):
+
+    all_people = graphene.List(People)
+
+    def resolve_all_people(root, info):
+        developers = optimize(Developer.objects.all(), info)
+        property_managers = optimize(PropertyManager.objects.all(), info)
+        owners = optimize(Owner.objects.all(), info)
+        return itertools.chain(developers, property_managers, owners)
+
+schema = graphene.Schema(query=Query)</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../depth/" class="btn btn-neutral float-left" title="Depth Limiting"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../custom/" class="btn btn-neutral float-right" title="Custom Fields">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../depth/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../custom/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
