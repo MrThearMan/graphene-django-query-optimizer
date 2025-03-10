@@ -26,7 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "debug_toolbar",
+    # "debug_toolbar",
     "graphiql_debug_toolbar",
     "graphene_django",
     "example_project.app",
@@ -118,7 +118,7 @@ GRAPHENE = {
     "TESTING_ENDPOINT": "/graphql/",
     "MIDDLEWARE": [
         "example_project.config.logging.TracebackMiddleware",
-        "graphene_django.debug.DjangoDebugMiddleware",
+        # "graphene_django.debug.DjangoDebugMiddleware",
     ],
 }
 

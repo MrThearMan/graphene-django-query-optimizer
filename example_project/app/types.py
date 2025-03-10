@@ -455,7 +455,7 @@ class RealEstateNode(IsTypeOfProxyPatch, DjangoObjectType):
     class Meta:
         model = RealEstateProxy
         filter_fields = {
-            "name": ["exact"],
+            "name": ["exact", "in"],
             "surface_area": ["exact"],
         }
         interfaces = (relay.Node,)
