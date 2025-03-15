@@ -59,6 +59,11 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
 
             options["filterset_class"] = create_filterset(model, filter_fields)
 
+        elif filterset_class is not None:
+            from graphene_django.filter.utils import replace_csv_filters
+
+            replace_csv_filters(filterset_class)
+
         _meta.max_complexity = max_complexity or optimizer_settings.MAX_COMPLEXITY
         super().__init_subclass_with_meta__(_meta=_meta, model=model, fields=fields, **options)
 
