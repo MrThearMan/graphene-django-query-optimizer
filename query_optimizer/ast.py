@@ -11,6 +11,7 @@ from graphene.relay.node import AbstractNode
 from graphene.types.definitions import GrapheneInterfaceType, GrapheneObjectType, GrapheneUnionType
 from graphene.utils.str_converters import to_snake_case
 from graphene_django import DjangoObjectType
+from graphene_django.registry import get_global_registry
 from graphql import (
     FieldNode,
     FragmentDefinitionNode,
@@ -111,7 +112,10 @@ class GraphQLASTWalker:
             return self.handle_model_field(field_type, field_node, field_name)
         return self.handle_plain_object_type(field_type, field_node)
 
-    def handle_abstract_node(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None: ...
+    def handle_abstract_node(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
+        graphene_type = get_global_registry().get_type_for_model(self.model._meta.concrete_model)
+        field_type = self.info.schema.get_type(graphene_type._meta.name)
+        return self.handle_object_type(field_type, field_node)
 
     def handle_graphql_builtin(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None: ...
 
