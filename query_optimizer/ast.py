@@ -89,6 +89,9 @@ class GraphQLASTWalker:
         if issubclass(graphene_type, ObjectType):
             return self.handle_object_type(field_type, field_node)
 
+        if issubclass(graphene_type, AbstractNode):
+            return self.handle_abstract_node(field_type, field_node)
+
         msg = f"Unhandled graphene type: '{graphene_type}'"  # pragma: no cover
         raise OptimizerError(msg)  # pragma: no cover
 
@@ -107,6 +110,8 @@ class GraphQLASTWalker:
         if issubclass(graphene_type, DjangoObjectType):
             return self.handle_model_field(field_type, field_node, field_name)
         return self.handle_plain_object_type(field_type, field_node)
+
+    def handle_abstract_node(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None: ...
 
     def handle_graphql_builtin(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None: ...
 
