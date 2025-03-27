@@ -10,6 +10,7 @@ from django.db import models
 from django.db.models import Model, Prefetch, QuerySet
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.functions import RowNumber
+from graphene.utils.str_converters import to_snake_case
 from graphene_django.registry import get_global_registry
 from graphene_django.settings import graphene_settings
 
@@ -322,7 +323,14 @@ class QueryOptimizer:
     def process_filters(self, input_data: dict[str, Any]) -> dict[str, Any]:
         from graphene_django.filter.fields import convert_enum
 
-        return {key: convert_enum(value) for key, value in input_data.items()}
+        kwargs = {}
+        for key, value in input_data.items():
+            if key == "order_by" and value is not None:
+                value = to_snake_case(value)
+
+            kwargs[key] = convert_enum(value)
+
+        return kwargs
 
     def run_manual_optimizers(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
         for name, func in self.manual_optimizers.items():
