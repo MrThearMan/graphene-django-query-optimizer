@@ -214,6 +214,75 @@ def test_filter__order_by__multiple(graphql_client):
     }
 
 
+def test_filter__order_by__camelcase_asc(graphql_client):
+    HousingCompanyFactory.create(name="1", street_address="1")
+    HousingCompanyFactory.create(name="2", street_address="2")
+
+    query = """
+        query {
+          pagedHousingCompanies(orderBy: "streetAddress") {
+            edges {
+              node {
+                name
+                streetAddress
+              }
+            }
+          }
+        }
+    """
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    assert response.content == {
+            "edges": [
+                {
+                    "node": {
+                        "name": "1", "streetAddress": "1",
+                    }
+                },
+                {
+                    "node": {
+                        "name": "2", "streetAddress": "2",
+                    }
+                },
+            ]
+        }
+
+
+def test_filter__order_by__camelcase_desc(graphql_client):
+    HousingCompanyFactory.create(name="1", street_address="1")
+    HousingCompanyFactory.create(name="2", street_address="2")
+
+    query = """
+        query {
+          pagedHousingCompanies(orderBy: "-streetAddress") {
+            edges {
+              node {
+                streetAddress
+              }
+            }
+          }
+        }
+    """
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    assert response.content == {
+            "edges": [
+                {
+                    "node": {
+                        "streetAddress": "2",
+                    }
+                },
+                {
+                    "node": {
+                        "streetAddress": "1",
+                    }
+                },
+            ]
+        }
+
+
 def test_filter__order_by__nested__asc(graphql_client):
     developer_1 = DeveloperFactory.create(name="1")
     developer_2 = DeveloperFactory.create(name="3")
@@ -467,6 +536,92 @@ def test_filter__order_by__nested__multiple(graphql_client):
             },
         ]
     }
+
+
+def test_filter__order_by__camelcase__nested_asc(graphql_client):
+    developer_1 = DeveloperFactory.create(name="1")
+    HousingCompanyFactory.create(name="1", street_address="1", developers=[developer_1])
+    HousingCompanyFactory.create(name="2", street_address="2", developers=[developer_1])
+
+    query = """
+        query {
+          pagedDevelopers {
+            edges {
+              node {
+                name
+                housingcompanySet(orderBy: "streetAddress") {
+                  edges {
+                    node {
+                      streetAddress
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    assert response.content == {
+            "edges": [
+                {
+                    "node": {
+                        "name": "1",
+                        "housingcompanySet": {
+                            "edges": [
+                                {"node": {"streetAddress": "1"}},
+                                {"node": {"streetAddress": "2"}},
+                            ],
+                        },
+                    }
+                },
+            ]
+        }
+
+
+def test_filter__order_by__camelcase__nested_desc(graphql_client):
+    developer_1 = DeveloperFactory.create(name="1")
+    HousingCompanyFactory.create(name="1", street_address="1", developers=[developer_1])
+    HousingCompanyFactory.create(name="2", street_address="2", developers=[developer_1])
+
+    query = """
+        query {
+          pagedDevelopers {
+            edges {
+              node {
+                name
+                housingcompanySet(orderBy: "-streetAddress") {
+                  edges {
+                    node {
+                      streetAddress
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    assert response.content == {
+            "edges": [
+                {
+                    "node": {
+                        "name": "1",
+                        "housingcompanySet": {
+                            "edges": [
+                                {"node": {"streetAddress": "2"}},
+                                {"node": {"streetAddress": "1"}},
+                            ],
+                        },
+                    }
+                },
+            ]
+        }
 
 
 def test_filter__list_field(graphql_client):

@@ -10,6 +10,7 @@ from django.db import models
 from django.db.models import Model, Prefetch, QuerySet
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.functions import RowNumber
+from graphene.utils.str_converters import to_snake_case
 from graphene_django.registry import get_global_registry
 from graphene_django.settings import graphene_settings
 
@@ -280,7 +281,7 @@ class QueryOptimizer:
 
     def get_prefetch_ordering(self, filter_info: GraphQLFilterInfo, model: type[Model]) -> list[str]:
         """Get the ordering for prefetch querysets."""
-        order_info: str | list[str] = filter_info.get("filters", {}).get("order_by", "")
+        order_info: str | list[str] = self.process_order_by_filter(filter_info.get("filters", {}).get("order_by", ""))
 
         # 'Graphene-django' uses a comma-separated string for ordering.
         if isinstance(order_info, str):
@@ -319,10 +320,28 @@ class QueryOptimizer:
 
         return filterset.qs
 
+    def process_order_by_filter(self, value: list[str] | str | None) -> list[str] | str | None:
+        if not value:
+            return value
+
+        if isinstance(value, list):
+            return [to_snake_case(item) for item in value]
+
+        return to_snake_case(value)
+
     def process_filters(self, input_data: dict[str, Any]) -> dict[str, Any]:
         from graphene_django.filter.fields import convert_enum
 
-        return {key: convert_enum(value) for key, value in input_data.items()}
+        kwargs = {}
+        for key, value in input_data.items():
+            v = convert_enum(value)
+
+            if key == "order_by":
+                v = self.process_order_by_filter(v)
+
+            kwargs[key] = v
+
+        return kwargs
 
     def run_manual_optimizers(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
         for name, func in self.manual_optimizers.items():
