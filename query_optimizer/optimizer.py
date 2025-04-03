@@ -281,9 +281,7 @@ class QueryOptimizer:
 
     def get_prefetch_ordering(self, filter_info: GraphQLFilterInfo, model: type[Model]) -> list[str]:
         """Get the ordering for prefetch querysets."""
-        order_info: str | list[str] = self.process_order_by_filter(
-            filter_info.get("filters", {}).get("order_by", "")
-        )
+        order_info: str | list[str] = self.process_order_by_filter(filter_info.get("filters", {}).get("order_by", ""))
 
         # 'Graphene-django' uses a comma-separated string for ordering.
         if isinstance(order_info, str):
@@ -322,9 +320,7 @@ class QueryOptimizer:
 
         return filterset.qs
 
-    def process_order_by_filter(
-        self, value: list[str] | str | None
-    ) -> list[str] | str | None:
+    def process_order_by_filter(self, value: list[str] | str | None) -> list[str] | str | None:
         if not value:
             return value
 
