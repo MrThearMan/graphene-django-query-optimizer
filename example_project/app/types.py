@@ -1,4 +1,4 @@
-# ruff: noqa: RUF012, I001
+# ruff: noqa: I001
 from __future__ import annotations
 import graphene
 from django.contrib.contenttypes.models import ContentType
