@@ -234,19 +234,21 @@ def test_filter__order_by__camelcase_asc(graphql_client):
     assert response.no_errors, response.errors
 
     assert response.content == {
-            "edges": [
-                {
-                    "node": {
-                        "name": "1", "streetAddress": "1",
-                    }
-                },
-                {
-                    "node": {
-                        "name": "2", "streetAddress": "2",
-                    }
-                },
-            ]
-        }
+        "edges": [
+            {
+                "node": {
+                    "name": "1",
+                    "streetAddress": "1",
+                }
+            },
+            {
+                "node": {
+                    "name": "2",
+                    "streetAddress": "2",
+                }
+            },
+        ]
+    }
 
 
 def test_filter__order_by__camelcase_desc(graphql_client):
@@ -268,19 +270,19 @@ def test_filter__order_by__camelcase_desc(graphql_client):
     assert response.no_errors, response.errors
 
     assert response.content == {
-            "edges": [
-                {
-                    "node": {
-                        "streetAddress": "2",
-                    }
-                },
-                {
-                    "node": {
-                        "streetAddress": "1",
-                    }
-                },
-            ]
-        }
+        "edges": [
+            {
+                "node": {
+                    "streetAddress": "2",
+                }
+            },
+            {
+                "node": {
+                    "streetAddress": "1",
+                }
+            },
+        ]
+    }
 
 
 def test_filter__order_by__nested__asc(graphql_client):
@@ -565,20 +567,20 @@ def test_filter__order_by__camelcase__nested_asc(graphql_client):
     assert response.no_errors, response.errors
 
     assert response.content == {
-            "edges": [
-                {
-                    "node": {
-                        "name": "1",
-                        "housingcompanySet": {
-                            "edges": [
-                                {"node": {"streetAddress": "1"}},
-                                {"node": {"streetAddress": "2"}},
-                            ],
-                        },
-                    }
-                },
-            ]
-        }
+        "edges": [
+            {
+                "node": {
+                    "name": "1",
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"streetAddress": "1"}},
+                            {"node": {"streetAddress": "2"}},
+                        ],
+                    },
+                }
+            },
+        ]
+    }
 
 
 def test_filter__order_by__camelcase__nested_desc(graphql_client):
@@ -608,20 +610,20 @@ def test_filter__order_by__camelcase__nested_desc(graphql_client):
     assert response.no_errors, response.errors
 
     assert response.content == {
-            "edges": [
-                {
-                    "node": {
-                        "name": "1",
-                        "housingcompanySet": {
-                            "edges": [
-                                {"node": {"streetAddress": "2"}},
-                                {"node": {"streetAddress": "1"}},
-                            ],
-                        },
-                    }
-                },
-            ]
-        }
+        "edges": [
+            {
+                "node": {
+                    "name": "1",
+                    "housingcompanySet": {
+                        "edges": [
+                            {"node": {"streetAddress": "2"}},
+                            {"node": {"streetAddress": "1"}},
+                        ],
+                    },
+                }
+            },
+        ]
+    }
 
 
 def test_filter__list_field(graphql_client):
@@ -804,7 +806,7 @@ def test_filter__nested_connection__deep(graphql_client):
     )
     assert response.queries[3] == has(
         'FROM "app_realestate"',
-        ("ROW_NUMBER() OVER " '(PARTITION BY "app_realestate"."housing_company_id" ORDER BY "app_realestate"."id")'),
+        ('ROW_NUMBER() OVER (PARTITION BY "app_realestate"."housing_company_id" ORDER BY "app_realestate"."id")'),
     )
 
     assert response.content == {

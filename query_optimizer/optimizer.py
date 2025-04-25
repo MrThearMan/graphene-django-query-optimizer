@@ -325,7 +325,7 @@ class QueryOptimizer:
             return value
 
         if isinstance(value, list):
-            return [to_snake_case(item) for item in value]
+            return [to_snake_case(item) for item in value if item]
 
         return to_snake_case(value)
 
