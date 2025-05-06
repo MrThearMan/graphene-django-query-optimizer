@@ -57,25 +57,25 @@ django-settings-holder = ">=0.1.2"
 django-filter = { version = ">=21.1", optional = true }
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.3.4"
-coverage = "7.6.10"
-pytest-django = "4.9.0"
-tox = "4.23.2"
-tox-gh-actions = "3.2.0"
-faker = "33.3.1"
-factory-boy = "3.3.1"
+pytest = "8.3.5"
+coverage = "7.8.0"
+pytest-django = "4.11.1"
+tox = "4.25.0"
+tox-gh-actions = "3.3.0"
+faker = "37.1.0"
+factory-boy = "3.3.3"
 sqlparse = "0.5.3"
 django-graphiql-debug-toolbar = "0.2.0"
 py-spy = "0.4.0"
-django-filter = "24.3"
+django-filter = "25.1"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
-pymdown-extensions = "10.14"
+pymdown-extensions = "10.15"
 mkdocs-mermaid2-plugin = "1.2.1"
 
 [tool.poetry.group.lint.dependencies]
-pre-commit = "4.0.1"
+pre-commit = "4.2.0"
 
 [tool.ruff]
 fix = true
