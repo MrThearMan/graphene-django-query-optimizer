@@ -57,7 +57,7 @@ django-settings-holder = ">=0.1.2"
 django-filter = { version = ">=21.1", optional = true }
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.3.5"
+pytest = "8.4.0"
 coverage = "7.8.2"
 pytest-django = "4.11.1"
 tox = "4.26.0"
