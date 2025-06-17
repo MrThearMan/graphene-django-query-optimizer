@@ -11,7 +11,7 @@ from graphene_django.utils import maybe_queryset
 from .ast import GraphQLASTWalker
 from .errors import OptimizerError
 from .optimizer import QueryOptimizer
-from .prefetch_hack import fetch_in_context
+from .prefetch_hack import evaluate_with_prefetch_hack
 from .settings import optimizer_settings
 from .utils import is_optimized, optimizer_logger, swappable_by_subclassing
 
@@ -41,7 +41,7 @@ def optimize(
     optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
     if optimizer is not None:
         queryset = optimizer.optimize_queryset(queryset)
-        fetch_in_context(queryset, info)
+        evaluate_with_prefetch_hack(queryset)
 
     return queryset
 
@@ -59,7 +59,7 @@ def optimize_single(
         return queryset.filter(pk=pk).first()
 
     queryset = optimizer.optimize_queryset(queryset.filter(pk=pk))
-    fetch_in_context(queryset, info)
+    evaluate_with_prefetch_hack(queryset)
 
     # Shouldn't use .first(), as it can apply additional ordering, which would cancel the optimization.
     # The queryset should have the right model instance, since we started by filtering by its pk,
@@ -179,6 +179,11 @@ class OptimizationCompiler(GraphQLASTWalker):
 
     def handle_total_count(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
         self.optimizer.total_count = True
+
+    def handle_page_info(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
+        # If asking for next page, we need to know the total count.
+        if field_node.name.value == "hasNextPage":
+            self.optimizer.total_count = True
 
     def handle_custom_field(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
         field_name = to_snake_case(field_node.name.value)

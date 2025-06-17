@@ -39,6 +39,9 @@ class DefaultSettings(NamedTuple):
     OPTIMIZER_MARK: str = "_optimized"
     """Key used mark if a queryset has been optimized by the query optimizer."""
 
+    PREFETCH_HACK_CACHE_KEY: str = "_optimizer_prefetch_hack_cache"
+    """Key used to store the prefetch hack cache in queryset hints."""
+
     PREFETCH_COUNT_KEY: str = "_optimizer_count"
     """Name used for annotating the prefetched queryset total count."""
 

@@ -1,8 +1,8 @@
 import pytest
-from graphql_relay import to_global_id
 from graphene_django.settings import graphene_settings
+from graphql_relay import to_global_id
 
-from example_project.app.models import Building
+from example_project.app.models import Apartment, Building
 from example_project.app.types import BuildingNode
 from tests.factories import (
     ApartmentFactory,
@@ -974,7 +974,7 @@ def test_pagination__has_next_page__empty(graphql_client):
     response = graphql_client(query)
     assert response.no_errors, response.errors
 
-    assert response.content == {'pageInfo': {'hasNextPage': False}}
+    assert response.content == {"pageInfo": {"hasNextPage": False}}
 
 
 def test_pagination__has_next_page__fits_in_page(graphql_client):
@@ -991,12 +991,15 @@ def test_pagination__has_next_page__fits_in_page(graphql_client):
     response = graphql_client(query)
     assert response.no_errors, response.errors
 
-    assert response.content == {'pageInfo': {'hasNextPage': False}}
+    assert response.content == {"pageInfo": {"hasNextPage": False}}
 
 
 def test_pagination__has_next_page__overflows_page(graphql_client):
-    for idx in range(graphene_settings.RELAY_CONNECTION_MAX_LIMIT + 1):
+    for _idx in range(graphene_settings.RELAY_CONNECTION_MAX_LIMIT + 1):
         BuildingFactory.create()
+
+    assert graphene_settings.RELAY_CONNECTION_MAX_LIMIT == 100
+    assert Building.objects.count() == 101
 
     query = """
         query {
@@ -1008,11 +1011,11 @@ def test_pagination__has_next_page__overflows_page(graphql_client):
     response = graphql_client(query)
     assert response.no_errors, response.errors
 
-    assert response.content == {'pageInfo': {'hasNextPage': True}}
+    assert response.content == {"pageInfo": {"hasNextPage": True}}
 
 
 def test_pagination__has_next_page__last_page(graphql_client):
-    for idx in range(graphene_settings.RELAY_CONNECTION_MAX_LIMIT + 1):
+    for _idx in range(graphene_settings.RELAY_CONNECTION_MAX_LIMIT + 1):
         BuildingFactory.create()
 
     query = """
@@ -1026,7 +1029,7 @@ def test_pagination__has_next_page__last_page(graphql_client):
     response = graphql_client(query)
     assert response.no_errors, response.errors
 
-    assert response.content == {'pageInfo': {'hasNextPage': False}}
+    assert response.content == {"pageInfo": {"hasNextPage": False}}
 
 
 def test_pagination__nested__has_next_page__empty(graphql_client):
@@ -1039,7 +1042,7 @@ def test_pagination__nested__has_next_page__empty(graphql_client):
         query {
           building(id: "%s") {
             apartments {
-                pageInfo { hasNextPage }
+              pageInfo { hasNextPage }
             }
           }
         }
@@ -1048,7 +1051,7 @@ def test_pagination__nested__has_next_page__empty(graphql_client):
     response = graphql_client(query)
     assert response.no_errors, response.errors
 
-    assert response.content == {'apartments': {'pageInfo': {'hasNextPage': False}}}
+    assert response.content == {"apartments": {"pageInfo": {"hasNextPage": False}}}
 
 
 def test_pagination__nested__has_next_page__fits_in_page(graphql_client):
@@ -1060,9 +1063,9 @@ def test_pagination__nested__has_next_page__fits_in_page(graphql_client):
     query = """
         query {
           building(id: "%s") {
-              apartments {
-                  pageInfo { hasNextPage }
-              }
+            apartments {
+              pageInfo { hasNextPage }
+            }
           }
         }
     """ % (global_id,)
@@ -1070,7 +1073,7 @@ def test_pagination__nested__has_next_page__fits_in_page(graphql_client):
     response = graphql_client(query)
     assert response.no_errors, response.errors
 
-    assert response.content == {'apartments': {'pageInfo': {'hasNextPage': False}}}
+    assert response.content == {"apartments": {"pageInfo": {"hasNextPage": False}}}
 
 
 @pytest.mark.usefixtures("_set_building_node_apartments_max_limit")
@@ -1082,12 +1085,14 @@ def test_pagination__nested__has_next_page__overflows_page(graphql_client):
         # Fixture set pagination to 1, thus creating 2 instances to let the page overflow
         ApartmentFactory.create(street_address=idx, building=building)
 
+    assert Apartment.objects.count() == 2
+
     query = """
         query {
           building(id: "%s") {
-              apartments {
-                  pageInfo { hasNextPage }
-              }
+            apartments {
+              pageInfo { hasNextPage }
+            }
           }
         }
     """ % (global_id,)
@@ -1095,7 +1100,7 @@ def test_pagination__nested__has_next_page__overflows_page(graphql_client):
     response = graphql_client(query)
     assert response.no_errors, response.errors
 
-    assert response.content == {'apartments': {'pageInfo': {'hasNextPage': True}}}
+    assert response.content == {"apartments": {"pageInfo": {"hasNextPage": True}}}
 
 
 @pytest.mark.usefixtures("_set_building_node_apartments_max_limit")
@@ -1120,4 +1125,4 @@ def test_pagination__nested__has_next_page__last_page(graphql_client):
     response = graphql_client(query)
     assert response.no_errors, response.errors
 
-    assert response.content == {'apartments': {'pageInfo': {'hasNextPage': False}}}
+    assert response.content == {"apartments": {"pageInfo": {"hasNextPage": False}}}
