@@ -6,6 +6,8 @@ from .housing_company import HousingCompanyFactory
 from .owner import OwnerFactory
 from .ownership import OwnershipFactory
 from .postal_code import PostalCodeFactory
+from .product import ProductFactory
+from .product_image import ProductImageFactory
 from .property_manager import PropertyManagerFactory
 from .real_estate import RealEstateFactory
 from .sale import SaleFactory
@@ -21,6 +23,8 @@ __all__ = [
     "OwnerFactory",
     "OwnershipFactory",
     "PostalCodeFactory",
+    "ProductFactory",
+    "ProductImageFactory",
     "PropertyManagerFactory",
     "RealEstateFactory",
     "SaleFactory",

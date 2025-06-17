@@ -24,6 +24,8 @@ __all__ = [
     "Owner",
     "Ownership",
     "PostalCode",
+    "Product",
+    "ProductImage",
     "PropertyManager",
     "PropertyManagerProxy",
     "RealEstate",
@@ -74,6 +76,24 @@ class Tag(models.Model):
 
     def __str__(self) -> str:
         return self.tag
+
+
+class Product(models.Model):
+    name = models.CharField(max_length=255)
+
+    similar = models.ManyToManyField("self", blank=True)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class ProductImage(models.Model):
+    image = models.URLField()
+
+    product = models.ForeignKey(Product, related_name="images", on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.image)
 
 
 class PostalCode(models.Model):

@@ -4,16 +4,17 @@ import itertools
 from typing import TYPE_CHECKING, Optional
 
 import graphene
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models.functions import Concat
 from graphene import relay
 from graphene_django.debug import DjangoDebug
 
-from query_optimizer import optimize
+from query_optimizer import optimize, optimize_single
 from query_optimizer.fields import DjangoConnectionField, DjangoListField
 from query_optimizer.selections import get_field_selections
 
-from .models import Apartment, Developer, Example, HousingCompany, Owner, PropertyManager
+from .models import Apartment, Developer, Example, HousingCompany, Owner, Product, PropertyManager
 from .types import (
     ApartmentNode,
     ApartmentType,
@@ -30,6 +31,7 @@ from .types import (
     People,
     PlainObjectType,
     PostalCodeType,
+    ProductType,
     PropertyManagerNode,
     PropertyManagerType,
     RealEstateNode,
@@ -106,6 +108,21 @@ class Query(graphene.ObjectType):
 
     def resolve_example(root: None, info: GQLInfo, pk: Optional[int] = None):
         return optimize(Example.objects.filter(pk=pk), info).first()
+
+    # --------------------------------------------------------------------
+
+    product = graphene.Field(ProductType, id=graphene.Int(required=True))
+
+    def resolve_product(self, info: GQLInfo, **kwargs) -> Product:
+        product_id = kwargs["id"]
+        qs = Product.objects.filter(pk=product_id)
+
+        result = optimize_single(qs, info, pk=product_id)
+        if result is None:
+            msg = f"Product with id {product_id!r} does not exist"
+            raise ObjectDoesNotExist(msg)
+
+        return result
 
     # --------------------------------------------------------------------
 

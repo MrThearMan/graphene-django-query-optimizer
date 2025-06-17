@@ -1,6 +1,8 @@
 # ruff: noqa: I001
 from __future__ import annotations
+
 import graphene
+import urllib.parse
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import F, Model, QuerySet, Value
 from django.db.models.functions import Concat, ExtractYear
@@ -68,6 +70,8 @@ from example_project.app.models import (
     Shareholder,
     ShareholderProxy,
     Tag,
+    ProductImage,
+    Product,
 )
 from typing import TYPE_CHECKING
 
@@ -301,6 +305,31 @@ class OwnershipType(DjangoObjectType):
             "sale",
             "percentage",
         ]
+
+
+class ProductImageType(DjangoObjectType):
+    image = graphene.String(required=True)
+
+    class Meta:
+        model = ProductImage
+        interfaces = [relay.Node]
+        fields = ["id", "image"]
+
+    def resolve_image(self: ProductImage, info: GQLInfo) -> str | None:
+        if self.image:
+            return urllib.parse.unquote(self.image)
+        return None
+
+
+class ProductType(DjangoObjectType):
+    similar = DjangoConnectionField(lambda: ProductType)
+
+    images = DjangoListField(graphene.NonNull(ProductImageType), required=True)
+
+    class Meta:
+        model = Product
+        interfaces = [relay.Node]
+        fields = ["id", "name", "similar", "images"]
 
 
 # Generic Relations

@@ -1,6 +1,14 @@
 import pytest
+from graphql_relay import to_global_id
 
-from tests.factories import ApartmentFactory, DeveloperFactory, HousingCompanyFactory, RealEstateFactory
+from tests.factories import (
+    ApartmentFactory,
+    DeveloperFactory,
+    HousingCompanyFactory,
+    ProductFactory,
+    ProductImageFactory,
+    RealEstateFactory,
+)
 from tests.helpers import has
 
 pytestmark = [
@@ -253,3 +261,73 @@ def test_relations__many_to_many_relations__shared_entities(graphql_client):
             ]
         },
     ]
+
+
+def test_relations__self_relation(graphql_client):
+    product = ProductFactory.create(name="foo")
+    similar_1 = ProductFactory.create(name="bar", similar=[product])
+    similar_2 = ProductFactory.create(name="baz", similar=[product])
+
+    ProductImageFactory.create(image="https://example.com/1.jpg", product=product)
+    ProductImageFactory.create(image="https://example.com/2.jpg", product=product)
+
+    ProductImageFactory.create(image="https://example.com/3.jpg", product=similar_1)
+    ProductImageFactory.create(image="https://example.com/4.jpg", product=similar_2)
+
+    query = """
+        query {
+          product(id: %s) {
+            name
+            similar {
+              edges {
+                node {
+                  id
+                  name
+                  images {
+                    image
+                  }
+                }
+              }
+            }
+          }
+        }
+    """ % (product.id,)
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    assert response.content == {
+        "name": "foo",
+        "similar": {
+            "edges": [
+                {
+                    "node": {
+                        "id": to_global_id("ProductType", similar_1.id),
+                        "name": "bar",
+                        "images": [
+                            {
+                                "image": "https://example.com/3.jpg",
+                            },
+                        ],
+                    },
+                },
+                {
+                    "node": {
+                        "id": to_global_id("ProductType", similar_2.id),
+                        "name": "baz",
+                        "images": [
+                            {
+                                "image": "https://example.com/4.jpg",
+                            },
+                        ],
+                    },
+                },
+            ],
+        },
+    }
+
+    # Queries:
+    # 1) Fetching product
+    # 2) Fetching similar products
+    # 3) Fetching images for similar products
+    assert response.queries.count == 3, response.queries.log
