@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Model, Prefetch, QuerySet
+from django.db.models import ManyToManyField, ManyToManyRel, Model, Prefetch, QuerySet
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.functions import RowNumber
 from graphene.utils.str_converters import to_snake_case
@@ -16,7 +16,7 @@ from graphene_django.settings import graphene_settings
 
 from .ast import get_model_field
 from .filter_info import get_filter_info
-from .prefetch_hack import _register_for_prefetch_hack
+from .prefetch_hack import register_for_prefetch_hack
 from .settings import optimizer_settings
 from .typing import Generic, TModel
 from .utils import (
@@ -109,7 +109,7 @@ class QueryOptimizer:
         return self.optimize(results, filter_info)
 
     def pre_processing(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
-        """Run all pre-optimization hooks on the objct type mathcing the queryset's model."""
+        """Run all pre-optimization hooks on the object type matching the queryset's model."""
         object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
         if callable(getattr(object_type, "pre_optimization_hook", None)):
             return object_type.pre_optimization_hook(queryset, self)
@@ -250,7 +250,8 @@ class QueryOptimizer:
             cut = calculate_queryset_slice(**pagination_args)
             queryset = add_slice_to_queryset(queryset, start=models.Value(cut.start), stop=models.Value(cut.stop))
 
-        _register_for_prefetch_hack(self.info, field)
+        if isinstance(field, ManyToManyField | ManyToManyRel):
+            register_for_prefetch_hack(queryset, field)
 
         return (
             queryset

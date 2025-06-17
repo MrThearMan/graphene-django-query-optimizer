@@ -25,7 +25,7 @@ class GraphQLResponse(NamedTuple):
         return self.errors is None
 
 
-@pytest.fixture()
+@pytest.fixture
 def graphql_client(client: Client) -> Callable[..., GraphQLResponse]:
     def func(*args, **kwargs) -> GraphQLResponse:
         with capture_database_queries() as queries:
@@ -45,7 +45,7 @@ def graphql_client(client: Client) -> Callable[..., GraphQLResponse]:
     return func
 
 
-@pytest.fixture()
+@pytest.fixture
 def _set_building_node_apartments_max_limit() -> int:
     limit = BuildingNode.apartments.max_limit
     try:
@@ -55,7 +55,7 @@ def _set_building_node_apartments_max_limit() -> int:
         BuildingNode.apartments.max_limit = limit
 
 
-@pytest.fixture()
+@pytest.fixture
 def _remove_apartment_node_apartments_max_limit() -> int:
     limit = BuildingNode.apartments.max_limit
     try:

@@ -15,7 +15,7 @@ from graphql_relay.connection.array_connection import offset_to_cursor
 
 from .ast import get_underlying_type
 from .compiler import OptimizationCompiler, optimize
-from .prefetch_hack import fetch_in_context
+from .prefetch_hack import evaluate_with_prefetch_hack
 from .settings import optimizer_settings
 from .utils import calculate_queryset_slice, is_optimized
 from .validators import validate_pagination_args
@@ -315,10 +315,12 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         if not already_optimized:
             queryset = queryset[cut]
 
+        instances = evaluate_with_prefetch_hack(queryset)
+
         edges: list[EdgeType] = [
             # Create a connection from the sliced queryset.
             self.connection_type.Edge(node=value, cursor=offset_to_cursor(cut.start + index))
-            for index, value in enumerate(fetch_in_context(queryset, info))
+            for index, value in enumerate(instances)
         ]
 
         connection = connection_adapter(
