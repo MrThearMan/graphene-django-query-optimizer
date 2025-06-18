@@ -1,6 +1,6 @@
 [project]
 name = "graphene-django-query-optimizer"
-version = "0.10.11"
+version = "0.10.12"
 description = "Automatically optimize SQL queries in Graphene-Django schemas."
 authors = [
     { name = "Matti Lamppu", email = "lamppu.matti.akseli@gmail.com" },
