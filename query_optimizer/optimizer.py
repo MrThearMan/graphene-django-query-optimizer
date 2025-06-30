@@ -32,16 +32,7 @@ from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
     from .types import DjangoObjectType
-    from .typing import (
-        Any,
-        ExpressionKind,
-        GQLInfo,
-        GraphQLFilterInfo,
-        Literal,
-        Optional,
-        QuerySetResolver,
-        ToManyField,
-    )
+    from .typing import Any, ExpressionKind, GQLInfo, GraphQLFilterInfo, Literal, QuerySetResolver, ToManyField
 
 __all__ = [
     "QueryOptimizer",
@@ -82,7 +73,7 @@ class QueryOptimizer:
         self,
         model: type[Model] | None,
         info: GQLInfo,
-        name: Optional[str] = None,
+        name: str | None = None,
         parent: QueryOptimizer | None = None,
     ) -> None:
         self.model = model
@@ -110,7 +101,7 @@ class QueryOptimizer:
 
     def pre_processing(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
         """Run all pre-optimization hooks on the object type matching the queryset's model."""
-        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
+        object_type: DjangoObjectType | None = get_global_registry().get_type_for_model(queryset.model)
         if callable(getattr(object_type, "pre_optimization_hook", None)):
             return object_type.pre_optimization_hook(queryset, self)
 
@@ -189,7 +180,7 @@ class QueryOptimizer:
         if not filter_info.get("is_connection", False):
             return queryset
 
-        field: Optional[ToManyField] = get_model_field(self.parent.model, self.name)
+        field: ToManyField | None = get_model_field(self.parent.model, self.name)
         if field is None:  # pragma: no cover
             msg = (
                 f"Cannot find field {self.name!r} on model {self.parent.model.__name__!r}. "
@@ -303,7 +294,7 @@ class QueryOptimizer:
     def filter_queryset(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
         """Run all filtering based on the object type matching the queryset's model."""
         # Run filtering hooks on object types if they exist.
-        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
+        object_type: DjangoObjectType | None = get_global_registry().get_type_for_model(queryset.model)
         if callable(getattr(object_type, "filter_queryset", None)):
             queryset = object_type.filter_queryset(queryset, self.info)
 
