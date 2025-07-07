@@ -3,7 +3,7 @@ from __future__ import annotations
 from graphene_django.settings import graphene_settings
 from graphql_relay import cursor_to_offset
 
-from .typing import Optional, TypedDict
+from .typing import TypedDict
 
 __all__ = [
     "validate_pagination_args",
@@ -11,20 +11,20 @@ __all__ = [
 
 
 class PaginationArgs(TypedDict):
-    after: Optional[int]
-    before: Optional[int]
-    first: Optional[int]
-    last: Optional[int]
-    size: Optional[int]
+    after: int | None
+    before: int | None
+    first: int | None
+    last: int | None
+    size: int | None
 
 
 def validate_pagination_args(  # noqa: C901, PLR0912
-    first: Optional[int],
-    last: Optional[int],
-    offset: Optional[int],
-    after: Optional[str],
-    before: Optional[str],
-    max_limit: Optional[int] = None,
+    first: int | None,
+    last: int | None,
+    offset: int | None,
+    after: str | None,
+    before: str | None,
+    max_limit: int | None = None,
 ) -> PaginationArgs:
     """
     Validate the pagination arguments and return a dictionary with the validated values.
