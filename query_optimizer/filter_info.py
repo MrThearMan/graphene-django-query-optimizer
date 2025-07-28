@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from django.db.models import Model
     from graphene.types.definitions import GrapheneObjectType
 
-    from .typing import Any, Optional
+    from .typing import Any
 
 
 __all__ = [
@@ -62,7 +62,7 @@ class FilterInfoCompiler(GraphQLASTWalker):
         is_connection_ = is_connection(graphene_type)
 
         # Find the field-specific limit, or use the default limit.
-        max_limit: Optional[int] = getattr(
+        max_limit: int | None = getattr(
             getattr(parent_type.graphene_type, orig_field_name, None),
             "max_limit",
             graphene_settings.RELAY_CONNECTION_MAX_LIMIT,

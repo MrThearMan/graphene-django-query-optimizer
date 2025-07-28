@@ -154,10 +154,10 @@ class GraphQLFilterInfo(TypedDict, total=False):
     name: str
     filters: dict[str, Any]
     children: dict[str, GraphQLFilterInfo]
-    filterset_class: Optional[type[FilterSet]]
+    filterset_class: type[FilterSet] | None
     is_connection: bool
     is_node: bool
-    max_limit: Optional[int]
+    max_limit: int | None
 
 
 class ExpressionKind(Protocol):
