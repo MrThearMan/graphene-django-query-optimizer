@@ -8,7 +8,7 @@ from django.db import models
 from .settings import optimizer_settings
 
 if TYPE_CHECKING:
-    from .typing import Any, Optional, ParamSpec, TypeVar, Union
+    from .typing import Any, ParamSpec, TypeVar, Union
 
     T = TypeVar("T")
     P = ParamSpec("P")
@@ -50,10 +50,10 @@ def is_optimized(queryset: Union[models.QuerySet, list[models.Model]]) -> bool:
 
 def calculate_queryset_slice(
     *,
-    after: Optional[int],
-    before: Optional[int],
-    first: Optional[int],
-    last: Optional[int],
+    after: int | None,
+    before: int | None,
+    first: int | None,
+    last: int | None,
     size: int,
 ) -> slice:
     """
@@ -110,10 +110,10 @@ def calculate_queryset_slice(
 def calculate_slice_for_queryset(
     queryset: models.QuerySet,
     *,
-    after: Optional[int],
-    before: Optional[int],
-    first: Optional[int],
-    last: Optional[int],
+    after: int | None,
+    before: int | None,
+    first: int | None,
+    last: int | None,
     size: int,
 ) -> models.QuerySet:
     """
