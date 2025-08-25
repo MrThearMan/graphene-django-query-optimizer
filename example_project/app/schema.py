@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import itertools
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import graphene
 from django.db import models
@@ -104,7 +104,7 @@ class Query(graphene.ObjectType):
     example = graphene.Field(ExampleType, pk=graphene.Int(required=True))
     examples = DjangoListField(ExampleType)
 
-    def resolve_example(root: None, info: GQLInfo, pk: Optional[int] = None):
+    def resolve_example(root: None, info: GQLInfo, pk: int | None = None):
         return optimize(Example.objects.filter(pk=pk), info).first()
 
     # --------------------------------------------------------------------

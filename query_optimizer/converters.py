@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
     from query_optimizer import DjangoObjectType
     from query_optimizer.fields import DjangoConnectionField, DjangoListField
-    from query_optimizer.typing import Optional, Union
+    from query_optimizer.typing import Union
 
 __all__ = [
     "convert_to_many_field",
@@ -26,10 +26,10 @@ __all__ = [
 @convert_django_field.register(models.OneToOneRel)
 def convert_to_one_field(
     field,  # noqa: ANN001
-    registry: Optional[Registry] = None,
+    registry: Registry | None = None,
 ) -> graphene.Dynamic:
-    def dynamic_type() -> Optional[graphene.Field]:
-        type_: Optional[type[DjangoObjectType]] = registry.get_type_for_model(field.related_model)
+    def dynamic_type() -> graphene.Field | None:
+        type_: type[DjangoObjectType] | None = registry.get_type_for_model(field.related_model)
         if type_ is None:  # pragma: no cover
             return None
 
@@ -53,10 +53,10 @@ def convert_to_one_field(
 @convert_django_field.register(models.ManyToOneRel)
 def convert_to_many_field(
     field,  # noqa: ANN001
-    registry: Optional[Registry] = None,
+    registry: Registry | None = None,
 ) -> graphene.Dynamic:
     def dynamic_type() -> Union[DjangoConnectionField, DjangoListField, None]:
-        type_: Optional[type[DjangoObjectType]] = registry.get_type_for_model(field.related_model)
+        type_: type[DjangoObjectType] | None = registry.get_type_for_model(field.related_model)
         if type_ is None:  # pragma: no cover
             return None
 

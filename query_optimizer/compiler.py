@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from graphene.types.definitions import GrapheneObjectType
     from graphql import FieldNode
 
-    from .typing import PK, GQLInfo, Optional, TModel, ToManyField, ToOneField, Union
+    from .typing import PK, GQLInfo, TModel, ToManyField, ToOneField, Union
 
 
 __all__ = [
@@ -35,7 +35,7 @@ def optimize(
     queryset: QuerySet[TModel],
     info: GQLInfo,
     *,
-    max_complexity: Optional[int] = None,
+    max_complexity: int | None = None,
 ) -> QuerySet[TModel]:
     """Optimize the given queryset according to the field selections received in the GraphQLResolveInfo."""
     optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
@@ -51,8 +51,8 @@ def optimize_single(
     info: GQLInfo,
     *,
     pk: PK,
-    max_complexity: Optional[int] = None,
-) -> Optional[TModel]:
+    max_complexity: int | None = None,
+) -> TModel | None:
     """Optimize the given queryset for a single model instance by its primary key."""
     optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
     if optimizer is None:  # pragma: no cover
@@ -71,7 +71,7 @@ def optimize_single(
 class OptimizationCompiler(GraphQLASTWalker):
     """Class for compiling SQL optimizations based on the given query."""
 
-    def __init__(self, info: GQLInfo, max_complexity: Optional[int] = None) -> None:
+    def __init__(self, info: GQLInfo, max_complexity: int | None = None) -> None:
         """
         Initialize the optimization compiler with the query info.
 
@@ -81,10 +81,10 @@ class OptimizationCompiler(GraphQLASTWalker):
         """
         self.max_complexity = max_complexity or optimizer_settings.MAX_COMPLEXITY
         self.optimizer: QueryOptimizer = None  # type: ignore[assignment]
-        self.to_attr: Optional[str] = None
+        self.to_attr: str | None = None
         super().__init__(info)
 
-    def compile(self, queryset: Union[QuerySet, Manager, list[Model]]) -> Optional[QueryOptimizer]:
+    def compile(self, queryset: Union[QuerySet, Manager, list[Model]]) -> QueryOptimizer | None:
         """
         Compile optimizations for the given queryset.
 
@@ -187,7 +187,7 @@ class OptimizationCompiler(GraphQLASTWalker):
 
     def handle_custom_field(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
         field_name = to_snake_case(field_node.name.value)
-        field: Optional[graphene.Field] = field_type.graphene_type._meta.fields.get(field_name)
+        field: graphene.Field | None = field_type.graphene_type._meta.fields.get(field_name)
         if field is None:  # pragma: no cover
             msg = (
                 f"Field '{field_node.name.value}' not found from object type '{field_type.graphene_type}'. "
@@ -198,7 +198,7 @@ class OptimizationCompiler(GraphQLASTWalker):
 
         # `RelatedField`, `DjangoListField` and `DjangoConnectionField` can define a
         # 'field_name' attribute to specify the actual model field name.
-        actual_field_name: Optional[str] = getattr(field, "field_name", None)
+        actual_field_name: str | None = getattr(field, "field_name", None)
         if actual_field_name is not None:
             self.to_attr = field_name
             return self.handle_model_field(field_type, field_node, actual_field_name)
