@@ -5,9 +5,10 @@ from __future__ import annotations
 import random
 import string
 from itertools import cycle
+from typing import TYPE_CHECKING
 
 from django.core.management import call_command
-from django.core.management.base import BaseCommand, CommandParser
+from django.core.management.base import BaseCommand
 from faker import Faker
 
 from example_project.app.models import (
@@ -54,6 +55,9 @@ from example_project.app.models import (
     Shareholder,
     Tag,
 )
+
+if TYPE_CHECKING:
+    from django.core.management.base import CommandParser
 
 faker = Faker(locale="en_US")
 

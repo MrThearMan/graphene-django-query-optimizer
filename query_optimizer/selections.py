@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from graphene.types.definitions import GrapheneObjectType
     from graphql import FieldNode
 
-    from .typing import Any, GQLInfo, Optional, ToManyField, ToOneField
+    from .typing import Any, GQLInfo, ToManyField, ToOneField
 
 
 __all__ = [
@@ -22,7 +22,7 @@ __all__ = [
 ]
 
 
-def get_field_selections(info: GQLInfo, model: Optional[type[models.Model]] = None) -> list[Any]:
+def get_field_selections(info: GQLInfo, model: type[models.Model] | None = None) -> list[Any]:
     """Compile filter information included in the GraphQL query."""
     compiler = FieldSelectionCompiler(info, model)
     compiler.run()

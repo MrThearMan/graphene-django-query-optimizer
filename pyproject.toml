@@ -25,15 +25,14 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Framework :: Django :: 4.2",
     "Framework :: Django :: 5.0",
     "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
 ]
-requires-python = ">=3.10,<4"
+requires-python = ">=3.11,<4"
 dynamic = [
     "dependencies",
 ]
@@ -51,31 +50,33 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-Django = ">=4.2"
+Django = ">=5.0"
 graphene-django = ">=3.0.0"
 django-settings-holder = ">=0.1.2"
 django-filter = { version = ">=21.1", optional = true }
 
 [tool.poetry.group.test.dependencies]
 pytest = "8.4.1"
-coverage = "7.10.2"
+coverage = "7.10.6"
 pytest-django = "4.11.1"
-tox = "4.28.4"
-tox-gh-actions = "3.3.0"
-faker = "37.5.3"
+nox = "2025.5.1"
+faker = "37.6.0"
 factory-boy = "3.3.3"
 sqlparse = "0.5.3"
 django-graphiql-debug-toolbar = "0.2.0"
-py-spy = "0.4.1"
 django-filter = "25.1"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
 pymdown-extensions = "10.16.1"
-mkdocs-mermaid2-plugin = "1.2.1"
+pygments = "2.19.2"
+mkdocs-mermaid2-plugin = "1.2.2"
 
 [tool.poetry.group.lint.dependencies]
-pre-commit = "4.2.0"
+pre-commit = "4.3.0"
+mypy = "1.17.1"
+django-stubs = "5.2.2"
+py-spy = "0.4.1"
 
 [tool.ruff]
 fix = true
@@ -84,12 +85,18 @@ line-length = 120
 extend-exclude = [
     "tests*",
 ]
-lint.typing-modules = [
+
+[tool.ruff.format]
+docstring-code-format = true
+preview = true
+
+[tool.ruff.lint]
+typing-modules = [
     "query_optimizer.typing",
 ]
-lint.explicit-preview-rules = true
-lint.preview = true
-lint.select = [
+preview = true
+explicit-preview-rules = true
+select = [
     "A",        # flake8-builtins
     "ANN",      # flake8-annotations
     "ARG",      # flake8-unused-arguments
@@ -142,7 +149,7 @@ lint.select = [
     "W",        # pycodestyle warnings
 ]
 # Preview rules
-lint.extend-select = [
+extend-select = [
     "B909",     # loop-iterator-mutation
     "FURB110",  # if-exp-instead-of-or-operator
     "FURB142",  # for-loop-set-mutations
@@ -161,7 +168,7 @@ lint.extend-select = [
     "RUF022",   # unsorted-dunder-all
     "UP042",    # replace-str-enum
 ]
-lint.ignore = [
+ignore = [
     "A005",     # Allow shadowing builtin modules
     "ANN401",   # Any-typing allowed
     "ARG002",   # Unused method argument
@@ -223,11 +230,21 @@ lint.ignore = [
 [tool.ruff.lint.isort]
 combine-as-imports = false
 split-on-trailing-comma = false
+required-imports = [
+    "from __future__ import annotations",
+]
 known-third-party = [
     "django",
 ]
 known-first-party = [
     "query_optimizer",
+]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
 ]
 
 [tool.ruff.lint.flake8-import-conventions]
@@ -254,6 +271,16 @@ banned-from = [
     "yaml",
 ]
 
+[tool.ruff.lint.flake8-annotations]
+suppress-dummy-args = true
+
+[tool.ruff.lint.flake8-type-checking]
+strict = true
+quote-annotations = false
+
+[tool.ruff.lint.flake8-unused-arguments]
+ignore-variadic-names = true
+
 [tool.ruff.lint.flake8-self]
 extend-ignore-names = [
     "_base_manager",
@@ -261,20 +288,20 @@ extend-ignore-names = [
     "_meta",
 ]
 
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
 [tool.ruff.lint.pylint]
-max-args = 7
+max-returns = 8
+max-positional-args = 5
+max-args = 10
+max-bool-expr = 6
 
 [tool.coverage.run]
 relative_files = true
+branch = true
 
 [tool.coverage.report]
-omit = [
-    "tests/*",
-    "docs/*",
-    ".venv/*",
-    ".tox/*",
-    "example_project/*",
-]
 exclude_lines = [
     "if TYPE_CHECKING:",
     "except ImportError:",
@@ -283,54 +310,17 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "example_project.config.settings"
-filterwarnings = [
-    "ignore::DeprecationWarning",
+DJANGO_SETTINGS_MODULE = "example_project.project.settings"
+addopts = "--disable-warnings"
+
+[tool.mypy]
+plugins = [
+    "mypy_django_plugin.main",
 ]
 
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-envlist = py{310, 311, 312, 313}-django{42, 50, 51}-gd{30, 31, 32}
-isolated_build = true
-
-[gh-actions]
-python =
-    3.10: py310
-    3.11: py311
-    3.12: py312
-    3.13: py313
-
-[testenv]
-allowlist_externals =
-    poetry
-setenv =
-    PYTHONPATH = {toxinidir}
-    DJANGO_SETTINGS_MODULE = example_project.config.settings
-deps =
-    django42: Django >=4.2,<4.3
-    django50: Django >=5.0,<5.1
-    django51: Django >=5.1,<5.2
-
-    gd30: graphene-django >=3.0.0,<3.1.0
-    gd31: graphene-django >=3.1.0,<3.2.0
-    gd32: graphene-django >=3.2.0,<3.3.0
-
-    django-filter
-    django-settings-holder
-    typing-extensions
-
-    pytest
-    coverage
-    pytest-django
-    faker
-    factory-boy
-    sqlparse
-    django-graphiql-debug-toolbar
-commands =
-    coverage run -m pytest --disable-warnings
-"""
+[tool.django-stubs]
+django_settings_module = "example_project.project.settings"
 
 [build-system]
-requires = ["poetry-core>=1.9.0"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"

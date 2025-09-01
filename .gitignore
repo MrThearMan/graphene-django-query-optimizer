@@ -1,10 +1,29 @@
-*.idea
-*.tox
-*.ruff_cache
-*.mypy_cache
+# Caches
+.nox
+.ruff_cache
+.mypy_cache
 *.pytest_cache
+*.hypothesis
 *__pycache__
-*.coverage
-example_project/config/testdb
+
+# Build dirs
+dist
+build
+
+# Generated files
+coverage.xml
+.coverage
+/example_project/project/testdb
+/example_project/static/
+/example_project/media/
+/site
+/dist
+
+# Local configs
+.idea
+.vscode
 pytest.ini
-profile.svg
+mypy.ini
+
+# venv
+/.venv/

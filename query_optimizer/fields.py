@@ -41,7 +41,6 @@ if TYPE_CHECKING:
         ManualOptimizerMethod,
         ModelResolver,
         ObjectTypeInput,
-        Optional,
         QuerySetResolver,
         Union,
         UnmountedTypeInput,
@@ -65,7 +64,7 @@ class RelatedField(graphene.Field):
         type_: ObjectTypeInput,
         /,
         *,
-        field_name: Optional[str] = None,
+        field_name: str | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -95,10 +94,10 @@ class RelatedField(graphene.Field):
             return parent_resolver
         return self.related_resolver
 
-    def related_resolver(self, root: models.Model, info: GQLInfo) -> Optional[models.Model]:
+    def related_resolver(self, root: models.Model, info: GQLInfo) -> models.Model | None:
         field_name = self.field_name or to_snake_case(info.field_name)
         # Related object should be optimized to the root model.
-        related_instance: Optional[models.Model] = getattr(root, field_name, None)
+        related_instance: models.Model | None = getattr(root, field_name, None)
         if related_instance is None:  # pragma: no cover
             return None
         self.underlying_type.run_instance_checks(related_instance, info)
@@ -126,11 +125,11 @@ class FilteringMixin:
         self._base_args = args
 
     @cached_property
-    def filtering_args(self) -> Optional[dict[str, graphene.Argument]]:
+    def filtering_args(self) -> dict[str, graphene.Argument] | None:
         if not DJANGO_FILTER_INSTALLED or self.no_filters:  # pragma: no cover
             return None
 
-        from graphene_django.filter.utils import get_filtering_args_from_filterset
+        from graphene_django.filter.utils import get_filtering_args_from_filterset  # noqa: PLC0415
 
         filterset_class = getattr(self.underlying_type._meta, "filterset_class", None)
         if filterset_class is None:
@@ -147,7 +146,7 @@ class DjangoListField(FilteringMixin, graphene.Field):
         /,
         *,
         no_filters: bool = False,
-        field_name: Optional[str] = None,
+        field_name: str | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -188,7 +187,7 @@ class DjangoListField(FilteringMixin, graphene.Field):
         queryset = self.to_queryset(result)
         queryset = self.underlying_type.get_queryset(queryset, info)
 
-        max_complexity: Optional[int] = getattr(self.underlying_type._meta, "max_complexity", None)
+        max_complexity: int | None = getattr(self.underlying_type._meta, "max_complexity", None)
         return optimize(queryset, info, max_complexity=max_complexity)
 
     def to_queryset(self, iterable: Union[models.QuerySet, Manager, None]) -> models.QuerySet:
@@ -214,9 +213,9 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         type_: ObjectTypeInput,
         /,
         *,
-        max_limit: Optional[int] = ...,
+        max_limit: int | None = ...,
         no_filters: bool = False,
-        field_name: Optional[str] = None,
+        field_name: str | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -284,7 +283,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         queryset = self.to_queryset(result)
         queryset = self.underlying_type.get_queryset(queryset, info)
 
-        max_complexity: Optional[int] = getattr(self.underlying_type._meta, "max_complexity", None)
+        max_complexity: int | None = getattr(self.underlying_type._meta, "max_complexity", None)
 
         # Note if the queryset has already been optimized.
         already_optimized = is_optimized(queryset)
@@ -350,7 +349,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         if non_null:
             type_ = type_.of_type
 
-        connection_type: Optional[Type[Connection]] = type_._meta.connection
+        connection_type: Type[Connection] | None = type_._meta.connection
         if connection_type is None:
             msg = f"The type {type_.__name__} doesn't have a connection"
             raise ValueError(msg)
@@ -383,8 +382,8 @@ class AnnotatedField(graphene.Field):
         type_: UnmountedTypeInput,
         /,
         expression: ExpressionKind,
-        aliases: Optional[dict[str, ExpressionKind]] = None,
-        extra_annotations: Optional[dict[str, ExpressionKind]] = None,
+        aliases: dict[str, ExpressionKind] | None = None,
+        extra_annotations: dict[str, ExpressionKind] | None = None,
         **kwargs: Any,
     ) -> None:
         self.expression = expression

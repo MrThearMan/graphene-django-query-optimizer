@@ -1,4 +1,5 @@
 site_name: Graphene Django Query Optimizer
+site_description: Automatically optimize SQL queries in Graphene-Django schemas.
 
 nav:
   - Home: index.md
@@ -13,22 +14,23 @@ nav:
 
 theme:
   name: readthedocs
-  highlightjs: true
-  hljs_languages:  # https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md
-    - python
-    - console
-    - json
+  highlightjs: false  # Use pygments instead.
 
 markdown_extensions:
   pymdownx.highlight:
     anchor_linenums: true
+    linenums: true
   pymdownx.inlinehilite:
+  pymdownx.blocks.details:
   pymdownx.snippets:
+    base_path: docs/snippets
   pymdownx.superfences:
     custom_fences:
       - name: mermaid
         class: mermaid
         format: !!python/name:mermaid2.fence_mermaid
+  toc:
+    permalink: 🔗
 
 plugins:
   - search:
@@ -37,3 +39,4 @@ plugins:
 
 extra_css:
   - css/docs.css
+  - css/pygments.css

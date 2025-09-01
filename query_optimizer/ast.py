@@ -5,32 +5,27 @@ from contextlib import suppress
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import Field, ForeignKey, Model
+from django.db.models import ForeignKey
 from graphene import Connection, ObjectType, PageInfo
 from graphene.relay.node import AbstractNode
-from graphene.types.definitions import GrapheneInterfaceType, GrapheneObjectType, GrapheneUnionType
+from graphene.types.definitions import GrapheneObjectType, GrapheneUnionType
 from graphene.utils.str_converters import to_snake_case
 from graphene_django import DjangoObjectType
 from graphene_django.registry import get_global_registry
-from graphql import (
-    FieldNode,
-    FragmentDefinitionNode,
-    FragmentSpreadNode,
-    GraphQLField,
-    GraphQLOutputType,
-    GraphQLSchema,
-    InlineFragmentNode,
-    SelectionNode,
-    Undefined,
-)
+from graphql import FieldNode, FragmentSpreadNode, InlineFragmentNode, SelectionNode, Undefined
 from graphql.execution.execute import get_field_def
 
 from .errors import OptimizerError
 from .settings import optimizer_settings
-from .typing import GRAPHQL_BUILTIN, GQLInfo, ModelField, Optional, ToManyField, ToOneField, TypeGuard, Union, overload
+from .typing import GRAPHQL_BUILTIN, Union, overload
 
 if TYPE_CHECKING:
+    from django.db.models import Field, Model
     from graphene.types.base import BaseOptions
+    from graphene.types.definitions import GrapheneInterfaceType
+    from graphql import FragmentDefinitionNode, GraphQLField, GraphQLOutputType, GraphQLSchema
+
+    from .typing import GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard
 
 __all__ = [
     "GraphQLASTWalker",
@@ -44,7 +39,7 @@ Selections = tuple[SelectionNode, ...]
 class GraphQLASTWalker:
     """Class for walking the GraphQL AST and handling the different nodes."""
 
-    def __init__(self, info: GQLInfo, model: Optional[type[Model]] = None) -> None:
+    def __init__(self, info: GQLInfo, model: type[Model] | None = None) -> None:
         self.info = info
         self.complexity: int = 0
         self.model: type[Model] = model
@@ -297,14 +292,14 @@ def get_fragment_type(
     # For unions, fetch the type from in the union.
     if isinstance(field_type, GrapheneUnionType):
         gen = (t for t in field_type.types if t.name == fragment_type_name)
-        fragment_type: Optional[GrapheneObjectType] = next(gen, None)
+        fragment_type: GrapheneObjectType | None = next(gen, None)
         if fragment_type is None:  # pragma: no cover
             msg = f"Fragment type '{fragment_type_name}' not found in union '{field_type}'"
             raise OptimizerError(msg)
 
     # For interfaces, fetch the type from in the schema.
     else:
-        fragment_type: Optional[GrapheneObjectType] = schema.get_type(fragment_type_name)
+        fragment_type: GrapheneObjectType | None = schema.get_type(fragment_type_name)
         if fragment_type is None:  # pragma: no cover
             msg = f"Fragment type '{fragment_type_name}' not found in schema."
             raise OptimizerError(msg)
@@ -323,7 +318,7 @@ def get_related_model(related_field: Union[ToOneField, ToManyField], model: type
     return related_model  # type: ignore[return-value]
 
 
-def get_model_field(model: type[Model], field_name: str) -> Optional[ModelField]:
+def get_model_field(model: type[Model], field_name: str) -> ModelField | None:
     if field_name == "pk":
         model_field: ModelField = model._meta.pk
         return model_field

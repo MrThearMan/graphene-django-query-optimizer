@@ -1,14 +1,15 @@
 # Import all converters at the top to make sure they are registered first
-from .converters import *  # noqa: F403, I001
+from __future__ import annotations
 
 from .compiler import optimize, optimize_single
+from .converters import *  # noqa: F403
 from .fields import (
+    AnnotatedField,
     DjangoConnectionField,
     DjangoListField,
-    RelatedField,
-    AnnotatedField,
-    MultiField,
     ManuallyOptimizedField,
+    MultiField,
+    RelatedField,
 )
 from .types import DjangoObjectType
 

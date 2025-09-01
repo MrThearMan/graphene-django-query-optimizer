@@ -2,7 +2,7 @@
 from __future__ import annotations
 import graphene
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import F, Model, QuerySet, Value
+from django.db.models import F, Value
 from django.db.models.functions import Concat, ExtractYear
 from django_filters import CharFilter, FilterSet, OrderingFilter
 from graphene import relay, Connection, ObjectType
@@ -72,6 +72,7 @@ from example_project.app.models import (
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from django.db.models import Model, QuerySet
     from query_optimizer.typing import GQLInfo, Any, Union
 
 __all__ = [

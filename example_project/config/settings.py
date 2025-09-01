@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key

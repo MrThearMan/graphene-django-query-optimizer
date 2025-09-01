@@ -9,13 +9,13 @@ from graphene_django.utils import is_valid_django_model
 
 from .compiler import optimize_single
 from .settings import optimizer_settings
-from .typing import PK, OptimizedDjangoOptions
+from .typing import OptimizedDjangoOptions
 
 if TYPE_CHECKING:
     from django.db.models import Model, QuerySet
 
     from .optimizer import QueryOptimizer
-    from .typing import Any, GQLInfo, Literal, Optional, TModel, Union
+    from .typing import PK, Any, GQLInfo, Literal, TModel, Union
 
 
 __all__ = [
@@ -34,10 +34,10 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
     @classmethod
     def __init_subclass_with_meta__(
         cls,
-        _meta: Optional[OptimizedDjangoOptions] = None,
-        model: Optional[type[Model]] = None,
+        _meta: OptimizedDjangoOptions | None = None,
+        model: type[Model] | None = None,
         fields: Union[list[str], Literal["__all__"], None] = None,
-        max_complexity: Optional[int] = None,
+        max_complexity: int | None = None,
         **options: Any,
     ) -> None:
         if not is_valid_django_model(model):  # pragma: no cover
@@ -52,15 +52,15 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
             cls.resolve_pk = cls.resolve_id
 
         filterset_class = options.get("filterset_class")
-        filter_fields: Optional[dict[str, list[str]]] = options.pop("filter_fields", None)
+        filter_fields: dict[str, list[str]] | None = options.pop("filter_fields", None)
 
         if filterset_class is None and filter_fields is not None:
-            from .filter import create_filterset
+            from .filter import create_filterset  # noqa: PLC0415
 
             options["filterset_class"] = create_filterset(model, filter_fields)
 
         elif filterset_class is not None:
-            from graphene_django.filter.utils import replace_csv_filters
+            from graphene_django.filter.utils import replace_csv_filters  # noqa: PLC0415
 
             replace_csv_filters(filterset_class)
 
@@ -82,7 +82,7 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         return queryset
 
     @classmethod
-    def get_node(cls, info: GQLInfo, pk: PK) -> Optional[TModel]:
+    def get_node(cls, info: GQLInfo, pk: PK) -> TModel | None:
         queryset = cls._meta.model._default_manager.all()
         maybe_instance = optimize_single(queryset, info, pk=pk, max_complexity=cls._meta.max_complexity)
         if maybe_instance is not None:  # pragma: no cover

@@ -7,18 +7,20 @@ import graphene
 from graphene.utils.str_converters import to_snake_case
 from graphene_django.settings import graphene_settings
 from graphene_django.utils import DJANGO_FILTER_INSTALLED
-from graphql import FieldNode, get_argument_values
+from graphql import get_argument_values
 from graphql.execution.execute import get_field_def
 
-from .ast import GrapheneType, GraphQLASTWalker, Selections, get_underlying_type, is_connection, is_node
-from .typing import GQLInfo, GraphQLFilterInfo, ToManyField, ToOneField
+from .ast import GraphQLASTWalker, get_underlying_type, is_connection, is_node
+from .typing import GraphQLFilterInfo
 from .utils import swappable_by_subclassing
 
 if TYPE_CHECKING:
     from django.db.models import Model
     from graphene.types.definitions import GrapheneObjectType
+    from graphql import FieldNode
 
-    from .typing import Any, Optional
+    from .ast import GrapheneType, Selections
+    from .typing import Any, GQLInfo, ToManyField, ToOneField
 
 
 __all__ = [
@@ -62,7 +64,7 @@ class FilterInfoCompiler(GraphQLASTWalker):
         is_connection_ = is_connection(graphene_type)
 
         # Find the field-specific limit, or use the default limit.
-        max_limit: Optional[int] = getattr(
+        max_limit: int | None = getattr(
             getattr(parent_type.graphene_type, orig_field_name, None),
             "max_limit",
             graphene_settings.RELAY_CONNECTION_MAX_LIMIT,

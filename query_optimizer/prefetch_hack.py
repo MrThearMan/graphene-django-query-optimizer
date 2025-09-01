@@ -4,12 +4,14 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, TypeAlias
 from unittest.mock import patch
 
-from django.db.models import ManyToManyField, ManyToManyRel, Model, QuerySet
+from django.db.models import ManyToManyField
 from django.db.models.fields.related_descriptors import _filter_prefetch_queryset
 
 from .settings import optimizer_settings
 
 if TYPE_CHECKING:
+    from django.db.models import ManyToManyRel, Model, QuerySet
+
     from .typing import TModel
 
 __all__ = [

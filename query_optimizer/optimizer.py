@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import ManyToManyField, ManyToManyRel, Model, Prefetch, QuerySet
+from django.db.models import ManyToManyField, ManyToManyRel, Prefetch
 from django.db.models.constants import LOOKUP_SEP
 from django.db.models.functions import RowNumber
 from graphene.utils.str_converters import to_snake_case
@@ -31,17 +31,10 @@ from .utils import (
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
+    from django.db.models import Model, QuerySet
+
     from .types import DjangoObjectType
-    from .typing import (
-        Any,
-        ExpressionKind,
-        GQLInfo,
-        GraphQLFilterInfo,
-        Literal,
-        Optional,
-        QuerySetResolver,
-        ToManyField,
-    )
+    from .typing import Any, ExpressionKind, GQLInfo, GraphQLFilterInfo, Literal, QuerySetResolver, ToManyField
 
 __all__ = [
     "QueryOptimizer",
@@ -82,7 +75,7 @@ class QueryOptimizer:
         self,
         model: type[Model] | None,
         info: GQLInfo,
-        name: Optional[str] = None,
+        name: str | None = None,
         parent: QueryOptimizer | None = None,
     ) -> None:
         self.model = model
@@ -110,7 +103,7 @@ class QueryOptimizer:
 
     def pre_processing(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
         """Run all pre-optimization hooks on the object type matching the queryset's model."""
-        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
+        object_type: DjangoObjectType | None = get_global_registry().get_type_for_model(queryset.model)
         if callable(getattr(object_type, "pre_optimization_hook", None)):
             return object_type.pre_optimization_hook(queryset, self)
 
@@ -189,7 +182,7 @@ class QueryOptimizer:
         if not filter_info.get("is_connection", False):
             return queryset
 
-        field: Optional[ToManyField] = get_model_field(self.parent.model, self.name)
+        field: ToManyField | None = get_model_field(self.parent.model, self.name)
         if field is None:  # pragma: no cover
             msg = (
                 f"Cannot find field {self.name!r} on model {self.parent.model.__name__!r}. "
@@ -268,16 +261,12 @@ class QueryOptimizer:
                         - models.Value(1)  # Start from zero.
                     )
                 },
-            ).filter(
-                **{
-                    f"{optimizer_settings.PREFETCH_PARTITION_INDEX}__gte": models.F(
-                        optimizer_settings.PREFETCH_SLICE_START
-                    ),
-                    f"{optimizer_settings.PREFETCH_PARTITION_INDEX}__lt": models.F(
-                        optimizer_settings.PREFETCH_SLICE_STOP
-                    ),
-                }
-            )
+            ).filter(**{
+                f"{optimizer_settings.PREFETCH_PARTITION_INDEX}__gte": models.F(
+                    optimizer_settings.PREFETCH_SLICE_START
+                ),
+                f"{optimizer_settings.PREFETCH_PARTITION_INDEX}__lt": models.F(optimizer_settings.PREFETCH_SLICE_STOP),
+            })
         )
 
     def get_prefetch_ordering(self, filter_info: GraphQLFilterInfo, model: type[Model]) -> list[str]:
@@ -303,7 +292,7 @@ class QueryOptimizer:
     def filter_queryset(self, queryset: QuerySet, filter_info: GraphQLFilterInfo) -> QuerySet:
         """Run all filtering based on the object type matching the queryset's model."""
         # Run filtering hooks on object types if they exist.
-        object_type: Optional[DjangoObjectType] = get_global_registry().get_type_for_model(queryset.model)
+        object_type: DjangoObjectType | None = get_global_registry().get_type_for_model(queryset.model)
         if callable(getattr(object_type, "filter_queryset", None)):
             queryset = object_type.filter_queryset(queryset, self.info)
 
@@ -331,7 +320,7 @@ class QueryOptimizer:
         return to_snake_case(value)
 
     def process_filters(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        from graphene_django.filter.fields import convert_enum
+        from graphene_django.filter.fields import convert_enum  # noqa: PLC0415
 
         kwargs = {}
         for key, value in input_data.items():
