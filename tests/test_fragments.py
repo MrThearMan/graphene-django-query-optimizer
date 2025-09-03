@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from tests.factories import ApartmentFactory, DeveloperFactory, OwnerFactory, PropertyManagerFactory
@@ -277,3 +279,30 @@ def test_inline_fragment(graphql_client):
     assert response.queries[5] == has(
         'FROM "app_ownership"',
     )
+
+
+def test_inline_fragment__typename(graphql_client):
+    DeveloperFactory.create(name="1", housingcompany_set__name="1")
+    PropertyManagerFactory.create(name="1", housing_companies__name="1")
+
+    query = """
+        query {
+          allPeople {
+            __typename
+            ... on DeveloperType {
+              name
+            }
+            ... on PropertyManagerType {
+              name
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for fetching developers.
+    # 1 query for fetching property managers.
+    # 1 query for fetching owners (even if not used in the query).
+    assert response.queries.count == 3, response.queries.log

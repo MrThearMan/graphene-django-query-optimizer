@@ -9,6 +9,7 @@ from django.db.models import ForeignKey
 from graphene import Connection, ObjectType, PageInfo
 from graphene.relay.node import AbstractNode
 from graphene.types.definitions import GrapheneObjectType, GrapheneUnionType
+from graphene.types.union import Union as GrapheneUnion
 from graphene.utils.str_converters import to_snake_case
 from graphene_django import DjangoObjectType
 from graphene_django.registry import get_global_registry
@@ -86,6 +87,9 @@ class GraphQLASTWalker:
             return self.handle_object_type(field_type, field_node)
 
         if issubclass(graphene_type, AbstractNode):
+            return self.handle_abstract_node(field_type, field_node)
+
+        if issubclass(graphene_type, GrapheneUnion):
             return self.handle_abstract_node(field_type, field_node)
 
         msg = f"Unhandled graphene type: '{graphene_type}'"  # pragma: no cover
@@ -255,7 +259,12 @@ def get_selections(field_node: Union[FieldNode, FragmentDefinitionNode, InlineFr
 def is_edge(field_type: GrapheneObjectType) -> bool:
     # Edge-classes are created by `graphene.relay.connection.get_edge_class`,
     # which means that we cannot check against the EdgeBase class directly.
-    return all(field in field_type.fields for field in ["node", "cursor"]) and field_type.name.endswith("Edge")
+    return (
+        isinstance(field_type, GrapheneObjectType)
+        and field_type.name.endswith("Edge")
+        and "cursor" in field_type.fields
+        and "node" in field_type.fields
+    )
 
 
 def is_connection(graphql_field: Union[GraphQLField, GrapheneObjectType]) -> bool:
