@@ -310,7 +310,7 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "example_project.project.settings"
+DJANGO_SETTINGS_MODULE = "example_project.config.settings"
 addopts = "--disable-warnings"
 
 [tool.mypy]
@@ -319,7 +319,7 @@ plugins = [
 ]
 
 [tool.django-stubs]
-django_settings_module = "example_project.project.settings"
+django_settings_module = "example_project.config.settings"
 
 [build-system]
 requires = ["poetry-core>=2.0.0"]
