@@ -17,3 +17,4 @@ jobs:
     uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.4.16
     with:
       python-version: '["3.11", "3.12", "3.13"]'
+      coveralls: false
