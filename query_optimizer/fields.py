@@ -10,14 +10,14 @@ from graphene.relay.connection import connection_adapter, page_info_adapter
 from graphene.types.argument import to_arguments
 from graphene.utils.str_converters import to_camel_case, to_snake_case
 from graphene_django.settings import graphene_settings
-from graphene_django.utils.utils import DJANGO_FILTER_INSTALLED, maybe_queryset
+from graphene_django.utils.utils import DJANGO_FILTER_INSTALLED
 from graphql_relay.connection.array_connection import offset_to_cursor
 
 from .ast import get_underlying_type
 from .compiler import OptimizationCompiler, optimize
 from .prefetch_hack import evaluate_with_prefetch_hack
 from .settings import optimizer_settings
-from .utils import calculate_queryset_slice, is_optimized
+from .utils import calculate_queryset_slice, is_optimized, maybe_queryset
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:

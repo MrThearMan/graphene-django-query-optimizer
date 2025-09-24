@@ -6,14 +6,13 @@ from typing import TYPE_CHECKING
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.db.models import ForeignKey, ManyToOneRel
 from graphene.utils.str_converters import to_snake_case
-from graphene_django.utils import maybe_queryset
 
 from .ast import GraphQLASTWalker
 from .errors import OptimizerError
 from .optimizer import QueryOptimizer
 from .prefetch_hack import evaluate_with_prefetch_hack
 from .settings import optimizer_settings
-from .utils import is_optimized, optimizer_logger, swappable_by_subclassing
+from .utils import is_optimized, maybe_queryset, optimizer_logger, swappable_by_subclassing
 
 if TYPE_CHECKING:
     import graphene

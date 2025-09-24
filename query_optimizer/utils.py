@@ -4,6 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from django.db import models
+from django.db.models.manager import BaseManager
 
 from .settings import optimizer_settings
 
@@ -46,6 +47,12 @@ def is_optimized(queryset: Union[models.QuerySet, list[models.Model]]) -> bool:
     if isinstance(queryset, list):
         return True
     return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)
+
+
+def maybe_queryset(value: BaseManager | models.QuerySet) -> models.QuerySet:
+    if isinstance(value, BaseManager):
+        value = value.get_queryset()
+    return value
 
 
 def calculate_queryset_slice(
