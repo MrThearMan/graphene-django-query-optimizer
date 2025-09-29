@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 from contextlib import suppress
+from types import MethodType
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import FieldDoesNotExist
@@ -272,7 +273,12 @@ def is_connection(graphql_field: Union[GraphQLField, GrapheneObjectType]) -> boo
 
 
 def is_node(graphql_field: GraphQLField) -> bool:
-    return issubclass(getattr(getattr(graphql_field.resolve, "func", None), "__self__", type(None)), AbstractNode)
+    # Assumes node is resolved using 'graphene.relay.node.Node.node_resolver'
+    resolver = getattr(graphql_field.resolve, "func", None)
+    if isinstance(resolver, MethodType):
+        cls: type = resolver.__self__  # type: ignore[assignment]
+        return isinstance(cls, type) and issubclass(cls, AbstractNode)
+    return False
 
 
 def is_graphql_builtin(field_name: str) -> bool:
