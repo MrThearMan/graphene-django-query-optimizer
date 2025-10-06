@@ -64,7 +64,7 @@ faker = "37.8.0"
 factory-boy = "3.3.3"
 sqlparse = "0.5.3"
 django-graphiql-debug-toolbar = "0.2.0"
-django-filter = "25.1"
+django-filter = "25.2"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
@@ -75,7 +75,7 @@ mkdocs-mermaid2-plugin = "1.2.2"
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.3.0"
 mypy = "1.18.2"
-django-stubs = "5.2.5"
+django-stubs = "5.2.6"
 py-spy = "0.4.1"
 
 [tool.ruff]
