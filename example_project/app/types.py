@@ -68,6 +68,9 @@ from example_project.app.models import (
     Shareholder,
     ShareholderProxy,
     Tag,
+    State,
+    StateTransition,
+    Protein,
 )
 from typing import TYPE_CHECKING
 
@@ -302,6 +305,34 @@ class OwnershipType(DjangoObjectType):
             "sale",
             "percentage",
         ]
+
+
+# ...
+
+
+class StateType(DjangoObjectType):
+    protein = RelatedField(lambda: ProteinType)
+
+    class Meta:
+        model = State
+        fields = "__all__"
+
+
+class StateTransitionType(DjangoObjectType):
+    fromState = RelatedField(StateType, field_name="from_state")  # noqa: N815
+    toState = RelatedField(StateType, field_name="to_state")  # noqa: N815
+
+    class Meta:
+        model = StateTransition
+        fields = "__all__"
+
+
+class ProteinType(DjangoObjectType):
+    transitions = DjangoListField(StateTransitionType)
+
+    class Meta:
+        model = Protein
+        fields = "__all__"
 
 
 # Generic Relations

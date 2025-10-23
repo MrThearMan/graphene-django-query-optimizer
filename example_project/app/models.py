@@ -304,6 +304,21 @@ class Ownership(models.Model):
         return f"Sale of {self.sale.apartment.address!r} to {self.owner.name!r}"
 
 
+class Protein(models.Model):
+    name = models.CharField(max_length=100)
+
+
+class StateTransition(models.Model):
+    protein = models.ForeignKey(Protein, related_name="transitions", on_delete=models.CASCADE)
+    from_state = models.ForeignKey("State", related_name="transitions_from", on_delete=models.CASCADE)
+    to_state = models.ForeignKey("State", related_name="transitions_to", on_delete=models.CASCADE)
+
+
+class State(models.Model):
+    protein = models.ForeignKey(Protein, related_name="states", on_delete=models.CASCADE)
+    name = models.CharField(max_length=64)
+
+
 # Proxies
 
 

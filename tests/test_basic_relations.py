@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import pytest
 
+from example_project.app.models import Protein, State, StateTransition
 from tests.factories import ApartmentFactory, DeveloperFactory, HousingCompanyFactory, RealEstateFactory
 from tests.helpers import has
 
@@ -253,3 +256,55 @@ def test_relations__many_to_many_relations__shared_entities(graphql_client):
             ]
         },
     ]
+
+
+def test_relations__two_relations_to_same_model(graphql_client):
+    protein_1 = Protein.objects.create(name="foo")
+    protein_2 = Protein.objects.create(name="bar")
+    protein_3 = Protein.objects.create(name="baz")
+
+    protein_1_state_1 = State.objects.create(protein=protein_1, name="P1S1")
+    protein_1_state_2 = State.objects.create(protein=protein_1, name="P1S2")
+
+    protein_2_state_1 = State.objects.create(protein=protein_2, name="P2S1")
+    protein_2_state_2 = State.objects.create(protein=protein_2, name="P2S2")
+
+    protein_3_state_1 = State.objects.create(protein=protein_3, name="P3S1")
+    protein_3_state_2 = State.objects.create(protein=protein_3, name="P3S2")
+
+    StateTransition.objects.create(
+        protein=protein_1,
+        from_state=protein_1_state_1,
+        to_state=protein_1_state_2,
+    )
+    StateTransition.objects.create(
+        protein=protein_2,
+        from_state=protein_2_state_1,
+        to_state=protein_2_state_2,
+    )
+    StateTransition.objects.create(
+        protein=protein_3,
+        from_state=protein_3_state_1,
+        to_state=protein_3_state_2,
+    )
+
+    query = """
+        query {
+            proteins {
+                id
+                name
+                transitions {
+                    id
+                    fromState { id name }
+                    toState { id name }
+                }
+            }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for fetching Proteins
+    # 1 query for fetching all StateTransitions and States
+    assert response.queries.count == 2, response.queries.log

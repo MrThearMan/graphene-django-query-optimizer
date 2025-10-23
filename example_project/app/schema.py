@@ -32,6 +32,7 @@ from .types import (
     PostalCodeType,
     PropertyManagerNode,
     PropertyManagerType,
+    ProteinType,
     RealEstateNode,
     RealEstateType,
     SaleType,
@@ -98,6 +99,10 @@ class Query(graphene.ObjectType):
 
     all_tags = DjangoListField(TagType)
     all_content_types = DjangoListField(ContentTypeType)
+
+    # --------------------------------------------------------------------
+
+    proteins = DjangoListField(ProteinType)
 
     # --------------------------------------------------------------------
 
