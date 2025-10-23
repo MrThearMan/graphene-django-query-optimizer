@@ -14,6 +14,7 @@ dev port="8000":
 docs port="8080":
     @poetry run mkdocs serve -a localhost:{{port}} -o
 
+# Generate test data for local development
 generate:
     @poetry run python manage.py create_test_data
 
