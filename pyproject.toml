@@ -56,8 +56,8 @@ django-settings-holder = ">=0.1.2"
 django-filter = { version = ">=21.1", optional = true }
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.4.2"
-coverage = "7.11.0"
+pytest = "9.0.0"
+coverage = "7.11.2"
 pytest-django = "4.11.1"
 nox = "2025.10.16"
 faker = "37.12.0"
@@ -73,7 +73,7 @@ pygments = "2.19.2"
 mkdocs-mermaid2-plugin = "1.2.3"
 
 [tool.poetry.group.lint.dependencies]
-pre-commit = "4.3.0"
+pre-commit = "4.4.0"
 mypy = "1.18.2"
 django-stubs = "5.2.7"
 py-spy = "0.4.1"
