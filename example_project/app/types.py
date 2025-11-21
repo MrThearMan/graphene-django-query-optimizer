@@ -483,6 +483,7 @@ class HousingCompanyFilterSet(FilterSet):
             "postal_code__code": ["iexact"],
             "city": ["iexact", "icontains"],
             "developers__name": ["iexact", "icontains"],
+            "property_manager_id": ["in"],
         }
 
     def filter_address(self, qs: QuerySet[HousingCompany], name: str, value: str) -> QuerySet[HousingCompany]:
