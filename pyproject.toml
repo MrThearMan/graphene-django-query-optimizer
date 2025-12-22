@@ -60,9 +60,9 @@ pytest = "9.0.2"
 coverage = "7.13.0"
 pytest-django = "4.11.1"
 nox = "2025.11.12"
-faker = "38.2.0"
+faker = "39.0.0"
 factory-boy = "3.3.3"
-sqlparse = "0.5.4"
+sqlparse = "0.5.5"
 django-graphiql-debug-toolbar = "0.2.0"
 django-filter = "25.2"
 
@@ -73,8 +73,8 @@ pygments = "2.19.2"
 mkdocs-mermaid2-plugin = "1.2.3"
 
 [tool.poetry.group.lint.dependencies]
-pre-commit = "4.5.0"
-mypy = "1.19.0"
+pre-commit = "4.5.1"
+mypy = "1.19.1"
 django-stubs = "5.2.8"
 py-spy = "0.4.1"
 
