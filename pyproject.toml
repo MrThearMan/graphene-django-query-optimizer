@@ -57,7 +57,7 @@ django-filter = { version = ">=21.1", optional = true }
 
 [tool.poetry.group.test.dependencies]
 pytest = "9.0.2"
-coverage = "7.13.0"
+coverage = "7.13.1"
 pytest-django = "4.11.1"
 nox = "2025.11.12"
 faker = "39.0.0"
