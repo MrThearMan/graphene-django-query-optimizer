@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from graphene_django.settings import graphene_settings
 from graphql_relay import to_global_id
@@ -1126,3 +1128,26 @@ def test_pagination__nested__has_next_page__last_page(graphql_client):
     assert response.no_errors, response.errors
 
     assert response.content == {"apartments": {"pageInfo": {"hasNextPage": False}}}
+
+
+def test_pagination__nested__count(graphql_client):
+    building = BuildingFactory.create()
+    global_id = to_global_id(str(BuildingNode), building.pk)
+
+    ApartmentFactory.create(street_address="1", building=building)
+    ApartmentFactory.create(street_address="2", building=building)
+
+    query = """
+        query {
+          building(id: "%s") {
+            apartments {
+              totalCount
+            }
+          }
+        }
+    """ % (global_id,)
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    assert response.content == {"apartments": {"totalCount": 1}}
