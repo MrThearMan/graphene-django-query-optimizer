@@ -57,7 +57,7 @@ django-filter = { version = ">=21.1", optional = true }
 
 [tool.poetry.group.test.dependencies]
 pytest = "9.0.2"
-coverage = "7.13.1"
+coverage = "7.13.2"
 pytest-django = "4.11.1"
 nox = "2025.11.12"
 faker = "40.1.2"
@@ -68,14 +68,14 @@ django-filter = "25.2"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
-pymdown-extensions = "10.20"
+pymdown-extensions = "10.20.1"
 pygments = "2.19.2"
 mkdocs-mermaid2-plugin = "1.2.3"
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.5.1"
 mypy = "1.19.1"
-django-stubs = "5.2.8"
+django-stubs = "5.2.9"
 py-spy = "0.4.1"
 
 [tool.ruff]
