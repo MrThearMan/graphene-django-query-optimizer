@@ -14,6 +14,6 @@ on:
 
 jobs:
   test:
-    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.5.1
+    uses: MrThearMan/CI/.github/workflows/test-nox.yml@v0.5.2
     with:
       python-version: '["3.11", "3.12", "3.13"]'
