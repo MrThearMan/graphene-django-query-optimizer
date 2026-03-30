@@ -60,7 +60,7 @@ pytest = "9.0.2"
 coverage = "7.13.5"
 pytest-django = "4.12.0"
 nox = "2026.2.9"
-faker = "40.11.0"
+faker = "40.11.1"
 factory-boy = "3.3.3"
 sqlparse = "0.5.5"
 django-graphiql-debug-toolbar = "0.2.0"
@@ -68,8 +68,8 @@ django-filter = "25.2"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
-pymdown-extensions = "10.21"
-pygments = "2.19.2"
+pymdown-extensions = "10.21.2"
+pygments = "2.20.0"
 mkdocs-mermaid2-plugin = "1.2.3"
 
 [tool.poetry.group.lint.dependencies]
