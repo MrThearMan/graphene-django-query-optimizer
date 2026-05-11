@@ -52,14 +52,14 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-Django = ">=5.2.13"
+Django = ">=5.2.14"
 graphene-django = ">=3.0.0"
 django-settings-holder = ">=0.1.2"
 django-filter = { version = ">=21.1", optional = true }
 
 [tool.poetry.group.test.dependencies]
 pytest = "9.0.3"
-coverage = "7.13.5"
+coverage = "7.14.0"
 pytest-django = "4.12.0"
 nox = "2026.4.10"
 faker = "40.15.0"
@@ -76,8 +76,8 @@ mkdocs-mermaid2-plugin = "1.2.3"
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.6.0"
-mypy = "1.20.2"
-django-stubs = "6.0.3"
+mypy = "2.0.0"
+django-stubs = "6.0.4"
 py-spy = "0.4.2"
 
 [tool.ruff]
