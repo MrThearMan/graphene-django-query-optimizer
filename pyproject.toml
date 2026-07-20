@@ -59,10 +59,10 @@ django-filter = { version = ">=26.1", optional = true }
 
 [tool.poetry.group.test.dependencies]
 pytest = "9.1.1"
-coverage = "7.15.1"
+coverage = "7.15.2"
 pytest-django = "4.12.0"
 nox = "2026.7.11"
-faker = "40.28.1"
+faker = "40.31.0"
 factory-boy = "3.3.3"
 sqlparse = "0.5.5"
 django-graphiql-debug-toolbar = "0.2.0"
@@ -76,8 +76,8 @@ mkdocs-mermaid2-plugin = "1.2.3"
 
 [tool.poetry.group.lint.dependencies]
 pre-commit = "4.6.0"
-mypy = "2.2.0"
-django-stubs = "6.0.6"
+mypy = "2.3.0"
+django-stubs = "6.0.7"
 py-spy = "0.4.2"
 
 [tool.ruff]
