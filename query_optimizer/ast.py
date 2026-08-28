@@ -72,7 +72,10 @@ class GraphQLASTWalker:
     def handle_field_node(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
         graphene_type: type[ObjectType] = field_type.graphene_type
 
-        if self.info.parent_type == field_type:
+        # The root field must be matched by AST node identity and not by type alone,
+        # since the parent type can also appear nested inside the walked selections
+        # (e.g. a related object of the same type as the one being optimized).
+        if self.info.parent_type == field_type and any(field_node is root_node for root_node in self.info.field_nodes):
             return self.handle_query_class(field_type, field_node)
 
         if issubclass(graphene_type, Connection):

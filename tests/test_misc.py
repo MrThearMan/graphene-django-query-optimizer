@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from tests.factories import (
@@ -597,3 +599,66 @@ def test_same_relation_multiple_times(graphql_client):
         'FROM "app_ownership"',
         'INNER JOIN "app_owner"',
     )
+
+
+def test_misc__same_type_nested_inside_its_own_list_field(graphql_client):
+    developer = DeveloperFactory.create(name="foo")
+    HousingCompanyFactory.create(name="bar", city="Berlin", developers=[developer])
+    TagFactory.create(tag="1", content_object=developer)
+
+    query = """
+        query {
+          allTags {
+            contentObject {
+              ... on DeveloperType {
+                name
+                housingcompanySet {
+                  name
+                  developers {
+                    name
+                    housingcompanySet {
+                      city
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    """
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    # 1 query for fetching tags
+    # 1 query for fetching developers (generic foreign key)
+    # 1 query for fetching housing companies for the developer
+    # 1 query for fetching nested developers
+    # 1 query for fetching housing companies for the nested developers
+    assert response.queries.count == 5, response.queries.log
+
+    # The nested housing company's field must be fetched from its own table,
+    # not attributed to the developer in between.
+    assert response.queries[4] == has(
+        '"app_housingcompany"."city"',
+        'FROM "app_housingcompany"',
+    )
+
+    assert response.content == [
+        {
+            "contentObject": {
+                "name": "foo",
+                "housingcompanySet": [
+                    {
+                        "name": "bar",
+                        "developers": [
+                            {
+                                "name": "foo",
+                                "housingcompanySet": [{"city": "Berlin"}],
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+    ]
