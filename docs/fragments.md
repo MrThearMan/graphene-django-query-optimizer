@@ -61,17 +61,21 @@ from example_project.app.models import Developer, PropertyManager, Owner
 
 from query_optimizer import DjangoObjectType, optimize
 
+
 class DeveloperType(DjangoObjectType):
     class Meta:
         model = Developer
+
 
 class PropertyManagerType(DjangoObjectType):
     class Meta:
         model = PropertyManager
 
+
 class OwnerType(DjangoObjectType):
     class Meta:
         model = Owner
+
 
 class People(graphene.Union):
     class Meta:
@@ -81,8 +85,8 @@ class People(graphene.Union):
             OwnerType,
         )
 
-class Query(graphene.ObjectType):
 
+class Query(graphene.ObjectType):
     all_people = graphene.List(People)
 
     def resolve_all_people(root, info):
@@ -90,6 +94,7 @@ class Query(graphene.ObjectType):
         property_managers = optimize(PropertyManager.objects.all(), info)
         owners = optimize(Owner.objects.all(), info)
         return itertools.chain(developers, property_managers, owners)
+
 
 schema = graphene.Schema(query=Query)
 ```

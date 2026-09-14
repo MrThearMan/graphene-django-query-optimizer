@@ -8,6 +8,7 @@ from example_project.app.models import HousingCompany
 
 from query_optimizer import DjangoObjectType
 
+
 class HousingCompanyType(DjangoObjectType):
     class Meta:
         model = HousingCompany
@@ -32,6 +33,7 @@ from example_project.app.models import HousingCompany
 
 from query_optimizer import DjangoObjectType, AnnotatedField  # new import
 
+
 class HousingCompanyType(DjangoObjectType):
     class Meta:
         model = HousingCompany
@@ -48,6 +50,7 @@ from django.db.models import F, Value
 from example_project.app.models import HousingCompany
 
 from query_optimizer import DjangoObjectType, AnnotatedField
+
 
 class HousingCompanyType(DjangoObjectType):
     class Meta:
@@ -69,6 +72,7 @@ import graphene
 from example_project.app.models import HousingCompany
 
 from query_optimizer import DjangoObjectType, MultiField  # new import
+
 
 class HousingCompanyType(DjangoObjectType):
     class Meta:
@@ -99,6 +103,7 @@ from example_project.app.models import HousingCompany
 from query_optimizer import DjangoObjectType, ManuallyOptimizedField  # new import
 from query_optimizer.optimizer import QueryOptimizer  # for type hinting
 
+
 class HousingCompanyType(DjangoObjectType):
     class Meta:
         model = HousingCompany
@@ -127,6 +132,7 @@ different from the field name in the model.
 from example_project.app.models import HousingCompany
 
 from query_optimizer import DjangoObjectType, DjangoListField  # new import
+
 
 class HousingCompanyType(DjangoObjectType):
     class Meta:

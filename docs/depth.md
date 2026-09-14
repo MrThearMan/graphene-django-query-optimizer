@@ -12,15 +12,18 @@ from example_project.app.models import Apartment
 
 from query_optimizer import DjangoObjectType, optimize
 
+
 class ApartmentType(DjangoObjectType):
     class Meta:
         model = Apartment
+
 
 class Query(graphene.ObjectType):
     all_apartments = graphene.List(ApartmentType)
 
     def resolve_all_apartments(root, info):
         return optimize(Apartment.objects.all(), info, max_complexity=4)  # changed
+
 
 schema = graphene.Schema(query=Query)
 ```
@@ -34,14 +37,17 @@ from example_project.app.models import Apartment
 
 from query_optimizer import DjangoObjectType
 
+
 class ApartmentNode(DjangoObjectType):
     class Meta:
         model = Apartment
         interfaces = (relay.Node,)
         max_complexity = 4  # changed
 
+
 class Query(graphene.ObjectType):
     apartment = relay.Node.Field(ApartmentNode)
+
 
 schema = graphene.Schema(query=Query)
 ```
