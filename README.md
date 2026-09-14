@@ -36,12 +36,15 @@ from example_project.app.models import Example
 
 from query_optimizer import DjangoObjectType, DjangoListField
 
+
 class ExampleType(DjangoObjectType):
     class Meta:
         model = Example
 
+
 class Query(graphene.ObjectType):
     all_examples = DjangoListField(ExampleType)
+
 
 schema = graphene.Schema(query=Query)
 ```

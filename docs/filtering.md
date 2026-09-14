@@ -10,6 +10,7 @@ from example_project.app.models import Apartment
 
 from query_optimizer import DjangoObjectType, DjangoConnectionField
 
+
 class ApartmentNode(DjangoObjectType):
     class Meta:
         model = Apartment
@@ -34,6 +35,7 @@ from example_project.app.models import Apartment
 
 from django_filters import FilterSet
 
+
 class ApartmentFilterSet(FilterSet):
     # Custom filters can be added here
 
@@ -56,6 +58,7 @@ the `filter_queryset` method of the `DjangoObjectType` class.
 from django.db.models import QuerySet
 from query_optimizer import DjangoObjectType
 from query_optimizer.typing import GQLInfo
+
 
 class ApartmentType(DjangoObjectType):
     @classmethod
