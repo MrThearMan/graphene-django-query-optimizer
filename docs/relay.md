@@ -12,6 +12,7 @@ from graphene import relay
 from graphene_django import DjangoObjectType
 from example_project.app.models import Apartment
 
+
 class ApartmentNode(DjangoObjectType):
     class Meta:
         model = Apartment
@@ -21,8 +22,10 @@ class ApartmentNode(DjangoObjectType):
         }
         interfaces = (relay.Node,)
 
+
 class Query(graphene.ObjectType):
     apartment = relay.Node.Field(ApartmentNode)
+
 
 schema = graphene.Schema(query=Query)
 ```
@@ -36,6 +39,7 @@ from example_project.app.models import Apartment
 
 from query_optimizer import DjangoObjectType
 
+
 class ApartmentNode(DjangoObjectType):
     class Meta:
         model = Apartment
@@ -45,8 +49,10 @@ class ApartmentNode(DjangoObjectType):
         }
         interfaces = (relay.Node,)
 
+
 class Query(graphene.ObjectType):
     apartment = relay.Node.Field(ApartmentNode)
+
 
 schema = graphene.Schema(query=Query)
 ```
@@ -64,13 +70,16 @@ from example_project.app.models import Apartment
 
 from graphene_django import DjangoObjectType, DjangoConnectionField
 
+
 class ApartmentNode(DjangoObjectType):
     class Meta:
         model = Apartment
         interfaces = (relay.Node,)
 
+
 class Query(graphene.ObjectType):
     paged_apartments = DjangoConnectionField(ApartmentNode)
+
 
 schema = graphene.Schema(query=Query)
 ```
@@ -85,13 +94,16 @@ from example_project.app.models import Apartment
 
 from query_optimizer import DjangoObjectType, DjangoConnectionField
 
+
 class ApartmentNode(DjangoObjectType):
     class Meta:
         model = Apartment
         interfaces = (relay.Node,)
 
+
 class Query(graphene.ObjectType):
     paged_apartments = DjangoConnectionField(ApartmentNode)
+
 
 schema = graphene.Schema(query=Query)
 ```
