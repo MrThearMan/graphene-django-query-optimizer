@@ -70,7 +70,7 @@ django-filter = "26.1"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = "1.6.1"
-pymdown-extensions = "12.0.1"
+pymdown-extensions = "12.1"
 pygments = "2.21.0"
 mkdocs-mermaid2-plugin = "1.2.3"
 
