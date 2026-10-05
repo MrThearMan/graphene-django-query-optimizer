@@ -20,13 +20,13 @@ repos:
             ]
 
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.22
+    rev: v0.16.10
     hooks:
     -   id: ruff-check
     -   id: ruff-format
 
 -   repo: https://github.com/python-poetry/poetry
-    rev: 2.4.1
+    rev: 2.5.1
     hooks:
     -   id: poetry-check
     -   id: poetry-lock
