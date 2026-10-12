@@ -9,14 +9,17 @@ import graphene
 from graphene_django import DjangoObjectType, DjangoListField
 from example_project.app.models import Apartment
 
+
 class ApartmentType(DjangoObjectType):
     class Meta:
         model = Apartment
+
 
 class Query(graphene.ObjectType):
     # Imagine the rest of the types are also here,
     # and we omit it for brevity.
     all_apartments = DjangoListField(ApartmentType)
+
 
 schema = graphene.Schema(query=Query)
 ```
@@ -83,12 +86,15 @@ from example_project.app.models import Apartment
 
 from query_optimizer import DjangoListField, DjangoObjectType
 
+
 class ApartmentType(DjangoObjectType):
     class Meta:
         model = Apartment
 
+
 class Query(graphene.ObjectType):
     all_apartments = DjangoListField(ApartmentType)
+
 
 schema = graphene.Schema(query=Query)
 ```
@@ -100,15 +106,18 @@ import graphene
 from query_optimizer import DjangoObjectType, optimize  # new import
 from example_project.app.models import Apartment
 
+
 class ApartmentType(DjangoObjectType):
     class Meta:
         model = Apartment
+
 
 class Query(graphene.ObjectType):
     all_apartments = graphene.List(ApartmentType)
 
     def resolve_all_apartments(root, info):
         return optimize(Apartment.objects.all(), info)  # wrapped function
+
 
 schema = graphene.Schema(query=Query)
 ```
