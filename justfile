@@ -2,54 +2,91 @@
 help:
     @just -l
 
+# Run all tests with coverage and show coverage report
+coverage:
+    @uv run coverage run -m pytest .
+    @uv run coverage report
+
+# Show files without test coverage
+coverage-missing:
+    @uv run coverage report --skip-covered --show-missing
+
 # Create a superuser
 create-user:
-    @DJANGO_SUPERUSER_PASSWORD=x poetry run python manage.py createsuperuser --username x --email x@user.com --no-input
+    @DJANGO_SUPERUSER_PASSWORD=x uv run python manage.py createsuperuser --username x --email x@user.com --no-input
+
+# Print top level dependencies
+deps-top:
+    @uv tree --depth 1 --no-default-groups
+
+# Print all outdated dependencies
+deps-out:
+    @uv pip list --outdated
+
+# Print all dependencies as a tree
+deps-tree:
+    @uv tree --all-groups
 
 # Start the development server
 dev port="8000":
-    @poetry run python manage.py runserver localhost:{{port}}
+    @uv run python manage.py runserver localhost:{{port}}
 
 # Start the docs server
 docs port="8080":
-    @poetry run mkdocs serve -a localhost:{{port}} -o
+    @uv run mkdocs serve -a localhost:{{port}} -o
 
 # Generate test data for local development
 generate:
-    @poetry run python manage.py create_test_data
+    @uv run python manage.py create_test_data
 
 # Install pre-commit hooks
 hook:
-    @poetry run pre-commit install
+    @uv run prek install
 
-# Install dependencies
+# Update all pre-commit hooks
+hook-update:
+    @uv run prek update
+
+# Install all dependencies & make sure they are up to date
 install:
-    @poetry install --all-extras
+    @uv sync
 
-# Run pre-commit hooks
+# Run pre-commit hooks on all files
 lint:
-    @poetry run pre-commit run --all-files
+    @uv run prek run --all-files
+
+# Generate a new dependency lock file
+lock:
+    @uv lock
 
 # Run migrations
 migrate:
-    @poetry run python manage.py migrate
+    @uv run python manage.py migrate
 
 # Create new migrations
 migrations:
-    @poetry run python manage.py makemigrations
+    @uv run python manage.py makemigrations
 
-# Run tests in all supported python versions using nox
+# Run mypy
+mypy dir=".":
+    @uv run mypy {{dir}}
+
+# Run tests in all supported python and django versions using nox
 nox:
-    @poetry run nox
+    @uv run nox
 
-# Sync dependencies
-sync:
-    @poetry sync --all-extras
+# List all available nox sessions
+nox-list:
+    @uv run nox --list
 
-# Run a specific test by name
-test name:
-    @poetry run pytest -k "{{name}}"
+# Run a single nox session
+nox-one name:
+    @uv run nox -s "{{name}}"
 
 # Run all tests
-tests:
-    @poetry run coverage run -m pytest
+test dir=".":
+    @uv run pytest {{dir}}
+
+# Run a specific test(s) by keyword (pytest "-k" option)
+test-one name:
+    @uv run pytest -k "{{name}}"
