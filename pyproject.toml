@@ -35,8 +35,10 @@ classifiers = [
     "Framework :: Django :: 6.0",
 ]
 requires-python = ">=3.11,<4"
-dynamic = [
-    "dependencies",
+dependencies = [
+    "django>=5.2.18",
+    "graphene-django>=3.0.0",
+    "django-settings-holder>=0.1.2",
 ]
 
 [project.urls]
@@ -45,40 +47,40 @@ dynamic = [
 "Bug Tracker" = "https://github.com/MrThearMan/graphene-django-query-optimizer/issues"
 "Documentation" = "https://mrthearman.github.io/graphene-django-query-optimizer"
 
-[tool.poetry]
-requires-poetry = ">=2.0.0"
-packages = [
-    { include = "query_optimizer" },
+[dependency-groups]
+test = [
+    "pytest==9.1.1",
+    "coverage==7.16.2",
+    "pytest-django==4.14.0",
+    "nox==2026.8.17",
+    "faker==40.43.0",
+    "factory-boy==3.3.3",
+    "sqlparse==0.6.0",
+    "django-graphiql-debug-toolbar==0.2.0",
+    "django-filter==26.2",
+]
+docs = [
+    "mkdocs==1.6.1",
+    "pymdown-extensions==12.3",
+    "pygments==2.21.0",
+    "mkdocs-mermaid2-plugin==1.2.3",
+]
+lint = [
+    "pre-commit==4.6.2",
+    "mypy==2.4.0",
+    "django-stubs==6.1.2",
+    "py-spy==0.4.2",
 ]
 
-[tool.poetry.dependencies]
-Django = ">=5.2.18"
-graphene-django = ">=3.0.0"
-django-settings-holder = ">=0.1.2"
-django-filter = { version = ">=26.2", optional = true }
+[tool.uv]
+default-groups = "all"
 
-[tool.poetry.group.test.dependencies]
-pytest = "9.1.1"
-coverage = "7.16.2"
-pytest-django = "4.14.0"
-nox = "2026.8.17"
-faker = "40.41.0"
-factory-boy = "3.3.3"
-sqlparse = "0.6.0"
-django-graphiql-debug-toolbar = "0.2.0"
-django-filter = "26.2"
-
-[tool.poetry.group.docs.dependencies]
-mkdocs = "1.6.1"
-pymdown-extensions = "12.1"
-pygments = "2.21.0"
-mkdocs-mermaid2-plugin = "1.2.3"
-
-[tool.poetry.group.lint.dependencies]
-pre-commit = "4.6.2"
-mypy = "2.4.0"
-django-stubs = "6.1.2"
-py-spy = "0.4.2"
+[tool.uv.build-backend]
+# The package is at the repository root, not under "src".
+module-root = ""
+module-name = [
+    "query_optimizer",
+]
 
 [tool.ruff]
 fix = true
@@ -324,5 +326,5 @@ plugins = [
 django_settings_module = "example_project.config.settings"
 
 [build-system]
-requires = ["poetry-core>=2.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
