@@ -90,32 +90,31 @@ I'll usually make a [new release] after each new feature, but if not, you can al
 5. Check that the release pipeline was successful. If not, delete the tag from origin
    with `git push --delete origin {tag_name}` and fix the issue before trying again.
 
-> Note, that the release will be made with the `pyproject.toml` version and not the
-> `tag` version, and that this is not checked anywhere, so make sure they match!
+> Note, that the release pipeline will fail if the `pyproject.toml` version
+> and the `tag` version do not match.
 
 ## Setting up the environment
 
-1. Install [Poetry].
-2. Install [Make].
-    - Windows: Install [Chocolatey] and then `choco install make`.
-    - Mac: Install [Homebrew] and then `brew install make`.
-    - Ubuntu: `apt install make`.
-3. Run `poetry install` to create a virtual environment and install project dependencies.
-4. Run `make hook` to install the [pre-commit] hooks.
+1. Install [uv].
+2. Install [Just].
+3. Run `just install` to create a virtual environment and install project dependencies.
+4. Run `just hook` to install the [prek] hooks.
 
-Run `make help` to list all existing development commands and their descriptions.
+Run `just help` to list all existing development commands and their descriptions.
 
 ## Testing
 
-Tests can be run with `make tests`, and individual tests with `make test <test_name>`.
-This will run tests in you [local environment][setup].
+Tests can be run with `just test`, and individual tests with `just test-one <test_name>`.
+This will run tests in your [local environment][setup].
 
-You can also test your code in multiple environments with [tox]. To do this, you must
-install python interpreters for all python version the library supports, then run
-`make tox`.
+You can also test your code in multiple environments with [nox]. To do this, you must
+install python interpreters for all python versions the library supports, then run
+`just nox`.
 
-Linting can be run on-demand with `make pre-commit`, or automatically before commits
-when installed with `make hook`
+Type checking can be run with `just mypy`.
+
+Linting can be run on-demand with `just lint`, or automatically before commits
+when installed with `just hook`.
 
 ## Guidelines for writing code
 
@@ -129,17 +128,14 @@ when installed with `make hook`
 
 - All code should be typed when possible.
   - Tests are an exception to this; typing them is optional.
-  - Make sure the typing methods used are supported in all python versions
-    the library supports (e.g., use `List[int]` instead of `list[int]` for Python 3.8 support).
+  - Make sure the typing methods used are supported in all python versions the library supports.
     CI will yell at you if you don't.
   - Create all custom types in `query_optimizer/typing.py` and import them from there.
     This avoids circular imports.
   - Use of `TypedDict` is encouraged where dicts would be used.
-  - Also import common types like `List` from `query_optimizer/typing.py` instead of the built-in `typing` module.
-    This is to make importing types more consistent across the codebase, and allows conditional import
-    logic with the `typing_extensions` module for newer typing methods like `ParamSpec` to be contained
-    in a single place.
-  - Using `mypy` for static type checking is optional, and will likely lead to many "errors" detected.
+  - Also import common types like `Any` from `query_optimizer/typing.py` instead of the built-in `typing` module.
+    This makes importing types more consistent across the codebase.
+  - Code is type checked with [mypy]. Run it with `just mypy`. CI will check this as well.
 
 - All functions, methods, and classes should include a docstring (*) in [reStructuredText format][pep287].
   - (*) Code that is short and _clearly_ self-documenting does not necessarily need a docstring.
@@ -150,16 +146,18 @@ when installed with `make hook`
     Documentation is not an excuse to write code that is hard to understand.
     Docstrings should not include code examples, they belong to [docs].
 
-- All code should be linted using the provided [pre-commit] hooks.
-  - Easiest way to do this is to install the pre-commit hooks with `make hook`. This will make
-    sure the pre-commit hooks will run automatically when you make a commit.
+- All code should be linted using the provided [prek] hooks.
+  - Easiest way to do this is to install the hooks with `just hook`. This will make
+    sure the hooks will run automatically when you make a commit.
   - Comments that ignore linting rules (`# type: ignore`, `# fmt: off`, `# noqa`) should be used
     _**very**_ sparingly. They are often not necessary and can lead to undocumented behavior
     if you are not careful.
 
 ## Guidelines for writing documentation
 
-- All documentation is written in `docs/` using markdown, and built with [mkdocs].
+- All documentation is written in `docs/` using markdown, and built with [zensical].
+  Build the docs with `just docs-build`, or serve them locally with `just docs`.
+- Every page needs a `description` in its front matter.
 - Write in idiomatic english, using simple language.
 - Keep examples simple and self-contained. Don't try to list all possible scenarios at once.
   Give the reader time to understand the basics before going over edge cases.
@@ -184,7 +182,7 @@ By contributing, you agree that your contributions will be licensed under the [M
 [pull request]: https://github.com/MrThearMan/graphene-django-query-optimizer/compare
 [fork]: https://github.com/MrThearMan/graphene-django-query-optimizer/fork
 [setup]: https://github.com/MrThearMan/graphene-django-query-optimizer/blob/main/CONTRIBUTING.md#setting-up-the-environment
-[tox]: https://tox.wiki/
+[nox]: https://github.com/wntrblm/nox
 [code-guidelines]: https://github.com/MrThearMan/graphene-django-query-optimizer/blob/main/CONTRIBUTING.md#guidelines-for-writing-code
 [docs-guidelines]: https://github.com/MrThearMan/graphene-django-query-optimizer/blob/main/CONTRIBUTING.md#guidelines-for-writing-documentation
 [reviewed]: https://github.com/MrThearMan/graphene-django-query-optimizer/blob/main/CONTRIBUTING.md#code-review-process
@@ -193,15 +191,14 @@ By contributing, you agree that your contributions will be licensed under the [M
 [new release]: https://github.com/MrThearMan/graphene-django-query-optimizer/blob/main/CONTRIBUTING.md#creating-a-new-release
 [semantic versioning]: https://semver.org/
 [Draft a new release]: https://github.com/MrThearMan/graphene-django-query-optimizer/releases/new
-[poetry]: https://python-poetry.org/docs/#installation
-[make]: https://man7.org/linux/man-pages/man1/make.1.html
-[chocolatey]: https://chocolatey.org/install
-[homebrew]: https://docs.brew.sh/Installation
-[pre-commit]: https://pre-commit.com/
+[uv]: https://docs.astral.sh/uv/getting-started/installation/
+[Just]: https://github.com/casey/just
+[prek]: https://prek.j178.dev/
+[mypy]: https://mypy.readthedocs.io/
 [pep287]: https://peps.python.org/pep-0287/
-[mkdocs]: https://www.mkdocs.org/
+[zensical]: https://zensical.org/
 [mermaid.js]: https://mermaid.js.org/
-[code block]: https://www.mkdocs.org/user-guide/writing-your-docs/#fenced-code-blocks
+[code block]: https://www.markdownguide.org/extended-syntax/#fenced-code-blocks
 [blockquotes]: https://www.markdownguide.org/basic-syntax#blockquotes-1
 [horizontal rules]: https://www.markdownguide.org/basic-syntax#horizontal-rules
 [links]: https://www.markdownguide.org/basic-syntax#links
