@@ -13,6 +13,7 @@ build
 # Generated files
 coverage.xml
 .coverage
+/.coverage*
 /example_project/config/testdb
 /example_project/static/
 /example_project/media/

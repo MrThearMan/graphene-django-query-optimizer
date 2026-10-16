@@ -45,22 +45,38 @@ def get_versions(pattern: re.Pattern[str]) -> list[str]:
 @nox.session(python=python_versions(), reuse_venv=True)
 @nox.parametrize("django", django_versions())
 def tests(session: nox.Session, django: str) -> None:
-    # Django 6.0 is only supports Python 3.12 and above
-    if session.python == "3.11" and django == "6.0.*":
-        session.skip()
+    venv = session.virtualenv.location
+    env = {"UV_PROJECT_ENVIRONMENT": venv}
 
-    # Python 3.14 only supported for Django 5.2 and above
-    if session.python == "3.14" and django in {"5.0.*", "5.1.*"}:
-        session.skip()
+    # "uv sync" picks its own interpreter unless "--python" names one, and would replace
+    # the virtualenv nox just made with one built from the first entry in ".python-version".
+    session.run_install(
+        "uv",
+        "sync",
+        "--all-extras",
+        "--all-groups",
+        "--python",
+        venv,
+        external=True,
+        env=env,
+    )
 
-    env = {
-        "POETRY_VIRTUALENVS_PATH": str(Path(session.virtualenv.bin).parent),
-    }
+    # "uv sync" removes every package the lockfile does not name, pip included,
+    # so the version under test is installed with uv as well.
+    session.run_install(
+        "uv",
+        "pip",
+        "install",
+        "--python",
+        venv,
+        f"django=={django}",
+        external=True,
+    )
 
-    session.run_install("poetry", "install", "--all-extras", external=True, env=env)
-    session.install(f"django=={django}")
+    session.run("coverage", "run", "--parallel-mode", "-m", "pytest", *session.posargs, external="error")
 
-    session.run("coverage", "run", "-m", "pytest", external="error")
+    # "coverage combine" consumes all parallel data files next to the data file it writes to.
+    session.run("coverage", "combine", "--append")
 
 
 if __name__ == "__main__":
