@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from graphene.types.definitions import GrapheneObjectType
     from graphql import FieldNode
 
-    from .typing import PK, Generator, GQLInfo, TModel, ToManyField, ToOneField, Union
+    from .typing import PK, Any, Generator, GQLInfo, TModel, ToManyField, ToOneField, Union
 
 
 __all__ = [
@@ -33,7 +33,7 @@ __all__ = [
 
 def optimize(
     queryset: QuerySet[TModel],
-    info: GQLInfo,
+    info: GQLInfo[Any],
     *,
     max_complexity: int | None = None,
 ) -> QuerySet[TModel]:
@@ -48,7 +48,7 @@ def optimize(
 
 def optimize_single(
     queryset: QuerySet[TModel],
-    info: GQLInfo,
+    info: GQLInfo[Any],
     *,
     pk: PK,
     max_complexity: int | None = None,
@@ -71,7 +71,7 @@ def optimize_single(
 class OptimizationCompiler(GraphQLASTWalker):
     """Class for compiling SQL optimizations based on the given query."""
 
-    def __init__(self, info: GQLInfo, max_complexity: int | None = None) -> None:
+    def __init__(self, info: GQLInfo[Any], max_complexity: int | None = None) -> None:
         """
         Initialize the optimization compiler with the query info.
 

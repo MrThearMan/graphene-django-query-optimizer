@@ -426,6 +426,7 @@ dependencies = [
     { name = "graphene-django" },
     { name = "graphql-core" },
     { name = "graphql-relay" },
+    { name = "typing-extensions" },
 ]
 
 [package.dev-dependencies]
@@ -461,6 +462,7 @@ requires-dist = [
     { name = "graphene-django", specifier = ">=3.2.3" },
     { name = "graphql-core", specifier = ">=3.2.13" },
     { name = "graphql-relay", specifier = ">=3.2.0" },
+    { name = "typing-extensions", specifier = ">=4.16.0" },
 ]
 
 [package.metadata.requires-dev]

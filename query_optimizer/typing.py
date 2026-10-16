@@ -12,7 +12,6 @@ from typing import (
     Protocol,
     TypedDict,
     TypeGuard,
-    TypeVar,
     Union,
     cast,
     overload,
@@ -40,6 +39,9 @@ from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions
 from graphql import GraphQLResolveInfo
 from graphql_relay import ConnectionType
+
+# Type parameter defaults are new in Python 3.13.
+from typing_extensions import TypeVar
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser, User
@@ -76,6 +78,8 @@ __all__ = [
     "Optional",
     "ParamSpec",
     "QuerySetResolver",
+    "TModel",
+    "TUser",
     "ToManyField",
     "ToOneField",
     "TypeGuard",
@@ -88,12 +92,16 @@ __all__ = [
 ]
 
 
-TModel = TypeVar("TModel", bound=Model)
 type PK = Any
 type ModelField = Union[Field, ForeignObjectRel, "GenericForeignKey"]
 type ToManyField = Union["GenericRelation", ManyToManyField, ManyToOneRel, ManyToManyRel]
 type ToOneField = Union["GenericRelation", ForeignObject, ForeignKey, OneToOneField]
 type AnyUser = Union["User", "AnonymousUser"]
+
+# Subscribe generic classes with these to type them for a specific model or user.
+# Without subscription, the defaults apply.
+TModel = TypeVar("TModel", bound=Model, default=Model)
+TUser = TypeVar("TUser", default=AnyUser)
 type QuerySetResolver = Callable[..., Union[QuerySet, Manager, None]]
 type ModelResolver = Callable[..., Union[Model, None]]
 type ConnectionResolver = Callable[..., ConnectionType]
@@ -125,8 +133,8 @@ GRAPHQL_BUILTIN = (
 )
 
 
-class UserHintedWSGIRequest(WSGIRequest):
-    user: AnyUser
+class UserHintedWSGIRequest(WSGIRequest, Generic[TUser]):
+    user: TUser  # type: ignore[assignment]
 
     optimizer_pagination: dict[str, PaginationArgs]
     """
@@ -140,8 +148,8 @@ class UserHintedWSGIRequest(WSGIRequest):
     """
 
 
-class GQLInfo(GraphQLResolveInfo):
-    context: UserHintedWSGIRequest
+class GQLInfo(GraphQLResolveInfo, Generic[TUser]):
+    context: UserHintedWSGIRequest[TUser]
 
 
 class OptimizedDjangoOptions(DjangoObjectTypeOptions):

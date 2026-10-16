@@ -75,4 +75,16 @@ The optimizer will find this method and use it automatically when this
 object type is used in a query. No additional queries are performed when using
 this method as opposed to overriding the `get_queryset` method itself.
 
+`DjangoObjectType` is generic over the model and the user type. Without subscription,
+the model is `Model` and the user is `User | AnonymousUser`. Subscribe the class
+to type its methods for a specific model and user. `GQLInfo` is generic over
+the user type in the same way:
+
+```python
+class ApartmentType(DjangoObjectType[Apartment, MyUser]):
+    @classmethod
+    def filter_queryset(cls, queryset: QuerySet[Apartment], info: GQLInfo[MyUser]) -> QuerySet[Apartment]:
+        return queryset.filter(owner=info.context.user)
+```
+
 [filters]: https://github.com/carltongibson/django-filter

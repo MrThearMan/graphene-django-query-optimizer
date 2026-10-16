@@ -85,7 +85,7 @@ class QueryOptimizer:
     def __init__(
         self,
         model: type[Model] | None,
-        info: GQLInfo,
+        info: GQLInfo[Any],
         name: str | None = None,
         parent: QueryOptimizer | None = None,
     ) -> None:

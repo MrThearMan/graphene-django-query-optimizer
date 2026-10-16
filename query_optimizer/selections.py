@@ -22,7 +22,7 @@ __all__ = [
 ]
 
 
-def get_field_selections(info: GQLInfo, model: type[models.Model] | None = None) -> list[Any]:
+def get_field_selections(info: GQLInfo[Any], model: type[models.Model] | None = None) -> list[Any]:
     """Compile filter information included in the GraphQL query."""
     compiler = FieldSelectionCompiler(info, model)
     compiler.run()

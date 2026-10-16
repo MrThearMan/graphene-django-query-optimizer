@@ -96,7 +96,7 @@ class RelatedField(graphene.Field):
             return parent_resolver
         return self.related_resolver
 
-    def related_resolver(self, root: models.Model, info: GQLInfo) -> models.Model | None:
+    def related_resolver(self, root: models.Model, info: GQLInfo[Any]) -> models.Model | None:
         field_name = self.field_name or to_snake_case(info.field_name)
         # Related object should be optimized to the root model.
         related_instance: models.Model | None = getattr(root, field_name, None)
@@ -175,7 +175,7 @@ class DjangoListField(FilteringMixin, graphene.Field):
         self.resolver = parent_resolver
         return self.list_resolver
 
-    def list_resolver(self, root: Any, info: GQLInfo, **kwargs: Any) -> models.QuerySet:
+    def list_resolver(self, root: Any, info: GQLInfo[Any], **kwargs: Any) -> models.QuerySet:
         # If field is aliased, a prefetch should have been done to that alias.
         # If not, call the ObjectType's "resolve_{field_name}" method, if it exists.
         # Otherwise, call the default resolver (usually `dict_or_attr_resolver`).
@@ -255,7 +255,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         self.resolver = parent_resolver
         return self.connection_resolver
 
-    def connection_resolver(self, root: Any, info: GQLInfo, **kwargs: Any) -> ConnectionType:
+    def connection_resolver(self, root: Any, info: GQLInfo[Any], **kwargs: Any) -> ConnectionType:
         pagination_args = validate_pagination_args(
             first=kwargs.pop("first", None),
             last=kwargs.pop("last", None),
@@ -410,7 +410,7 @@ class AnnotatedField(graphene.Field):
         self.resolver = parent_resolver
         return self.annotation_resolver
 
-    def annotation_resolver(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
+    def annotation_resolver(self, root: Model, info: GQLInfo[Any], **kwargs: Any) -> Any:
         return self.resolver(root, info, **kwargs)
 
     def optimizer_hook(self, compiler: OptimizationCompiler) -> None:
@@ -437,7 +437,7 @@ class MultiField(graphene.Field):
         self.resolver = parent_resolver
         return self.multi_field_resolver
 
-    def multi_field_resolver(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
+    def multi_field_resolver(self, root: Model, info: GQLInfo[Any], **kwargs: Any) -> Any:
         return self.resolver(root, info, **kwargs)
 
     def optimizer_hook(self, compiler: OptimizationCompiler) -> None:
@@ -487,7 +487,7 @@ class ManuallyOptimizedField(graphene.Field):
         self.resolver = parent_resolver
         return self.field_resolver
 
-    def field_resolver(self, root: Model, info: GQLInfo, **kwargs: Any) -> Any:
+    def field_resolver(self, root: Model, info: GQLInfo[Any], **kwargs: Any) -> Any:
         return self.resolver(root, info, **kwargs)
 
     def optimizer_hook(self, compiler: OptimizationCompiler) -> None:

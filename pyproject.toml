@@ -41,6 +41,7 @@ dependencies = [
     "graphql-core>=3.2.13",
     "graphql-relay>=3.2.0",
     "django-settings-holder>=0.3.1",
+    "typing-extensions>=4.16.0",
 ]
 
 [project.urls]

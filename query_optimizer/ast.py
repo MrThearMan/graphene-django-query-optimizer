@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from graphene.types.definitions import GrapheneInterfaceType
     from graphql import FragmentDefinitionNode, GraphQLField, GraphQLOutputType, GraphQLSchema
 
-    from .typing import Generator, GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard
+    from .typing import Any, Generator, GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard
 
 __all__ = [
     "GraphQLASTWalker",
@@ -41,7 +41,7 @@ Selections = tuple[SelectionNode, ...]
 class GraphQLASTWalker:
     """Class for walking the GraphQL AST and handling the different nodes."""
 
-    def __init__(self, info: GQLInfo, model: type[Model] | None = None) -> None:
+    def __init__(self, info: GQLInfo[Any], model: type[Model] | None = None) -> None:
         self.info = info
         self.complexity: int = 0
         # Set before walking, so the walker can assume it is always defined.

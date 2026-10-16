@@ -28,7 +28,7 @@ __all__ = [
 ]
 
 
-def get_filter_info(info: GQLInfo, model: type[Model]) -> GraphQLFilterInfo:
+def get_filter_info(info: GQLInfo[Any], model: type[Model]) -> GraphQLFilterInfo:
     """Compile filter information included in the GraphQL query."""
     compiler = FilterInfoCompiler(info, model)
     compiler.run()
