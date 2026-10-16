@@ -7,6 +7,8 @@ on:
 
 jobs:
   release:
-    uses: MrThearMan/CI/.github/workflows/release.yml@v0.5.2
+    uses: MrThearMan/CI/.github/workflows/release.yml@v0.6.2
+    with:
+      uv-cache-suffix: "release"
     secrets:
       pypi-token: ${{ secrets.PYPI_API_TOKEN }}
