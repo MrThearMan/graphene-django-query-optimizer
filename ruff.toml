@@ -1,0 +1,217 @@
+fix = true
+unsafe-fixes = true
+line-length = 120
+extend-exclude = [
+    "tests*",
+]
+
+[format]
+docstring-code-format = true
+preview = true
+
+[lint]
+typing-modules = [
+    "query_optimizer.typing",
+]
+preview = true
+explicit-preview-rules = true
+select = [
+    "A",        # flake8-builtins
+    "ANN",      # flake8-annotations
+    "ARG",      # flake8-unused-arguments
+    "B",        # flake8-bugbear
+    "BLE",      # flake8-blind-except
+    "C90",      # mccabe
+    "C4",       # flake8-comprehensions
+    "COM",      # flake8-commas
+    "D200",     # pydocstyle: One-line docstring should fit on one line
+    "D201",     # pydocstyle: No blank lines allowed before function docstring (found {num_lines})
+    "D202",     # pydocstyle: No blank lines allowed after function docstring (found {num_lines})
+    "D209",     # pydocstyle: Multi-line docstring closing quotes should be on a separate line
+    "D213",     # pydocstyle: Multi-line docstring summary should start at the second line
+    "DJ",       # flake8-django
+    "DTZ",      # flake8-datetimez
+    "E",        # pycodestyle errors
+    "EM",       # flake8-errmsg
+    "F",        # pyflakes
+    "FA",       # flake8-future-annotations
+    "FBT",      # flake8-boolean-trap
+    "FLY",      # flynt
+    "G",        # flake8-logging-format
+    "I",        # isort
+    "ICN",      # flake8-import-conventions
+    "INP",      # flake8-no-pep420
+    "INT",      # flake8-gettext
+    "ISC",      # flake8-implicit-str-concat
+    "LOG",      # flake8-logging
+    "N",        # pep8-naming
+    "PERF",     # perflint
+    "PGH",      # pygrep-hooks
+    "PIE",      # flake8-pie
+    "PL",       # pylint
+    "PT",       # flake8-pytest-style
+    "PTH",      # flake8-use-pathlib
+    "PYI",      # flake8-pyi
+    "Q",        # flake8-quotes
+    "R",        # Refactor
+    "RET",      # flake8-return
+    "RSE",      # flake8-raise
+    "RUF",      # ruff-specific rules
+    "S",        # flake8-bandit
+    "SIM",      # flake8-simplify
+    "SLF",      # flake8-self
+    "T20",      # flake8-print
+    "TCH",      # flake8-type-checking
+    "TID",      # flake8-tidy-imports
+    "TRY",      # tryceratops
+    "UP",       # pyupgrade
+    "W",        # pycodestyle warnings
+]
+# Preview rules
+extend-select = [
+    "B909",     # loop-iterator-mutation
+    "FURB110",  # if-exp-instead-of-or-operator
+    "FURB142",  # for-loop-set-mutations
+    "FURB145",  # slice-copy
+    "FURB171",  # single-item-membership-test
+    "FURB187",  # list-reverse-copy
+    "PLE0307",  # invalid-str-return-type
+    "PLR0916",  # too-many-boolean-expressions
+    "PLR1730",  # if-stmt-min-max
+    "PLR1733",  # unnecessary-dict-index-lookup
+    "PLR1736",  # unnecessary-list-index-lookup
+    "PLR6104",  # non-augmented-assignment
+    "PLW0211",  # bad-staticmethod-argument
+    "PLW0642",  # self-or-cls-assignment
+    "RUF021",   # parenthesize-chained-operators
+    "RUF022",   # unsorted-dunder-all
+    "UP042",    # replace-str-enum
+]
+ignore = [
+    "A005",     # Allow shadowing builtin modules
+    "ANN401",   # Any-typing allowed
+    "ARG002",   # Unused method argument
+    "ARG003",   # Unused class method argument
+    "N805",     # First argument of a method should be named `self`
+    "SLF001",   # Accessing private members is allowed
+    "UP007",    # Use `X | Y` for union type annotations
+    "G004",     # Logging statement uses f-string
+    "S602",     # Broken: https://github.com/astral-sh/ruff/issues/4045
+    "S603",     # Broken: https://github.com/astral-sh/ruff/issues/4045
+    "RUF012",   # Mutable class attributes
+    "DJ001",    # Avoid using `django.db.models.Model.objects.create`
+    #
+    # Conflicting with ruff-format
+    #
+    "COM812",   # missing-trailing-comma
+    "COM819",   # prohibited-trailing-comma
+    "D206",     # indent-with-spaces
+    "D300",     # triple-single-quotes
+    "E111",     # indentation-with-invalid-multiple
+    "E114",     # indentation-with-invalid-multiple-comment
+    "E117",     # over-indented
+    "ISC001",   # single-line-implicit-string-concatenation
+    "ISC002",   # multi-line-implicit-string-concatenation
+    "Q000",     # bad-quotes-inline-string
+    "Q001",     # bad-quotes-multiline-string
+    "Q002",     # bad-quotes-docstring
+    "Q003",     # avoidable-escaped-quote
+    "W191",     # tab-indentation
+]
+
+[lint.extend-per-file-ignores]
+"test_*.py" = [
+    "ANN",      # No need to annotate tests
+    "N801",     # Allow whatever class names in tests
+    "N802",     # Allow whatever function names in tests
+    "N815",     # Allow whatever variable names in tests
+    "PLR0915",  # Can have as many statements as needed
+    "PLR2004",  # Magic value comparisons are allowed in tests
+    "S101",     # Assert is fine
+    "S105",     # Hardcoded passwords are fine in tests
+    "S106",     # Hardcoded passwords are fine in tests
+    "S108",     # No need to care about insecure temp file usages in tests
+    "S311",     # Pseudo-random generators are fine here
+    "SLF",      # Allow accessing private members in tests
+    "UP",       # No upgrade rules
+]
+"example_project*" = [
+    "ANN",      # No need to annotate tests
+    "ARG",      # Fixtures can be unused
+    "DJ",       # Ignore Django-specific rules
+]
+"conftest.py" = [
+    "ARG",      # Fixtures can be unused
+    "ANN",      # No need to annotate tests
+    "UP",       # No upgrade rules
+]
+
+[lint.isort]
+combine-as-imports = false
+split-on-trailing-comma = false
+required-imports = [
+    "from __future__ import annotations",
+]
+known-third-party = [
+    "django",
+]
+known-first-party = [
+    "query_optimizer",
+]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
+[lint.flake8-import-conventions]
+banned-from = [
+    "base64",
+    "csv",
+    "datetime",
+    "hashlib",
+    "hmac",
+    "json",
+    "logging",
+    "math",
+    "os",
+    "pickle",
+    "random",
+    "re",
+    "shutil",
+    "subprocess",
+    "sys",
+    "tempfile",
+    "time",
+    "uuid",
+    "xml",
+    "yaml",
+]
+
+[lint.flake8-annotations]
+suppress-dummy-args = true
+
+[lint.flake8-type-checking]
+strict = true
+quote-annotations = false
+
+[lint.flake8-unused-arguments]
+ignore-variadic-names = true
+
+[lint.flake8-self]
+extend-ignore-names = [
+    "_base_manager",
+    "_default_manager",
+    "_meta",
+]
+
+[lint.mccabe]
+max-complexity = 12
+
+[lint.pylint]
+max-returns = 8
+max-positional-args = 5
+max-args = 10
+max-bool-expr = 6
