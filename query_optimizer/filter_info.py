@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from graphql import FieldNode
 
     from .ast import GrapheneType, Selections
-    from .typing import Any, GQLInfo, ToManyField, ToOneField
+    from .typing import Any, Generator, GQLInfo, ToManyField, ToOneField
 
 
 __all__ = [
@@ -131,7 +131,7 @@ class FilterInfoCompiler(GraphQLASTWalker):
             return super().handle_to_many_field(field_type, field_node, related_field, related_model)
 
     @contextlib.contextmanager
-    def child_filter_info(self, field_node: FieldNode) -> None:
+    def child_filter_info(self, field_node: FieldNode) -> Generator[None, None, None]:
         field_name = self.get_field_name(field_node)
         arguments: dict[str, GraphQLFilterInfo] = {}
         orig_arguments = self.filter_info

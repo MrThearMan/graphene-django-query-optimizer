@@ -14,7 +14,7 @@ from graphene.types.union import Union as GrapheneUnion
 from graphene.utils.str_converters import to_snake_case
 from graphene_django import DjangoObjectType
 from graphene_django.registry import get_global_registry
-from graphql import FieldNode, FragmentSpreadNode, InlineFragmentNode, SelectionNode, Undefined
+from graphql import FieldNode, FragmentSpreadNode, InlineFragmentNode, SelectionNode
 from graphql.execution.execute import get_field_def
 
 from .errors import OptimizerError
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from graphene.types.definitions import GrapheneInterfaceType
     from graphql import FragmentDefinitionNode, GraphQLField, GraphQLOutputType, GraphQLSchema
 
-    from .typing import GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard
+    from .typing import Generator, GQLInfo, ModelField, ToManyField, ToOneField, TypeGuard
 
 __all__ = [
     "GraphQLASTWalker",
@@ -44,7 +44,8 @@ class GraphQLASTWalker:
     def __init__(self, info: GQLInfo, model: type[Model] | None = None) -> None:
         self.info = info
         self.complexity: int = 0
-        self.model: type[Model] = model
+        # Set before walking, so the walker can assume it is always defined.
+        self.model: type[Model] = model  # type: ignore[assignment]
 
     def increase_complexity(self) -> None:
         self.complexity += 1
@@ -134,7 +135,7 @@ class GraphQLASTWalker:
 
         if not field.is_relation or is_foreign_key_id(field, field_node):
             with self.use_model(model):
-                return self.handle_normal_field(field_type, field_node, field)
+                return self.handle_normal_field(field_type, field_node, field)  # type: ignore[arg-type]
 
         if is_to_one(field):
             related_model = get_related_model(field, model)
@@ -207,7 +208,7 @@ class GraphQLASTWalker:
     ) -> None:
         fragment_type = get_fragment_type(field_type, inline_fragment, self.info.schema)
         graphene_options: BaseOptions = fragment_type.graphene_type._meta
-        fragment_model: type[Model] | Undefined = getattr(graphene_options, "model", Undefined)
+        fragment_model: type[Model] | None = getattr(graphene_options, "model", None)
 
         if fragment_model != self.model:
             return None
@@ -227,7 +228,7 @@ class GraphQLASTWalker:
         return related_field.cache_name or related_field.name
 
     @contextlib.contextmanager
-    def use_model(self, model: type[Model]) -> GraphQLASTWalker:
+    def use_model(self, model: type[Model]) -> Generator[None, None, None]:
         orig_model = self.model
         try:
             self.model = model
@@ -286,15 +287,15 @@ def is_graphql_builtin(field_name: str) -> bool:
     return field_name.lower() in GRAPHQL_BUILTIN
 
 
-def is_foreign_key_id(field: Field, field_node: FieldNode) -> bool:
+def is_foreign_key_id(field: ModelField, field_node: FieldNode) -> bool:
     return isinstance(field, ForeignKey) and field.get_attname() == to_snake_case(field_node.name.value)
 
 
-def is_to_many(field: Field) -> TypeGuard[ToManyField]:
+def is_to_many(field: ModelField) -> TypeGuard[ToManyField]:
     return bool(field.one_to_many or field.many_to_many)
 
 
-def is_to_one(field: Field) -> TypeGuard[ToOneField]:
+def is_to_one(field: ModelField) -> TypeGuard[ToOneField]:
     return bool(field.many_to_one or field.one_to_one)
 
 
@@ -306,16 +307,17 @@ def get_fragment_type(
     fragment_type_name = inline_fragment.type_condition.name.value
 
     # For unions, fetch the type from in the union.
+    fragment_type: GrapheneObjectType | None
     if isinstance(field_type, GrapheneUnionType):
         gen = (t for t in field_type.types if t.name == fragment_type_name)
-        fragment_type: GrapheneObjectType | None = next(gen, None)
+        fragment_type = next(gen, None)
         if fragment_type is None:  # pragma: no cover
             msg = f"Fragment type '{fragment_type_name}' not found in union '{field_type}'"
             raise OptimizerError(msg)
 
     # For interfaces, fetch the type from in the schema.
     else:
-        fragment_type: GrapheneObjectType | None = schema.get_type(fragment_type_name)
+        fragment_type = schema.get_type(fragment_type_name)  # type: ignore[assignment]
         if fragment_type is None:  # pragma: no cover
             msg = f"Fragment type '{fragment_type_name}' not found in schema."
             raise OptimizerError(msg)
@@ -335,19 +337,20 @@ def get_related_model(related_field: Union[ToOneField, ToManyField], model: type
 
 
 def get_model_field(model: type[Model], field_name: str) -> ModelField | None:
+    model_field: ModelField
     if field_name == "pk":
-        model_field: ModelField = model._meta.pk
+        model_field = model._meta.pk
         return model_field
 
     with suppress(FieldDoesNotExist):
-        model_field: ModelField = model._meta.get_field(field_name)
+        model_field = model._meta.get_field(field_name)
         return model_field
 
     # Field might be a reverse many-related field without `related_name`, in which case
     # the `model._meta.fields_map` will store the relation without the "_set" suffix.
     if field_name.endswith("_set"):
         with suppress(FieldDoesNotExist):
-            model_field: ModelField = model._meta.get_field(field_name.removesuffix("_set"))
+            model_field = model._meta.get_field(field_name.removesuffix("_set"))
             if is_to_many(model_field):
                 return model_field
 

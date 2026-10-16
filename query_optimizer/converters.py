@@ -29,7 +29,7 @@ def convert_to_one_field(
     registry: Registry | None = None,
 ) -> graphene.Dynamic:
     def dynamic_type() -> graphene.Field | None:
-        type_: type[DjangoObjectType] | None = registry.get_type_for_model(field.related_model)
+        type_: type[DjangoObjectType] | None = registry.get_type_for_model(field.related_model)  # type: ignore[union-attr]
         if type_ is None:  # pragma: no cover
             return None
 
@@ -56,7 +56,7 @@ def convert_to_many_field(
     registry: Registry | None = None,
 ) -> graphene.Dynamic:
     def dynamic_type() -> Union[DjangoConnectionField, DjangoListField, None]:
-        type_: type[DjangoObjectType] | None = registry.get_type_for_model(field.related_model)
+        type_: type[DjangoObjectType] | None = registry.get_type_for_model(field.related_model)  # type: ignore[union-attr]
         if type_ is None:  # pragma: no cover
             return None
 

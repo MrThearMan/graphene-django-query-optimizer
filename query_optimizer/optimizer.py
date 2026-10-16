@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import dataclasses
-from copy import copy
 from typing import TYPE_CHECKING
 
 from django.contrib.contenttypes.fields import GenericRelation
@@ -18,6 +17,7 @@ from .ast import get_model_field
 from .filter_info import get_filter_info
 from .prefetch_hack import register_for_prefetch_hack
 from .settings import optimizer_settings
+from .typing import cast
 from .utils import (
     SubqueryCount,
     add_slice_to_queryset,
@@ -31,9 +31,19 @@ from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
     from django.db.models import Model, QuerySet
+    from django.db.models.expressions import Combinable
 
     from .types import DjangoObjectType
-    from .typing import Any, ExpressionKind, GQLInfo, GraphQLFilterInfo, Literal, QuerySetResolver, TModel, ToManyField
+    from .typing import (
+        Any,
+        ExpressionKind,
+        GQLInfo,
+        GraphQLFilterInfo,
+        Literal,
+        ManualOptimizerMethod,
+        TModel,
+        ToManyField,
+    )
 
 __all__ = [
     "QueryOptimizer",
@@ -42,8 +52,8 @@ __all__ = [
 
 @dataclasses.dataclass
 class OptimizationResults[TModel: models.Model]:
+    queryset: QuerySet[TModel]
     name: str | None = None
-    queryset: QuerySet[TModel] | None = None
     only_fields: list[str] = dataclasses.field(default_factory=list)
     related_fields: list[str] = dataclasses.field(default_factory=list)
     select_related: list[str] = dataclasses.field(default_factory=list)
@@ -51,7 +61,9 @@ class OptimizationResults[TModel: models.Model]:
 
     def __add__(self, other: OptimizationResults) -> OptimizationResults:
         """Adding two compilation results together means extending the lookups to the other model."""
-        self.select_related.append(other.name)
+        # Nested results always have a name.
+        other_name: str = other.name  # type: ignore[assignment]
+        self.select_related.append(other_name)
         self.only_fields.extend(f"{other.name}{LOOKUP_SEP}{only}" for only in other.only_fields)
         self.related_fields.extend(f"{other.name}{LOOKUP_SEP}{only}" for only in other.related_fields)
         self.select_related.extend(f"{other.name}{LOOKUP_SEP}{select}" for select in other.select_related)
@@ -60,7 +72,7 @@ class OptimizationResults[TModel: models.Model]:
             if isinstance(prefetch, str):
                 self.prefetch_related.append(f"{other.name}{LOOKUP_SEP}{prefetch}")
             if isinstance(prefetch, Prefetch):
-                prefetch.add_prefix(other.name)
+                prefetch.add_prefix(other_name)
                 self.prefetch_related.append(prefetch)
 
         return self
@@ -85,7 +97,7 @@ class QueryOptimizer:
         self.annotations: dict[str, ExpressionKind] = {}
         self.select_related: dict[str, QueryOptimizer] = {}
         self.prefetch_related: dict[str, QueryOptimizer] = {}
-        self.manual_optimizers: dict[str, QuerySetResolver] = {}
+        self.manual_optimizers: dict[str, ManualOptimizerMethod] = {}
         self.total_count: bool = False
         self.name = name
         self.parent: QueryOptimizer | None = parent
@@ -103,8 +115,9 @@ class QueryOptimizer:
     def pre_processing(self, queryset: QuerySet[TModel]) -> QuerySet[TModel]:
         """Run all pre-optimization hooks on the object type matching the queryset's model."""
         object_type: DjangoObjectType | None = get_global_registry().get_type_for_model(queryset.model)
-        if callable(getattr(object_type, "pre_optimization_hook", None)):
-            return object_type.pre_optimization_hook(queryset, self)
+        pre_optimization_hook = getattr(object_type, "pre_optimization_hook", None)
+        if callable(pre_optimization_hook):
+            return pre_optimization_hook(queryset, self)
 
         return queryset  # pragma: no cover
 
@@ -121,9 +134,10 @@ class QueryOptimizer:
         )
 
         for name, optimizer in self.select_related.items():
-            queryset = optimizer.model._default_manager.all()
+            # Only generic foreign keys have no model, and they are always prefetched.
+            nested_queryset = optimizer.model._default_manager.all()  # type: ignore[union-attr]
             nested_filter_info = filter_info.get("children", {}).get(name, {})
-            nested_results = optimizer.process(queryset, nested_filter_info)
+            nested_results = optimizer.process(nested_queryset, nested_filter_info)
 
             # Promote `select_related` to `prefetch_related` if any annotations are needed.
             if optimizer.annotations:
@@ -137,12 +151,12 @@ class QueryOptimizer:
         for name, optimizer in self.prefetch_related.items():
             # For generic foreign keys, we don't know the model, so we can't optimize the queryset.
             if optimizer.model is None:
-                results.prefetch_related.append(optimizer.name)
+                results.prefetch_related.append(optimizer.name)  # type: ignore[arg-type]
                 continue
 
-            queryset = optimizer.model._default_manager.all()
+            nested_queryset = optimizer.model._default_manager.all()
             nested_filter_info = filter_info.get("children", {}).get(name, {})
-            nested_results = optimizer.process(queryset, nested_filter_info)
+            nested_results = optimizer.process(nested_queryset, nested_filter_info)
 
             prefetch = optimizer.process_prefetch(name, nested_results, nested_filter_info)
             results.prefetch_related.append(prefetch)
@@ -181,20 +195,23 @@ class QueryOptimizer:
         if not filter_info.get("is_connection", False):
             return queryset
 
-        field: ToManyField | None = get_model_field(self.parent.model, self.name)
+        # Prefetch optimizers always have a parent with a model, and a name.
+        parent_model: type[Model] = self.parent.model  # type: ignore[union-attr,assignment]
+        field_name: str = self.name  # type: ignore[assignment]
+        field = cast("ToManyField | None", get_model_field(parent_model, field_name))
         if field is None:  # pragma: no cover
             msg = (
-                f"Cannot find field {self.name!r} on model {self.parent.model.__name__!r}. "
+                f"Cannot find field {self.name!r} on model {parent_model.__name__!r}. "
                 f"Cannot optimize nested pagination."
             )
             optimizer_logger.warning(msg)
             return queryset
 
         remote_field = field.remote_field
-        field_name = (
+        remote_field_name: str = (
             remote_field.name  # .
             if isinstance(field, models.ManyToManyField | GenericRelation)
-            else remote_field.attname
+            else remote_field.attname  # type: ignore[union-attr]
         )
 
         order_by = self.get_prefetch_ordering(filter_info, model=queryset.model)
@@ -223,7 +240,7 @@ class QueryOptimizer:
             queryset = queryset.annotate(
                 **{
                     optimizer_settings.PREFETCH_COUNT_KEY: SubqueryCount(
-                        queryset.filter(**{field_name: models.OuterRef(field_name)}),
+                        queryset.filter(**{remote_field_name: models.OuterRef(remote_field_name)}),
                     ),
                 },
             )
@@ -232,14 +249,17 @@ class QueryOptimizer:
         if all(value is None for value in pagination_args.values()):  # pragma: no cover
             return queryset
 
-        if (
-            pagination_args.get("last") is not None
-            or pagination_args.get("after") is not None
-            or pagination_args.get("size") is None
-        ):
+        size = pagination_args["size"]
+        if pagination_args.get("last") is not None or pagination_args.get("after") is not None or size is None:
             queryset = calculate_slice_for_queryset(queryset, **pagination_args)
         else:
-            cut = calculate_queryset_slice(**pagination_args)
+            cut = calculate_queryset_slice(
+                after=pagination_args["after"],
+                before=pagination_args["before"],
+                first=pagination_args["first"],
+                last=pagination_args["last"],
+                size=size,
+            )
             queryset = add_slice_to_queryset(queryset, start=models.Value(cut.start), stop=models.Value(cut.stop))
 
         if isinstance(field, ManyToManyField | ManyToManyRel):
@@ -254,8 +274,9 @@ class QueryOptimizer:
                     optimizer_settings.PREFETCH_PARTITION_INDEX: (
                         models.Window(
                             expression=RowNumber(),
-                            partition_by=models.F(field_name),
-                            order_by=order_by,
+                            partition_by=models.F(remote_field_name),
+                            # "Meta.ordering" is typed with "Combinable", which "Window" does not accept.
+                            order_by=order_by,  # type: ignore[arg-type]
                         )
                         - models.Value(1)  # Start from zero.
                     )
@@ -268,9 +289,10 @@ class QueryOptimizer:
             })
         )
 
-    def get_prefetch_ordering(self, filter_info: GraphQLFilterInfo, model: type[Model]) -> list[str]:
+    def get_prefetch_ordering(self, filter_info: GraphQLFilterInfo, model: type[Model]) -> list[str | Combinable]:
         """Get the ordering for prefetch querysets."""
-        order_info: str | list[str] = self.process_order_by_filter(filter_info.get("filters", {}).get("order_by", ""))
+        order_by = filter_info.get("filters", {}).get("order_by", "")
+        order_info: str | list[str] = self.process_order_by_filter(order_by) or ""
 
         # 'Graphene-django' uses a comma-separated string for ordering.
         if isinstance(order_info, str):
@@ -283,7 +305,7 @@ class QueryOptimizer:
             # Use the `order_by` from the filter info, if available
             [x for x in order_info if x]
             # Use the model's `Meta.ordering` if no `order_by` is given
-            or copy(model._meta.ordering)
+            or list(model._meta.ordering or [])
             # No ordering if neither is available
             or []
         )
@@ -292,14 +314,16 @@ class QueryOptimizer:
         """Run all filtering based on the object type matching the queryset's model."""
         # Run filtering hooks on object types if they exist.
         object_type: DjangoObjectType | None = get_global_registry().get_type_for_model(queryset.model)
-        if callable(getattr(object_type, "filter_queryset", None)):
-            queryset = object_type.filter_queryset(queryset, self.info)
+        filter_queryset = getattr(object_type, "filter_queryset", None)
+        if callable(filter_queryset):
+            queryset = filter_queryset(queryset, self.info)
 
         # Lastly, run filterset filtering, if any.
-        if filter_info.get("filterset_class") is None:
+        filterset_class = filter_info.get("filterset_class")
+        if filterset_class is None:
             return queryset
 
-        filterset = filter_info["filterset_class"](
+        filterset = filterset_class(
             data=self.process_filters(filter_info["filters"]),
             queryset=queryset,
             request=self.info.context,

@@ -102,6 +102,19 @@ addopts = "--disable-warnings"
 plugins = [
     "mypy_django_plugin.main",
 ]
+exclude = [
+    "^tests/",
+    "^docs/",
+    "^site/",
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "django_filters.*",
+    "graphene.*",
+    "graphene_django.*",
+]
+ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "example_project.config.settings"

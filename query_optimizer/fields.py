@@ -21,6 +21,8 @@ from .utils import calculate_queryset_slice, is_optimized, maybe_queryset
 from .validators import validate_pagination_args
 
 if TYPE_CHECKING:
+    from types import EllipsisType
+
     from django.db import models
     from django.db.models import Model, QuerySet
     from django.db.models.manager import Manager
@@ -109,8 +111,10 @@ class RelatedField(graphene.Field):
 
 
 class FilteringMixin:
-    # Subclasses should implement the following:
-    underlying_type: type[DjangoObjectType]
+    if TYPE_CHECKING:
+        # Subclasses should implement the following:
+        @property
+        def underlying_type(self) -> type[DjangoObjectType]: ...
 
     no_filters: bool = False
     """Should filterset filters be disabled for this field?"""
@@ -213,7 +217,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         type_: ObjectTypeInput,
         /,
         *,
-        max_limit: int | None = ...,
+        max_limit: int | EllipsisType | None = ...,
         no_filters: bool = False,
         field_name: str | None = None,
         **kwargs: Any,
@@ -308,7 +312,13 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
                 0,  # QuerySet result cache is empty -> count is 0.
             )
         )
-        cut = calculate_queryset_slice(**pagination_args)
+        cut = calculate_queryset_slice(
+            after=pagination_args["after"],
+            before=pagination_args["before"],
+            first=pagination_args["first"],
+            last=pagination_args["last"],
+            size=count,
+        )
 
         # Prefetch queryset has already been sliced.
         if not already_optimized:
@@ -468,7 +478,8 @@ class ManuallyOptimizedField(graphene.Field):
             raise AttributeError(msg)
 
     def optimize(self, queryset: QuerySet, optimizer: QueryOptimizer, **kwargs: Any) -> QuerySet:
-        return self.optimizer(queryset, optimizer, **kwargs)
+        # Set in `__set_name__`, which raises an error if the optimizer method is missing.
+        return self.optimizer(queryset, optimizer, **kwargs)  # type: ignore[misc]
 
     def wrap_resolve(self, parent_resolver: Callable[..., Any]) -> Callable[..., Any]:
         # `parent_resolver` is either a `resolve_{self.name}` method defined

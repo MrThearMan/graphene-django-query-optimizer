@@ -40,7 +40,7 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         max_complexity: int | None = None,
         **options: Any,
     ) -> None:
-        if not is_valid_django_model(model):  # pragma: no cover
+        if model is None or not is_valid_django_model(model):  # pragma: no cover
             msg = f"You need to pass a valid Django Model in {cls.__name__}.Meta, received {model}."
             raise TypeError(msg)
 

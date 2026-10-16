@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 from django.db.models import ManyToManyField
-from django.db.models.fields.related_descriptors import _filter_prefetch_queryset
+from django.db.models.fields.related_descriptors import _filter_prefetch_queryset  # type: ignore[attr-defined]
 
 from .settings import optimizer_settings
 
@@ -40,14 +40,14 @@ def register_for_prefetch_hack(queryset: QuerySet, field: ManyToManyField | Many
     field_name = field.remote_field.name
 
     forward_field: ManyToManyField
-    forward_field = field if isinstance(field, ManyToManyField) else field.remote_field
+    forward_field = field if isinstance(field, ManyToManyField) else field.remote_field  # type: ignore[assignment]
     through = forward_field.m2m_db_table()
 
     cache: PrefetchHackCacheType = defaultdict(lambda: defaultdict(set))
     cache[db_table][field_name].add(through)
 
     key = optimizer_settings.PREFETCH_HACK_CACHE_KEY
-    queryset._hints.setdefault(key, cache)
+    queryset._hints.setdefault(key, cache)  # type: ignore[attr-defined]
 
 
 def _prefetch_hack(queryset: QuerySet, field_name: str, instances: list[Model]) -> QuerySet:
@@ -65,7 +65,7 @@ def _prefetch_hack(queryset: QuerySet, field_name: str, instances: list[Model]) 
     to prevent the INNER join from being added.
     """
     key = optimizer_settings.PREFETCH_HACK_CACHE_KEY
-    cache: PrefetchHackCacheType | None = queryset._hints.pop(key, None)
+    cache: PrefetchHackCacheType | None = queryset._hints.pop(key, None)  # type: ignore[attr-defined]
     if cache is not None:
         #
         # `filter_is_sticky` is set here just to prevent the `used_aliases` from being cleared

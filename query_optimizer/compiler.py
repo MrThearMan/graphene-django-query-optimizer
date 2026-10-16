@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from graphene.types.definitions import GrapheneObjectType
     from graphql import FieldNode
 
-    from .typing import PK, GQLInfo, TModel, ToManyField, ToOneField, Union
+    from .typing import PK, Generator, GQLInfo, TModel, ToManyField, ToOneField, Union
 
 
 __all__ = [
@@ -84,7 +84,7 @@ class OptimizationCompiler(GraphQLASTWalker):
         self.to_attr: str | None = None
         super().__init__(info)
 
-    def compile(self, queryset: Union[QuerySet, Manager, list[Model]]) -> QueryOptimizer | None:
+    def compile(self, queryset: Union[QuerySet, Manager]) -> QueryOptimizer | None:
         """
         Compile optimizations for the given queryset.
 
@@ -210,7 +210,7 @@ class OptimizationCompiler(GraphQLASTWalker):
         return None  # pragma: no cover
 
     @contextlib.contextmanager
-    def use_optimizer(self, optimizer: QueryOptimizer) -> None:
+    def use_optimizer(self, optimizer: QueryOptimizer) -> Generator[None, None, None]:
         orig_optimizer = self.optimizer
         try:
             self.optimizer = optimizer

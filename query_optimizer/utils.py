@@ -9,6 +9,8 @@ from django.db.models.manager import BaseManager
 from .settings import optimizer_settings
 
 if TYPE_CHECKING:
+    from django.db.models.expressions import Combinable
+
     from .typing import Any, ParamSpec, TypeVar, Union
 
     T = TypeVar("T")
@@ -32,12 +34,12 @@ optimizer_logger = logging.getLogger("query_optimizer")
 
 def mark_optimized(queryset: models.QuerySet) -> None:
     """Mark queryset as optimized so that later optimizers know to skip optimization"""
-    queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True
+    queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True  # type: ignore[attr-defined]
 
 
 def remove_optimized_mark(queryset: models.QuerySet) -> None:  # pragma: no cover
     """Mark queryset as unoptimized so that later optimizers will run optimization"""
-    queryset._hints.pop(optimizer_settings.OPTIMIZER_MARK, None)
+    queryset._hints.pop(optimizer_settings.OPTIMIZER_MARK, None)  # type: ignore[attr-defined]
 
 
 def is_optimized(queryset: Union[models.QuerySet, list[models.Model]]) -> bool:
@@ -45,7 +47,7 @@ def is_optimized(queryset: Union[models.QuerySet, list[models.Model]]) -> bool:
     # If Prefetch(..., to_attr=...) is used, the relation is a list of models.
     if isinstance(queryset, list):
         return True
-    return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)
+    return queryset._hints.get(optimizer_settings.OPTIMIZER_MARK, False)  # type: ignore[attr-defined]
 
 
 def maybe_queryset(value: BaseManager | models.QuerySet) -> models.QuerySet:
@@ -120,7 +122,7 @@ def calculate_slice_for_queryset(
     before: int | None,
     first: int | None,
     last: int | None,
-    size: int,
+    size: int | None,
 ) -> models.QuerySet:
     """
     Annotate queryset with pagination slice start and stop indexes.
@@ -132,8 +134,8 @@ def calculate_slice_for_queryset(
     if size_key not in queryset.query.annotations:  # pragma: no cover
         queryset = queryset.alias(**{size_key: models.Value(size)})
 
-    start = models.Value(0)
-    stop = models.F(optimizer_settings.PREFETCH_COUNT_KEY)
+    start: Combinable = models.Value(0)
+    stop: Combinable = models.F(optimizer_settings.PREFETCH_COUNT_KEY)
 
     if after is not None:
         start = models.Case(
@@ -183,8 +185,8 @@ def calculate_slice_for_queryset(
 def add_slice_to_queryset(
     queryset: models.QuerySet,
     *,
-    start: models.Expression,
-    stop: models.Expression,
+    start: Combinable,
+    stop: Combinable,
 ) -> models.QuerySet:
     return queryset.alias(
         **{
@@ -211,9 +213,9 @@ def swappable_by_subclassing[Ttype: type](obj: Ttype) -> Ttype:
         def new(_: type, *_args: Any, **_kwargs: Any) -> Ttype:
             return super(type, new_subcls).__new__(new_subcls)  # type: ignore[arg-type]
 
-        obj.__new__ = new
+        obj.__new__ = new  # type: ignore[method-assign,assignment]
 
         return orig_init_subclass(*args, **kwargs)
 
-    obj.__init_subclass__ = init_subclass
+    obj.__init_subclass__ = init_subclass  # type: ignore[method-assign]
     return obj

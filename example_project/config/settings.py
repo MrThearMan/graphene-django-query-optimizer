@@ -14,7 +14,7 @@ ROOT_URLCONF = "example_project.config.urls"
 WSGI_APPLICATION = "example_project.config.wsgi.application"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS: list[str] = []
 
 INTERNAL_IPS = [
     "localhost",

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from graphene.types.definitions import GrapheneObjectType
     from graphql import FieldNode
 
-    from .typing import Any, GQLInfo, ToManyField, ToOneField
+    from .typing import Any, Generator, GQLInfo, ToManyField, ToOneField
 
 
 __all__ = [
@@ -82,7 +82,7 @@ class FieldSelectionCompiler(GraphQLASTWalker):
             return super().handle_to_many_field(field_type, field_node, related_field, related_model)
 
     @contextlib.contextmanager
-    def child_selections(self, field_node: FieldNode) -> None:
+    def child_selections(self, field_node: FieldNode) -> Generator[None, None, None]:
         field_name = to_snake_case(field_node.name.value)
         selections: list[Any] = []
         orig_selections = self.field_selections

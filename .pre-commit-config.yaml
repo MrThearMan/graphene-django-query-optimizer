@@ -1,6 +1,7 @@
 ci:
     skip: [
         "uv-lock",
+        "mypy",
     ]
 
 repos:
@@ -29,3 +30,13 @@ repos:
     rev: 0.13.1
     hooks:
     -   id: uv-lock
+
+-   repo: local
+    hooks:
+    -   id: mypy
+        name: mypy
+        # Runs in the project environment, since the django-stubs plugin needs Django and the settings.
+        entry: uv run mypy .
+        language: system
+        types: [python]
+        pass_filenames: false

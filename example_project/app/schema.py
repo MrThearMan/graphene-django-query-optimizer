@@ -39,7 +39,7 @@ from .types import (
 )
 
 if TYPE_CHECKING:
-    from query_optimizer.typing import GQLInfo, Iterable, Union
+    from query_optimizer.typing import Any, GQLInfo, Iterable, Union
 
 
 class Query(graphene.ObjectType):
@@ -56,7 +56,7 @@ class Query(graphene.ObjectType):
     all_owners = DjangoListField(OwnerType)
     all_ownerships = DjangoListField(OwnershipType)
 
-    def resolve_all_apartments(root: None, info: GQLInfo, **kwargs) -> models.QuerySet[Apartment]:
+    def resolve_all_apartments(root: Any, info: GQLInfo, **kwargs) -> models.QuerySet[Apartment]:
         return optimize(
             Apartment.objects.all().annotate(
                 full_address=Concat(
@@ -71,7 +71,7 @@ class Query(graphene.ObjectType):
 
     housing_company_by_name = graphene.List(HousingCompanyType, name=graphene.String(required=True))
 
-    def resolve_housing_company_by_name(root: None, info: GQLInfo, name: str) -> models.QuerySet[HousingCompany]:
+    def resolve_housing_company_by_name(root: Any, info: GQLInfo, name: str) -> models.QuerySet[HousingCompany]:
         get_field_selections(info)
         return optimize(HousingCompany.objects.filter(name=name), info)
 
@@ -90,7 +90,7 @@ class Query(graphene.ObjectType):
 
     all_people = graphene.List(People)
 
-    def resolve_all_people(root: None, info: GQLInfo) -> Iterable[Union[Developer, PropertyManager, Owner]]:
+    def resolve_all_people(root: Any, info: GQLInfo) -> Iterable[Union[Developer, PropertyManager, Owner]]:
         developers = optimize(Developer.objects.all(), info)
         property_managers = optimize(PropertyManager.objects.all(), info)
         owners = optimize(Owner.objects.all(), info)
@@ -104,7 +104,7 @@ class Query(graphene.ObjectType):
     example = graphene.Field(ExampleType, pk=graphene.Int(required=True))
     examples = DjangoListField(ExampleType)
 
-    def resolve_example(root: None, info: GQLInfo, pk: int | None = None):
+    def resolve_example(root: Any, info: GQLInfo, pk: int) -> Example | None:
         return optimize(Example.objects.filter(pk=pk), info).first()
 
     # --------------------------------------------------------------------
@@ -115,7 +115,7 @@ class Query(graphene.ObjectType):
 
     plain = graphene.Field(PlainObjectType)
 
-    def resolve_plain(root, info: GQLInfo) -> dict[str, str]:
+    def resolve_plain(root, info: GQLInfo) -> dict[str, Any]:
         get_field_selections(info)
         return {
             "foo": "1",

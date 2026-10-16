@@ -194,7 +194,7 @@ class HousingCompanyType(DjangoObjectType):
     alias_greeting = AnnotatedField(graphene.String, F("alias_greeting"), aliases={"alias_greeting": F("name")})
 
     def resolve_alias_greeting(root: HousingCompany, info: GQLInfo) -> str:
-        return f"Hello {root.alias_greeting}!"
+        return f"Hello {root.alias_greeting}!"  # type: ignore[attr-defined]
 
 
 class RealEstateType(DjangoObjectType):
@@ -337,7 +337,7 @@ class TagType(DjangoObjectType):
     content_type = RelatedField(ContentTypeType)
     content_object = graphene.Field(TaggedItemType)
 
-    def resolve_content_object(root: Tag, info: GQLInfo) -> Union[PostalCode, Developer]:
+    def resolve_content_object(root: Tag, info: GQLInfo) -> Union[PostalCode, Developer, None]:
         return root.content_object
 
     class Meta:
@@ -369,11 +369,13 @@ class CustomConnection(Connection):
 
 
 class IsTypeOfProxyPatch:
+    _meta: Any
+
     @classmethod
     def is_type_of(cls, root: Any, info: GQLInfo) -> bool:
         if cls._meta.model._meta.proxy:
             return root._meta.model._meta.concrete_model == cls._meta.model._meta.concrete_model
-        return super().is_type_of(root, info)
+        return super().is_type_of(root, info)  # type: ignore[misc]
 
 
 class EmployeeNode(IsTypeOfProxyPatch, DjangoObjectType):
@@ -410,7 +412,7 @@ class DeveloperNode(IsTypeOfProxyPatch, DjangoObjectType):
 
     housing_company_id = graphene.Field(graphene.Int)
 
-    def resolve_housing_company_id(root: DeveloperProxy, info: GQLInfo) -> str:
+    def resolve_housing_company_id(root: DeveloperProxy, info: GQLInfo) -> int:
         return getattr(root, "_prefetch_related_val_housingcompany_id", -1)
 
     class Meta:
@@ -514,7 +516,7 @@ class HousingCompanyNode(IsTypeOfProxyPatch, DjangoObjectType):
 
     developer_id = graphene.Field(graphene.Int)
 
-    def resolve_developer_id(root: HousingCompanyProxy, info: GQLInfo) -> list[int]:
+    def resolve_developer_id(root: HousingCompanyProxy, info: GQLInfo) -> int:
         return getattr(root, "_prefetch_related_val_developer_id", -1)
 
     class Meta:

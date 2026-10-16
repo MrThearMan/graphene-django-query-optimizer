@@ -20,3 +20,43 @@ jobs:
       exclude: '[{"os": "windows-latest", "python-version": "3.15"}]'
       allow-prereleases: true
       uv-cache-suffix: "test"
+
+  mypy:
+    name: "Run mypy"
+    runs-on: "ubuntu-latest"
+
+    # Cancel old workflows when a new workflow is triggered for the same PR/branch/tag
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-mypy
+      cancel-in-progress: true
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: "Check out repository"
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: "Set up python"
+        id: setup-python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: "Set up uv"
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.12.10"
+          enable-cache: true
+          cache-suffix: "mypy"
+
+      - name: "Install dependencies"
+        run: |
+          uv sync --locked --all-extras --all-groups --python "${{ steps.setup-python.outputs.python-path }}"
+
+      - name: "Run mypy"
+        run: |
+          uv run --no-sync mypy .

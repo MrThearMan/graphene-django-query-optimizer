@@ -417,7 +417,7 @@ def create_examples() -> None:  # noqa: PLR0915
     f31.forward_many_to_many_fields.add(f300, f302)
     f32.forward_many_to_many_fields.add(f301, f302)
 
-    h = HousingCompany.objects.first()
+    h = HousingCompany.objects.earliest("pk")
     e1 = Example.objects.create(
         name=faker.name(),
         forward_one_to_one_field=f10,
