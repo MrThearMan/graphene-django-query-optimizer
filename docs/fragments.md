@@ -1,3 +1,7 @@
+---
+description: "How fragment spreads and inline fragments are optimized."
+---
+
 # Fragments
 
 ## Fragment spreads

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block site_meta %}
+  {{ super() }}
+  {#- Agents that follow this link read the page as Markdown instead of parsing its HTML. -#}
+  {% set page_url = page.url | default("") | trim("/") %}
+  {% set markdown_page = "index.md" if page_url in ["", "."] else page_url ~ ".md" %}
+  <link rel="alternate" type="text/markdown" href="{{ markdown_page | url }}" title="{{ page.title | default(config.site_name) }} as Markdown">
+  {#- The llms.txt spec pairs the link above with this one, which points to the index that covers the page. -#}
+  <link rel="describedby" href="{{ 'llms.txt' | url }}" title="{{ config.site_name }} llms.txt">
+{% endblock %}

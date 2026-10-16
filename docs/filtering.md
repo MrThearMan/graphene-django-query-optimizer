@@ -1,3 +1,7 @@
+---
+description: "How to filter optimized querysets with django-filter and object type filtering hooks."
+---
+
 # Filtering
 
 For adding additional filtering, optional dependency [django-filter][filters]

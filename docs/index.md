@@ -1,3 +1,7 @@
+---
+description: "Graphene Django Query Optimizer: automatically optimize SQL queries in Graphene-Django schemas."
+---
+
 # Graphene Django Query Optimizer
 
 [![Coverage Status][coverage-badge]][coverage]

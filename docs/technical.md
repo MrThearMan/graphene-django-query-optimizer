@@ -1,3 +1,7 @@
+---
+description: "Technical details on how the optimizer introspects queries and builds optimizations."
+---
+
 # Technical details
 
 The optimizer uses the `GraphQLResolveInfo` and GraphQL AST to introspect

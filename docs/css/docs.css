@@ -1,327 +1,403 @@
 /*
-Variables
+Palette
 */
 :root {
-    --undine-nav-width: 250px;
-    --undine-mobile-nav-width: 85%;
+    --docs-text-color: #bbbbbb;
+    --docs-nav-color: #191919;
+    --docs-section-color: #222222;
+    --docs-active-color: #111111;
+    --docs-quote-color: #424242;
+    --docs-notice-color: #aa4926;
+    --docs-target-color: #292900;
 
-    --undine-text-color: #bbbbbb;
-    --undine-nav-color: #191919;
-    --undine-section-color: #222222;
-    --undine-active-color: #111111;
-    --undine-quote-color: #424242;
-    --undine-notice-color: #aa4926;
-    --undine-target-color: #292900;
+    --docs-code-color: #1a1c20;
+    --docs-lineno-color: #404d60;
+    --docs-highlight-color: #23252d;
 
-    --undine-code-color: #1a1c20;
-    --undine-lineno-color: #404d60;
-    --undine-highlight-color: #23252d;
+    --docs-scrollbar-color: #424242;
 
-    --undine-scrollbar-color: #424242;
+    --docs-link-color: #4f9ed9;
+    --docs-link-hover-color: #7fbce8;
+}
 
-    /* Default color */
-    background-color: var(--undine-section-color);
+[data-md-color-scheme="slate"] {
+    --md-default-bg-color: var(--docs-section-color);
+    --md-default-fg-color: var(--docs-text-color);
+    --md-default-fg-color--light: #999999;
+    --md-default-fg-color--lighter: #6a6a6a;
+    --md-default-fg-color--lightest: #3a3a3a;
+
+    --md-primary-fg-color: var(--docs-nav-color);
+    --md-primary-fg-color--light: var(--docs-section-color);
+    --md-primary-fg-color--dark: var(--docs-active-color);
+    --md-primary-bg-color: var(--docs-text-color);
+    --md-primary-bg-color--light: #999999;
+
+    --md-accent-fg-color: var(--docs-link-hover-color);
+    --md-accent-fg-color--transparent: var(--docs-active-color);
+    --md-accent-bg-color: var(--docs-section-color);
+
+    --md-typeset-color: var(--docs-text-color);
+    --md-typeset-a-color: var(--docs-link-color);
+    --md-typeset-mark-color: var(--docs-target-color);
+    --md-typeset-del-color: #5a2a2a;
+    --md-typeset-ins-color: #2a5a2a;
+    --md-typeset-table-color: var(--docs-quote-color);
+
+    --md-code-fg-color: var(--docs-text-color);
+    --md-code-bg-color: var(--docs-code-color);
+    --md-code-hl-color: var(--docs-highlight-color);
+    --md-code-hl-color--light: var(--docs-highlight-color);
+
+    --md-footer-fg-color: var(--docs-text-color);
+    --md-footer-fg-color--light: #999999;
+    --md-footer-fg-color--lighter: #6a6a6a;
+    --md-footer-bg-color: var(--docs-nav-color);
+    --md-footer-bg-color--dark: var(--docs-active-color);
+
+    --md-shadow-z1: none;
+    --md-shadow-z2: none;
+    --md-shadow-z3: none;
+
+    color-scheme: dark;
 }
 
 /*
-Layout
+Header
 */
-body {
-    color: var(--undine-text-color);
-    background-color: var(--undine-section-color);
+.md-header {
+    background-color: var(--docs-nav-color);
+    box-shadow: none;
+    border-bottom: 1px solid var(--docs-active-color);
+}
 
-    .wy-grid-for-nav {
+/*
+Sidebars
+*/
+/*
+The primary sidebar is a sticky, zero-height stub, so the nav column is painted
+on the scroll wrapper that actually spans the viewport.
+*/
+.md-sidebar--primary .md-sidebar__scrollwrap {
+    background-color: var(--docs-nav-color);
+    border-radius: 6px;
+    min-height: calc(100vh - 4.8rem);
+}
 
-        /*
-        Sidebar
-        */
-        nav.wy-nav-side {
-            background-color: var(--undine-nav-color);
-            width: var(--undine-nav-width);
-            padding-bottom: 0;
+.md-nav {
+    background-color: inherit;
+}
 
-            .wy-side-scroll {
-                width: auto;
-                overflow-y: auto;
+/* On mobile the primary nav is a drawer that covers the page. */
+.md-nav--primary,
+.md-nav--primary .md-nav__title {
+    background-color: var(--docs-nav-color);
+}
 
-                /*
-                Sidebar banner
-                */
-                .wy-side-nav-search {
-                    width: auto;
-                    background-color: var(--undine-nav-color);
+.md-nav__title {
+    color: var(--docs-text-color);
+    background-color: inherit;
+    box-shadow: none;
+}
 
-                    /*
-                    Search bar
-                    */
-                    input[type=text] {
-                        color: var(--undine-text-color);
-                        background-color: var(--undine-section-color);
-                        border-color: var(--undine-active-color);
-                        box-shadow: none;
-                        caret-color : var(--undine-text-color);
-                    }
-                }
+.md-nav__link {
+    color: var(--docs-text-color);
+}
 
-                /*
-                Sidebar items
-                */
-                .wy-menu-vertical {
-                    width: var(--undine-nav-width);
+.md-sidebar--primary .md-nav__link {
+    padding: 0.4rem 0.6rem;
+    margin: 0;
+    border-radius: 0;
+}
 
-                    /*
-                    Not selected
-                    */
-                    li[class^='toctree-'],
-                    li[class^='toctree-'] > a {
-                        color: var(--undine-text-color);
-                        background-color: var(--undine-nav-color);
-                        border: none;
-                    }
+.md-nav--primary .md-nav__link[for]:focus:not(.md-nav__link--active),
+.md-nav--primary .md-nav__link[for]:hover:not(.md-nav__link--active),
+.md-nav--primary .md-nav__link[href]:focus:not(.md-nav__link--active),
+.md-nav--primary .md-nav__link[href]:hover:not(.md-nav__link--active) {
+    color: var(--docs-text-color);
+    background-color: var(--docs-active-color);
+}
 
-                    /*
-                    Selected/Hovered sidebar items
-                    */
-                    li[class^='toctree-'].current,
-                    li[class^='toctree-'].current > a,
-                    li[class^='toctree-'].current > a:hover,
-                    li[class^='toctree-'] > a:hover {
-                        color: var(--undine-text-color);
-                        background-color: var(--undine-active-color);
-                        border: none;
-                    }
-                }
+.md-nav--primary .md-nav__item .md-nav__link--active,
+.md-nav--primary .md-nav__item .md-nav__link--active code {
+    color: var(--docs-text-color);
+    font-weight: 700;
+}
 
-            }
+/* The table of contents is a reading aid, so it stays quiet until hovered. */
+.md-sidebar--secondary .md-nav__link--active {
+    color: var(--docs-link-color);
+    background-color: transparent;
+}
 
-        }
+/*
+Content
+*/
+.md-main {
+    background-color: var(--docs-section-color);
+}
 
-        /*
-        Content
-        */
-        section.wy-nav-content-wrap {
-            margin-left: var(--undine-nav-width);
-            background-color: var(--undine-section-color);
+/*
+The sidebars stick to the bottom of the header, so the column starts there as well.
+A top margin here would let them slide up by that much on the first scroll.
+*/
+.md-main__inner {
+    margin-top: 0;
+}
 
-            /*
-            Mobile top nav
-            */
-            nav.wy-nav-top {
-                background-color: var(--undine-nav-color);
-            }
+/* Centre the column once the viewport is wider than it, while keeping a gutter on narrow screens. */
+.md-content__inner {
+    max-width: 1024px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1.2rem;
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+}
 
-            .wy-nav-content {
-                background-color: var(--undine-section-color);
-                max-width: 1024px;
-                margin: auto;
+.md-typeset :is(h1, h2, h3, h4, h5, h6):target {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    border-radius: 6px;
+    background-color: var(--docs-target-color);
+}
 
-                h1:target,
-                h2:target,
-                h3:target,
-                h4:target,
-                h5:target,
-                h6:target {
-                    margin-left: -0.5rem;
-                    margin-right: -0.5rem;
-                    padding-left: 0.5rem;
-                    padding-right: 0.5rem;
-                    border-radius: 6px;
-                    background-color: var(--undine-target-color);
-                }
-            }
-        }
-
-        /*
-        Mobile
-        */
-        @media screen and (max-width: 768px) {
-
-            /*
-            Sidebar
-            */
-            nav.wy-nav-side {
-
-                &.shift {
-                    width: var(--undine-mobile-nav-width);
-                }
-
-                .wy-side-scroll {
-                    .wy-menu-vertical {
-                        width: auto;
-                    }
-                }
-
-            }
-
-            /*
-            Content
-            */
-            section.wy-nav-content-wrap {
-                margin-left: 0;
-
-                &.shift {
-                    position: fixed;
-                    min-width: 100%;
-                    left: var(--undine-mobile-nav-width);
-                    top: 0;
-                    height: 100%;
-                    overflow: hidden;
-                }
-            }
-
-        }
-
-    }
-
-    /*
-    Next and previous buttons
-    */
-    .rst-versions {
-        display: none;
-    }
+/* The raise centres the icon on the cap height of the heading it belongs to. */
+.md-typeset .headerlink {
+    color: var(--docs-lineno-color);
+    font-size: 0.8em;
+    vertical-align: 0.125em;
 }
 
 /*
 Codeblocks
 */
-.highlight {
-    color: var(--undine-text-color) !important;
-    background-color: var(--undine-code-color) !important;
-    border: 1px solid var(--undine-code-color) !important;
+.md-typeset .highlight,
+.md-typeset pre > code {
     border-radius: 6px;
-
-    div {
-        margin: 0;
-        padding: 0;
-    }
-
-    table {
-        margin: 0 !important;
-        padding: 0 !important;
-        display: block;
-
-        td.linenos {
-            color: var(--undine-text-color) !important;
-            background-color: var(--undine-code-color) !important;
-            border: none !important;
-            margin: 0;
-            padding: 0;
-            white-space: break-spaces;
-            vertical-align: middle;
-
-            div {
-                pre {
-                    padding: 0;
-                    line-height: 125%;
-                    border-right: 1px solid var(--undine-lineno-color);
-
-                    span {
-
-                        &.normal {
-                            padding: 0 13px;
-                        }
-
-                        &.special {
-                            padding: 0 13px;
-                            background-color: var(--undine-highlight-color);
-                        }
-
-                        a {
-                            color: var(--undine-lineno-color);
-                        }
-
-                    }
-                }
-            }
-
-        }
-
-        td.code {
-            color: var(--undine-text-color) !important;
-            background-color: var(--undine-code-color) !important;
-            border: none !important;
-            padding: 0;
-            margin: 0;
-            white-space: break-spaces;
-            vertical-align: middle;
-
-            div {
-                pre {
-                    line-height: 125%;
-                    padding: 0;
-                    margin: 0;
-
-                    code {
-                        color: var(--undine-text-color);
-                        background-color: var(--undine-code-color);
-                        padding: 8px 12px;
-                        border: none;
-
-                        .hll {
-                            background-color: var(--undine-highlight-color);
-                        }
-                    }
-                }
-            }
-
-        }
-
-    }
 }
 
-/*
-Details
-*/
-details {
-    margin-bottom: 24px;
-    padding: 8px 16px;
-    border: 2px solid var(--undine-quote-color);
-    border-radius: 6px;
+.md-typeset .highlight {
+    color: var(--docs-text-color);
+    background-color: var(--docs-code-color);
+    border: 1px solid var(--docs-code-color);
+    margin: 24px 0;
+}
 
-    summary {
-        padding: 3px;
-    }
+.md-typeset .highlighttable {
+    margin: 0;
+    background-color: var(--docs-code-color);
+}
 
-    summary:hover {
-        cursor: pointer;
-    }
+.md-typeset .highlighttable .linenos {
+    background-color: var(--docs-code-color);
+    border: none;
+}
 
-    p {
-        margin: 16px 0;
-    }
+.md-typeset .highlighttable .linenodiv pre {
+    border-right: 1px solid var(--docs-lineno-color);
+    padding: 0;
+    line-height: 1.4;
+}
 
-    blockquote {
-        margin-bottom: 16px!important;
+.md-typeset .highlighttable .linenodiv a {
+    color: var(--docs-lineno-color);
+}
 
-        p {
-            margin-top: 0;
-        }
-    }
+.md-typeset .highlighttable .linenodiv .special {
+    background-color: var(--docs-highlight-color);
+}
+
+.md-typeset .highlighttable .code {
+    background-color: var(--docs-code-color);
+    border: none;
+}
+
+.md-typeset .highlighttable .code pre,
+.md-typeset .highlighttable .code code {
+    color: var(--docs-text-color);
+    background-color: var(--docs-code-color);
+    line-height: 1.4;
+    border: none;
+}
+
+.md-typeset .highlight .hll,
+.md-typeset .highlight [data-linenos]:before {
+    background-color: var(--docs-highlight-color);
 }
 
 /*
 Inline code
 */
-.rst-content code {
-    color: var(--undine-text-color);
-    background-color: var(--undine-code-color);
-    border: 1px solid var(--undine-code-color);
+.md-typeset code {
+    color: var(--docs-text-color);
+    background-color: var(--docs-code-color);
+    border: 1px solid var(--docs-code-color);
     border-radius: 6px;
 }
 
-.rst-content div[class^=highlight] {
-    margin: 24px 0;
+/*
+Details
+*/
+/* The theme drops the bottom padding of a closed block, so both states must be set together. */
+.md-typeset details,
+.md-typeset details:not([open]) {
+    margin-bottom: 24px;
+    padding: 16px;
+    background-color: transparent;
+    border: 2px solid var(--docs-quote-color);
+    border-radius: 6px;
+    box-shadow: none;
+    font-size: inherit;
+}
+
+/* Spacing inside the block comes from its padding, not from the margins of its children. */
+.md-typeset details > summary,
+.md-typeset details:not([open]) > summary {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    background-color: transparent;
+    font-weight: 700;
 }
 
 /*
-Search page search bar
+The theme sets the summary padding with a `[dir]` selector, so these must match its specificity.
+The inset reserved for the hidden icon is reduced to a small indent.
 */
-#mkdocs-search-query {
-    color: var(--undine-text-color);
-    background-color: var(--undine-section-color);
-    border-color: var(--undine-active-color);
-    box-shadow: none;
-    caret-color : var(--undine-text-color);
+[dir="ltr"] .md-typeset details > summary {
+    padding-left: 0.5rem;
+    padding-right: 1rem;
+}
+
+[dir="rtl"] .md-typeset details > summary {
+    padding-right: 0.5rem;
+    padding-left: 1rem;
+}
+
+.md-typeset details[open] > summary {
+    margin-bottom: 16px;
+}
+
+/* The content is indented to the same amount as the summary. */
+.md-typeset details > :not(summary) {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+html .md-typeset details[open] > summary + * {
+    margin-top: 0;
+}
+
+html .md-typeset details > :last-child {
+    margin-bottom: 0;
+}
+
+.md-typeset details > summary:hover {
+    cursor: pointer;
+}
+
+/* The theme reserves the left inset for an admonition icon, which these blocks do not use. */
+.md-typeset details > summary:before {
+    display: none;
+}
+
+.md-typeset details > summary:after {
+    color: var(--docs-text-color);
+}
+
+.md-typeset details > p {
+    margin: 16px 0;
+}
+
+/*
+Blockquotes
+*/
+/* The theme sets the blockquote border with a `[dir]` selector, so these must match its specificity. */
+[dir="ltr"] .md-typeset blockquote,
+[dir="rtl"] .md-typeset blockquote {
+    color: var(--docs-text-color);
+    background-color: var(--docs-quote-color);
+    border: 1px solid var(--docs-quote-color);
+    border-left: 4px solid var(--docs-notice-color);
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    margin-left: 0;
+    padding: 16px 12px 16px 24px;
+}
+
+.md-typeset blockquote > :first-child {
+    margin-top: 0;
+}
+
+.md-typeset blockquote > :last-child {
+    margin-bottom: 0;
+}
+
+/*
+Tables
+*/
+.md-typeset table:not([class]) {
+    background-color: var(--docs-code-color);
+    border: 1px solid var(--docs-quote-color);
+}
+
+.md-typeset table:not([class]) th {
+    color: var(--docs-text-color);
+    background-color: var(--docs-nav-color);
+}
+
+.md-typeset table:not([class]) td {
+    background-color: var(--docs-code-color);
+    border-top: 1px solid var(--docs-quote-color);
+}
+
+/*
+Search
+*/
+.md-search__form {
+    background-color: var(--docs-section-color);
+}
+
+.md-search__form:hover {
+    background-color: var(--docs-active-color);
+}
+
+[data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+    background-color: var(--docs-section-color);
+}
+
+.md-search__input {
+    color: var(--docs-text-color);
+    caret-color: var(--docs-text-color);
+}
+
+.md-search__input::placeholder {
+    color: var(--docs-text-color);
+}
+
+.md-search-result__meta,
+.md-search-result__article,
+.md-search-result__teaser {
+    color: var(--docs-text-color);
+}
+
+.md-search__output {
+    background-color: var(--docs-nav-color);
+}
+
+/*
+Footer
+*/
+.md-footer {
+    background-color: var(--docs-nav-color);
+}
+
+.md-footer-meta {
+    background-color: var(--docs-active-color);
 }
 
 /*
@@ -330,66 +406,61 @@ Scrollbars
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
-    background-color: var(--undine-nav-color);
+    background-color: var(--docs-nav-color);
 }
+
 ::-webkit-scrollbar-track {
     border-radius: 6px;
-    background-color: var(--undine-nav-color);
+    background-color: var(--docs-nav-color);
 }
+
 ::-webkit-scrollbar-thumb {
     border-radius: 6px;
-    background-color: var(--undine-scrollbar-color);
+    background-color: var(--docs-scrollbar-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--docs-scrollbar-color);
 }
 
 /*
-Blockquotes
+Code blocks and the sidebar use the standard `scrollbar-color` property, which makes the
+browser ignore the `::-webkit-scrollbar` rules above for them. They need their own colours.
 */
-blockquote {
-    background-color: var(--undine-quote-color);
-    border: 1px solid var(--undine-quote-color);
-    border-left: 4px solid var(--undine-notice-color);
-    border-top-right-radius: 6px;
-    border-bottom-right-radius: 6px;
-    margin-left: 0 !important;
-    padding: 24px 12px 0 24px;
+.md-typeset pre > code,
+.md-sidebar__scrollwrap {
+    scrollbar-color: var(--docs-scrollbar-color) transparent;
+}
 
-    .highlight {
-        margin-bottom: 24px !important;
-    }
+/* The theme tints these with the accent colour on hover, which is a link blue here. */
+.md-typeset pre > code:hover,
+.md-sidebar__scrollwrap:focus-within,
+.md-sidebar__scrollwrap:hover {
+    scrollbar-color: var(--docs-scrollbar-color) transparent;
 }
 
 /*
 Mermaid
 */
-div.mermaid {
+[data-md-color-scheme="slate"] {
+    --md-mermaid-font-family: var(--md-text-font-family), sans-serif;
+
+    --md-mermaid-bg-color: var(--docs-section-color);
+    --md-mermaid-edge-color: #6C8EBF;
+    --md-mermaid-label-bg-color: #DAE8FC;
+    --md-mermaid-label-fg-color: var(--docs-code-color);
+    --md-mermaid-node-bg-color: #DAE8FC;
+    --md-mermaid-node-fg-color: #6C8EBF;
+}
+
+.md-typeset .mermaid {
     display: flex;
     justify-content: center;
+}
 
-    svg {
-        width: auto;
-        height: auto;
-        max-width: 100%;
-        padding: 12px 0;
-    }
-
-    .edgeLabel {
-        background-color: transparent;
-        color: #bbbbbb;
-    }
-
-    .messageText {
-        fill: #bbbbbb;
-        stroke: none;
-    }
-
-    g {
-        rect {
-            fill: #DAE8FC;
-            stroke: #6C8EBF;
-        }
-        polygon {
-            fill: #FFF2CC;
-            stroke: #E5D092;
-        }
-    }
+.md-typeset .mermaid svg {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    padding: 12px 0;
 }

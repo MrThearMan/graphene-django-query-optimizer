@@ -1,3 +1,7 @@
+---
+description: "How to use the optimizer to remove N+1 queries from a Graphene-Django schema."
+---
+
 # Quickstart
 
 The database schema these examples will be using can be seen [here][schema].

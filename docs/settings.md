@@ -1,3 +1,7 @@
+---
+description: "All settings available for the optimizer."
+---
+
 # Settings
 
 Here are the available settings.

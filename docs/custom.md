@@ -1,3 +1,7 @@
+---
+description: "Custom fields that tell the optimizer which annotations and model fields they need."
+---
+
 # Custom fields
 
 GraphQL types can have non-model fields using custom resolvers.

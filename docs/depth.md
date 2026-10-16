@@ -1,3 +1,7 @@
+---
+description: "How to limit query depth with the optimizer's max complexity."
+---
+
 # Depth Limiting
 
 The `optimize()` function has builtin query depth limiting, which
