@@ -422,7 +422,10 @@ default-groups = "all"
 dependencies = [
     { name = "django" },
     { name = "django-settings-holder" },
+    { name = "graphene" },
     { name = "graphene-django" },
+    { name = "graphql-core" },
+    { name = "graphql-relay" },
 ]
 
 [package.dev-dependencies]
@@ -453,8 +456,11 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "django", specifier = ">=5.2.18" },
-    { name = "django-settings-holder", specifier = ">=0.1.2" },
-    { name = "graphene-django", specifier = ">=3.0.0" },
+    { name = "django-settings-holder", specifier = ">=0.3.1" },
+    { name = "graphene", specifier = ">=3.4.3" },
+    { name = "graphene-django", specifier = ">=3.2.3" },
+    { name = "graphql-core", specifier = ">=3.2.13" },
+    { name = "graphql-relay", specifier = ">=3.2.0" },
 ]
 
 [package.metadata.requires-dev]
