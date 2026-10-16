@@ -200,12 +200,7 @@ class HousingCompanyType(DjangoObjectType):
 class RealEstateType(DjangoObjectType):
     class Meta:
         model = RealEstate
-        field = [
-            "pk",
-            "name",
-            "housing_company",
-            "buildings",
-        ]
+        fields = "__all__"
 
 
 class BuildingType(DjangoObjectType):
@@ -384,6 +379,7 @@ class EmployeeNode(IsTypeOfProxyPatch, DjangoObjectType):
 
     class Meta:
         model = EmployeeProxy
+        fields = "__all__"
         interfaces = (relay.Node,)
         connection_class = CustomConnection
 
@@ -394,6 +390,7 @@ class ShareholderNode(IsTypeOfProxyPatch, DjangoObjectType):
 
     class Meta:
         model = ShareholderProxy
+        fields = "__all__"
         interfaces = (relay.Node,)
         connection_class = CustomConnection
 
@@ -417,6 +414,7 @@ class DeveloperNode(IsTypeOfProxyPatch, DjangoObjectType):
 
     class Meta:
         model = DeveloperProxy
+        fields = "__all__"
         interfaces = (relay.Node,)
         connection_class = CustomConnection
 
@@ -426,6 +424,7 @@ class ApartmentNode(IsTypeOfProxyPatch, DjangoObjectType):
 
     class Meta:
         model = ApartmentProxy
+        fields = "__all__"
         max_complexity = 10
         connection_class = CustomConnection
         filter_fields = {
@@ -448,6 +447,7 @@ class BuildingNode(IsTypeOfProxyPatch, DjangoObjectType):
 
     class Meta:
         model = BuildingProxy
+        fields = "__all__"
         interfaces = (relay.Node,)
         filterset_class = BuildingFilterSet
 
@@ -457,6 +457,7 @@ class RealEstateNode(IsTypeOfProxyPatch, DjangoObjectType):
 
     class Meta:
         model = RealEstateProxy
+        fields = "__all__"
         filter_fields = {
             "name": ["exact", "in"],
             "surface_area": ["exact"],
@@ -521,6 +522,7 @@ class HousingCompanyNode(IsTypeOfProxyPatch, DjangoObjectType):
 
     class Meta:
         model = HousingCompanyProxy
+        fields = "__all__"
         interfaces = (relay.Node,)
         connection_class = CustomConnection
         filterset_class = HousingCompanyFilterSet
@@ -540,6 +542,7 @@ class PropertyManagerNode(IsTypeOfProxyPatch, DjangoObjectType):
 
     class Meta:
         model = PropertyManagerProxy
+        fields = "__all__"
         interfaces = (relay.Node,)
         connection_class = CustomConnection
         filterset_class = PropertyManagerFilterSet

@@ -96,7 +96,9 @@ exclude_lines = [
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "example_project.config.settings"
-addopts = "--disable-warnings"
+filterwarnings = [
+    "error",
+]
 
 [tool.mypy]
 plugins = [

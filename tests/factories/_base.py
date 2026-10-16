@@ -22,6 +22,11 @@ __all__ = [
 
 
 class GenericDjangoModelFactory(DjangoModelFactory, Generic[TModel]):
+    class Meta:
+        abstract = True
+        # Post-generation hooks only add related objects, so the instance does not need to be saved again.
+        skip_postgeneration_save = True
+
     @classmethod
     def build(cls: type[Generic[TModel]], **kwargs: Any) -> TModel:
         return super().build(**kwargs)
