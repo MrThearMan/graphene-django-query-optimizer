@@ -18,7 +18,7 @@ class PaginationArgs(TypedDict):
     size: int | None
 
 
-def validate_pagination_args(  # noqa: C901, PLR0912
+def validate_pagination_args(  # noqa: C901, PLR0912, PLR0917
     first: int | None,
     last: int | None,
     offset: int | None,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 from django.db.models import ManyToManyField
@@ -20,7 +20,7 @@ __all__ = [
 ]
 
 
-PrefetchHackCacheType: TypeAlias = defaultdict[str, defaultdict[str, set[str]]]
+type PrefetchHackCacheType = defaultdict[str, defaultdict[str, set[str]]]
 _PATH = f"{_filter_prefetch_queryset.__module__}.{_filter_prefetch_queryset.__name__}"
 
 

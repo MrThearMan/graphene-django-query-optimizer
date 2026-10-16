@@ -10,7 +10,6 @@ from typing import (
     Optional,
     ParamSpec,
     Protocol,
-    TypeAlias,
     TypedDict,
     TypeGuard,
     TypeVar,
@@ -90,29 +89,28 @@ __all__ = [
 
 
 TModel = TypeVar("TModel", bound=Model)
-PK: TypeAlias = Any
-ModelField: TypeAlias = Union[Field, ForeignObjectRel, "GenericForeignKey"]
-ToManyField: TypeAlias = Union["GenericRelation", ManyToManyField, ManyToOneRel, ManyToManyRel]
-ToOneField: TypeAlias = Union["GenericRelation", ForeignObject, ForeignKey, OneToOneField]
-AnyUser: TypeAlias = Union["User", "AnonymousUser"]
-QuerySetResolver: TypeAlias = Callable[..., Union[QuerySet, Manager, None]]
-ModelResolver: TypeAlias = Callable[..., Union[Model, None]]
-ConnectionResolver: TypeAlias = Callable[..., ConnectionType]
-ObjectTypeInput: TypeAlias = Union[
+type PK = Any
+type ModelField = Union[Field, ForeignObjectRel, "GenericForeignKey"]
+type ToManyField = Union["GenericRelation", ManyToManyField, ManyToOneRel, ManyToManyRel]
+type ToOneField = Union["GenericRelation", ForeignObject, ForeignKey, OneToOneField]
+type AnyUser = Union["User", "AnonymousUser"]
+type QuerySetResolver = Callable[..., Union[QuerySet, Manager, None]]
+type ModelResolver = Callable[..., Union[Model, None]]
+type ConnectionResolver = Callable[..., ConnectionType]
+type ObjectTypeInput = Union[
     str,
     type[DjangoObjectType],
     Callable[[], type[DjangoObjectType]],
 ]
-UnmountedTypeInput: TypeAlias = Union[
+type UnmountedTypeInput = Union[
+    type[Union[UnmountedType, DjangoObjectType]],
     str,
-    type[UnmountedType],
-    type[DjangoObjectType],
     Structure,
     Callable[[], type[UnmountedType]],
     Callable[[], type[DjangoObjectType]],
 ]
-ArgTypeInput: TypeAlias = Union[Argument, UnmountedType, Dynamic]
-Expr: TypeAlias = Union[models.Expression, models.F, models.Q]
+type ArgTypeInput = Union[Argument, UnmountedType, Dynamic]
+type Expr = Union[models.Expression, models.F, models.Q]
 
 
 GRAPHQL_BUILTIN = (

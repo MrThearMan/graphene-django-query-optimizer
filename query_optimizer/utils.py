@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
     T = TypeVar("T")
     P = ParamSpec("P")
-    Ttype = TypeVar("Ttype", bound=type)
 
 
 __all__ = [
@@ -200,7 +199,7 @@ class SubqueryCount(models.Subquery):
     output_field = models.BigIntegerField()
 
 
-def swappable_by_subclassing(obj: Ttype) -> Ttype:
+def swappable_by_subclassing[Ttype: type](obj: Ttype) -> Ttype:
     """Makes the decorated class return the most recently created direct subclass when it is instantiated."""
     orig_init_subclass = obj.__init_subclass__
 

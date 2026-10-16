@@ -75,7 +75,7 @@ class QueryData:
         return self.queries[item]
 
 
-def db_query_logger(
+def db_query_logger(  # noqa: PLR0917
     execute: Callable[..., Any],
     sql: str,
     params: tuple[Any, ...],

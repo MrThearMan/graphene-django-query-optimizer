@@ -18,7 +18,6 @@ from .ast import get_model_field
 from .filter_info import get_filter_info
 from .prefetch_hack import register_for_prefetch_hack
 from .settings import optimizer_settings
-from .typing import Generic, TModel
 from .utils import (
     SubqueryCount,
     add_slice_to_queryset,
@@ -34,7 +33,7 @@ if TYPE_CHECKING:
     from django.db.models import Model, QuerySet
 
     from .types import DjangoObjectType
-    from .typing import Any, ExpressionKind, GQLInfo, GraphQLFilterInfo, Literal, QuerySetResolver, ToManyField
+    from .typing import Any, ExpressionKind, GQLInfo, GraphQLFilterInfo, Literal, QuerySetResolver, TModel, ToManyField
 
 __all__ = [
     "QueryOptimizer",
@@ -42,7 +41,7 @@ __all__ = [
 
 
 @dataclasses.dataclass
-class OptimizationResults(Generic[TModel]):
+class OptimizationResults[TModel: models.Model]:
     name: str | None = None
     queryset: QuerySet[TModel] | None = None
     only_fields: list[str] = dataclasses.field(default_factory=list)
