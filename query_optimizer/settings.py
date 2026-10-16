@@ -63,10 +63,10 @@ class DefaultSettings(NamedTuple):
 
 DEFAULTS: dict[str, Any] = DefaultSettings()._asdict()
 IMPORT_STRINGS: set[Union[bytes, str]] = set()
-REMOVED_SETTINGS: set[str] = {
-    "PK_CACHE_KEY",
-    "DONT_OPTIMIZE_ON_ERROR",
-    "QUERY_CACHE_KEY",
+REMOVED_SETTINGS: dict[str, str | None] = {
+    "PK_CACHE_KEY": None,
+    "DONT_OPTIMIZE_ON_ERROR": None,
+    "QUERY_CACHE_KEY": None,
 }
 
 optimizer_settings = SettingsHolder(
