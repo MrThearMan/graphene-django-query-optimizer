@@ -40,7 +40,7 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
         max_complexity: int | None = None,
         **options: Any,
     ) -> None:
-        if model is None or not is_valid_django_model(model):  # pragma: no cover
+        if model is None or not is_valid_django_model(model):
             msg = f"You need to pass a valid Django Model in {cls.__name__}.Meta, received {model}."
             raise TypeError(msg)
 
@@ -85,7 +85,7 @@ class DjangoObjectType(graphene_django.types.DjangoObjectType):
     def get_node(cls, info: GQLInfo, pk: PK) -> TModel | None:
         queryset = cls._meta.model._default_manager.all()
         maybe_instance = optimize_single(queryset, info, pk=pk, max_complexity=cls._meta.max_complexity)
-        if maybe_instance is not None:  # pragma: no cover
+        if maybe_instance is not None:
             cls.run_instance_checks(maybe_instance, info)
         return maybe_instance
 

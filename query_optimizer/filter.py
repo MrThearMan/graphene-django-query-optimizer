@@ -22,7 +22,7 @@ __all__ = [
 
 @cache
 def default_filterset_class() -> type[FilterSet]:
-    if optimizer_settings.DEFAULT_FILTERSET_CLASS:  # pragma: no cover
+    if optimizer_settings.DEFAULT_FILTERSET_CLASS:
         return import_string(optimizer_settings.DEFAULT_FILTERSET_CLASS)
     return FilterSet
 

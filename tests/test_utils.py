@@ -4,7 +4,14 @@ from django.db import models
 from example_project.app.models import Example
 from query_optimizer.settings import optimizer_settings
 from query_optimizer.typing import NamedTuple, Optional
-from query_optimizer.utils import calculate_queryset_slice, calculate_slice_for_queryset, swappable_by_subclassing
+from query_optimizer.utils import (
+    calculate_queryset_slice,
+    calculate_slice_for_queryset,
+    is_optimized,
+    mark_optimized,
+    remove_optimized_mark,
+    swappable_by_subclassing,
+)
 from tests.factories.example import ExampleFactory
 from tests.helpers import parametrize_helper
 
@@ -181,3 +188,18 @@ def test_swappable_by_subclassing():
 
     d = A()
     assert type(d) is C  # Only direct subclasses are swapped.
+
+
+def test_remove_optimized_mark():
+    queryset = Example.objects.all()
+    mark_optimized(queryset)
+    assert is_optimized(queryset) is True
+
+    remove_optimized_mark(queryset)
+    assert is_optimized(queryset) is False
+
+
+def test_calculate_slice_for_queryset__no_count_annotation():
+    queryset = calculate_slice_for_queryset(Example.objects.all(), after=None, before=None, first=None, last=None, size=10)
+
+    assert queryset.query.annotations[optimizer_settings.PREFETCH_COUNT_KEY] == models.Value(10)

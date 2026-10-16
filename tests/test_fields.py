@@ -1,7 +1,18 @@
 import datetime
+from unittest.mock import Mock
 
+import graphene
 import pytest
+from django.db.models import F
 
+from example_project.app.types import ApartmentNode, ApartmentType, HousingCompanyType
+from query_optimizer.fields import (
+    AnnotatedField,
+    DjangoConnectionField,
+    DjangoListField,
+    ManuallyOptimizedField,
+    RelatedField,
+)
 from tests.factories import (
     ApartmentFactory,
     BuildingFactory,
@@ -885,3 +896,58 @@ def test_fields__pre_field(graphql_client):
         {"preField": f"{owner_2.name}-0"},
         {"preField": f"{owner_3.name}-0"},
     ]
+
+
+def test_fields__related_field__reverse_argument_deprecated():
+    with pytest.warns(DeprecationWarning, match="The `reverse` argument is no longer required"):
+        RelatedField(HousingCompanyType, reverse=True)
+
+
+def test_fields__related_field__no_related_instance():
+    field = RelatedField(HousingCompanyType)
+
+    assert field.related_resolver(root=Mock(spec=[]), info=Mock(field_name="housingCompany")) is None
+
+
+def test_fields__list_field__no_filters():
+    field = DjangoListField(ApartmentType, no_filters=True)
+
+    assert field.filtering_args is None
+
+
+def test_fields__list_field__non_null_type():
+    field = DjangoListField(graphene.NonNull(ApartmentType))
+
+    assert str(field.type) == "[ApartmentType!]"
+
+
+def test_fields__connection_field__non_null_type():
+    field = DjangoConnectionField(graphene.NonNull(ApartmentNode))
+
+    assert isinstance(field.type, graphene.NonNull)
+    assert field.connection_type == ApartmentNode._meta.connection
+
+
+def test_fields__connection_field__type_without_connection():
+    field = DjangoConnectionField(ApartmentType)
+
+    with pytest.raises(ValueError, match="The type ApartmentType doesn't have a connection"):
+        _ = field.type
+
+
+def test_fields__annotated_field__extra_annotations():
+    field = AnnotatedField(graphene.String, F("name"), extra_annotations={"foo": F("pk")})
+    field.name = "bar"
+    compiler = Mock()
+    compiler.optimizer.annotations = {}
+
+    field.optimizer_hook(compiler)
+
+    assert compiler.optimizer.annotations == {"bar": F("name"), "foo": F("pk")}
+
+
+def test_fields__manually_optimized_field__optimizer_method_missing():
+    with pytest.raises(AttributeError, match="Optimizer method 'optimize_foo' missing"):
+
+        class Foo:
+            foo = ManuallyOptimizedField(graphene.String)

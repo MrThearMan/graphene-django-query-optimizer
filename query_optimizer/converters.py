@@ -30,7 +30,7 @@ def convert_to_one_field(
 ) -> graphene.Dynamic:
     def dynamic_type() -> graphene.Field | None:
         type_: type[DjangoObjectType] | None = registry.get_type_for_model(field.related_model)  # type: ignore[union-attr]
-        if type_ is None:  # pragma: no cover
+        if type_ is None:
             return None
 
         actual_field = field.field if isinstance(field, models.OneToOneRel) else field
@@ -57,7 +57,7 @@ def convert_to_many_field(
 ) -> graphene.Dynamic:
     def dynamic_type() -> Union[DjangoConnectionField, DjangoListField, None]:
         type_: type[DjangoObjectType] | None = registry.get_type_for_model(field.related_model)  # type: ignore[union-attr]
-        if type_ is None:  # pragma: no cover
+        if type_ is None:
             return None
 
         actual_field = field if isinstance(field, models.ManyToManyField) else field.field
@@ -67,7 +67,7 @@ def convert_to_many_field(
         from query_optimizer.fields import DjangoConnectionField, DjangoListField  # noqa: PLC0415
 
         if type_._meta.connection and optimizer_settings.ALLOW_CONNECTION_AS_DEFAULT_NESTED_TO_MANY_FIELD:
-            return DjangoConnectionField(  # pragma: no cover
+            return DjangoConnectionField(
                 type_,
                 required=required,
                 description=description,

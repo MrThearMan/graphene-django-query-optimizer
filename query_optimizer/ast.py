@@ -66,7 +66,7 @@ class GraphQLASTWalker:
             elif isinstance(selection, InlineFragmentNode):
                 self.handle_inline_fragment(field_type, selection)
 
-            else:  # pragma: no cover
+            else:
                 msg = f"Unhandled selection node: '{selection}'"
                 raise OptimizerError(msg)
 
@@ -85,7 +85,7 @@ class GraphQLASTWalker:
         if is_edge(field_type):
             return self.handle_edge(field_type, field_node)
 
-        if issubclass(graphene_type, PageInfo):  # pragma: no cover
+        if issubclass(graphene_type, PageInfo):
             return self.handle_page_info(field_type, field_node)
 
         if issubclass(graphene_type, ObjectType):
@@ -97,8 +97,8 @@ class GraphQLASTWalker:
         if issubclass(graphene_type, GrapheneUnion):
             return self.handle_abstract_node(field_type, field_node)
 
-        msg = f"Unhandled graphene type: '{graphene_type}'"  # pragma: no cover
-        raise OptimizerError(msg)  # pragma: no cover
+        msg = f"Unhandled graphene type: '{graphene_type}'"
+        raise OptimizerError(msg)
 
     def handle_query_class(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
         graphene_type = self.get_graphene_type(field_type, field_node)
@@ -147,8 +147,8 @@ class GraphQLASTWalker:
             with self.use_model(model):
                 return self.handle_to_many_field(field_type, field_node, field, related_model)
 
-        msg = f"Unhandled field: '{field.name}'"  # pragma: no cover
-        raise OptimizerError(msg)  # pragma: no cover
+        msg = f"Unhandled field: '{field.name}'"
+        raise OptimizerError(msg)
 
     def handle_custom_field(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None: ...
 
@@ -224,7 +224,7 @@ class GraphQLASTWalker:
         alias = getattr(field_node.alias, "value", None)
         return alias or to_snake_case(field_node.name.value)
 
-    def get_related_field_name(self, related_field: ToOneField | ToManyField) -> str:  # pragma: no cover
+    def get_related_field_name(self, related_field: ToOneField | ToManyField) -> str:
         return related_field.cache_name or related_field.name
 
     @contextlib.contextmanager
@@ -240,13 +240,13 @@ class GraphQLASTWalker:
 @overload
 def get_underlying_type(
     field_type: type[GraphQLOutputType],
-) -> type[Union[DjangoObjectType, GrapheneObjectType]]: ...  # pragma: no cover
+) -> type[Union[DjangoObjectType, GrapheneObjectType]]: ...
 
 
 @overload
 def get_underlying_type(
     field_type: GraphQLOutputType,
-) -> Union[DjangoObjectType, GrapheneObjectType]: ...  # pragma: no cover
+) -> Union[DjangoObjectType, GrapheneObjectType]: ...
 
 
 def get_underlying_type(field_type):
@@ -311,14 +311,14 @@ def get_fragment_type(
     if isinstance(field_type, GrapheneUnionType):
         gen = (t for t in field_type.types if t.name == fragment_type_name)
         fragment_type = next(gen, None)
-        if fragment_type is None:  # pragma: no cover
+        if fragment_type is None:
             msg = f"Fragment type '{fragment_type_name}' not found in union '{field_type}'"
             raise OptimizerError(msg)
 
     # For interfaces, fetch the type from in the schema.
     else:
         fragment_type = schema.get_type(fragment_type_name)  # type: ignore[assignment]
-        if fragment_type is None:  # pragma: no cover
+        if fragment_type is None:
             msg = f"Fragment type '{fragment_type_name}' not found in schema."
             raise OptimizerError(msg)
 

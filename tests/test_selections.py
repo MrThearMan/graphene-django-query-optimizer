@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import contextlib
 from typing import TYPE_CHECKING
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 
-from query_optimizer.selections import get_field_selections
+from query_optimizer.selections import FieldSelectionCompiler, get_field_selections
 from tests.factories import HousingCompanyFactory
 
 if TYPE_CHECKING:
@@ -154,3 +154,34 @@ def test_get_field_selections__plain_object_type__nested(graphql_client):
     assert response.no_errors, response.errors
 
     assert selections == ["foo", {"bar": ["x"]}]
+
+
+def test_get_field_selections__builtin_and_custom_fields(graphql_client):
+    HousingCompanyFactory.create(name="foo")
+
+    query = """
+        query {
+          housingCompanyByName(name:"foo") {
+            __typename
+            greeting
+          }
+        }
+    """
+
+    with mock_selections() as selections:
+        response = graphql_client(query)
+
+    assert response.no_errors, response.errors
+
+    assert selections == ["__typename", "greeting"]
+
+
+def test_get_field_selections__no_child_selections():
+    compiler = FieldSelectionCompiler(info=Mock())
+    field_node = Mock()
+    field_node.name.value = "foo"
+
+    with compiler.child_selections(field_node):
+        pass
+
+    assert compiler.field_selections == []

@@ -55,7 +55,7 @@ def optimize_single(
 ) -> TModel | None:
     """Optimize the given queryset for a single model instance by its primary key."""
     optimizer = OptimizationCompiler(info, max_complexity=max_complexity).compile(queryset)
-    if optimizer is None:  # pragma: no cover
+    if optimizer is None:
         return queryset.filter(pk=pk).first()
 
     queryset = optimizer.optimize_queryset(queryset.filter(pk=pk))
@@ -106,11 +106,11 @@ class OptimizationCompiler(GraphQLASTWalker):
             self.run()
 
         # Allow known errors to be raised.
-        except OptimizerError:  # pragma: no cover
+        except OptimizerError:
             raise
 
         # Raise unknown errors if not allowed to skip optimization on error.
-        except Exception as error:  # pragma: no cover
+        except Exception as error:
             optimizer_logger.warning("Something went wrong during the optimization process.", exc_info=error)
             if not optimizer_settings.SKIP_OPTIMIZATION_ON_ERROR:
                 raise
@@ -188,7 +188,7 @@ class OptimizationCompiler(GraphQLASTWalker):
     def handle_custom_field(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
         field_name = to_snake_case(field_node.name.value)
         field: graphene.Field | None = field_type.graphene_type._meta.fields.get(field_name)
-        if field is None:  # pragma: no cover
+        if field is None:
             msg = (
                 f"Field '{field_node.name.value}' not found from object type '{field_type.graphene_type}'. "
                 f"Cannot optimize custom field."
@@ -207,7 +207,7 @@ class OptimizationCompiler(GraphQLASTWalker):
             field.optimizer_hook(self)
             return None
 
-        return None  # pragma: no cover
+        return None
 
     @contextlib.contextmanager
     def use_optimizer(self, optimizer: QueryOptimizer) -> Generator[None, None, None]:

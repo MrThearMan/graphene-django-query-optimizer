@@ -201,3 +201,20 @@ def test_relay__node__doesnt_mess_up_filterset__nested_filtering(graphql_client)
 
     # Check that the nested filter is actually applied
     assert response.content == {"apartments": {"edges": [{"node": {"streetAddress": "1"}}]}}
+
+
+def test_relay__node__does_not_exist(graphql_client):
+    global_id = to_global_id(str(ApartmentNode), 1)
+
+    query = """
+        query {
+          apartment(id: "%s") {
+            pk
+          }
+        }
+    """ % (global_id,)
+
+    response = graphql_client(query)
+    assert response.no_errors, response.errors
+
+    assert response.content is None

@@ -119,7 +119,7 @@ class QueryOptimizer:
         if callable(pre_optimization_hook):
             return pre_optimization_hook(queryset, self)
 
-        return queryset  # pragma: no cover
+        return queryset
 
     def process(self, queryset: QuerySet[TModel], filter_info: GraphQLFilterInfo) -> OptimizationResults[TModel]:
         """Process compiled optimizations to optimize the given queryset."""
@@ -199,7 +199,7 @@ class QueryOptimizer:
         parent_model: type[Model] = self.parent.model  # type: ignore[union-attr,assignment]
         field_name: str = self.name  # type: ignore[assignment]
         field = cast("ToManyField | None", get_model_field(parent_model, field_name))
-        if field is None:  # pragma: no cover
+        if field is None:
             msg = (
                 f"Cannot find field {self.name!r} on model {parent_model.__name__!r}. "
                 f"Cannot optimize nested pagination."
@@ -246,7 +246,7 @@ class QueryOptimizer:
             )
 
         # Don't limit the queryset if no pagination arguments are given (and field `max_size=None`)
-        if all(value is None for value in pagination_args.values()):  # pragma: no cover
+        if all(value is None for value in pagination_args.values()):
             return queryset
 
         size = pagination_args["size"]
@@ -295,11 +295,8 @@ class QueryOptimizer:
         order_info: str | list[str] = self.process_order_by_filter(order_by) or ""
 
         # 'Graphene-django' uses a comma-separated string for ordering.
-        if isinstance(order_info, str):
-            order_info = order_info.split(",")
         # 'Graphene-django-extensions' uses a list of enums.
-        elif isinstance(order_info, list):  # pragma: no cover
-            order_info = [str(x) for x in order_info]
+        order_info = order_info.split(",") if isinstance(order_info, str) else [str(x) for x in order_info]
 
         return (
             # Use the `order_by` from the filter info, if available
@@ -328,7 +325,7 @@ class QueryOptimizer:
             queryset=queryset,
             request=self.info.context,
         )
-        if not filterset.is_valid():  # pragma: no cover
+        if not filterset.is_valid():
             raise ValidationError(filterset.form.errors.as_json())
 
         return filterset.qs
@@ -362,13 +359,13 @@ class QueryOptimizer:
             queryset = func(queryset, self, **filters)
         return queryset
 
-    def has_child_optimizer(self, name: str) -> bool:  # pragma: no cover
+    def has_child_optimizer(self, name: str) -> bool:
         return name in self.select_related or name in self.prefetch_related
 
-    def get_child_optimizer(self, name: str) -> QueryOptimizer | None:  # pragma: no cover
+    def get_child_optimizer(self, name: str) -> QueryOptimizer | None:
         return self.select_related.get(name) or self.prefetch_related.get(name)
 
-    def get_or_set_child_optimizer(  # pragma: no cover
+    def get_or_set_child_optimizer(
         self,
         name: str,
         optimizer: QueryOptimizer,

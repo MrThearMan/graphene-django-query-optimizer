@@ -42,7 +42,7 @@ class FieldSelectionCompiler(GraphQLASTWalker):
             return super().handle_query_class(field_type, field_node)
 
     def handle_graphql_builtin(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
-        self.field_selections.append(to_snake_case(field_node.name.value))  # pragma: no cover
+        self.field_selections.append(to_snake_case(field_node.name.value))
 
     def handle_plain_object_type(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
         selections = get_selections(field_node)
@@ -59,7 +59,7 @@ class FieldSelectionCompiler(GraphQLASTWalker):
         self.field_selections.append(to_snake_case(field_node.name.value))
 
     def handle_custom_field(self, field_type: GrapheneObjectType, field_node: FieldNode) -> None:
-        self.field_selections.append(to_snake_case(field_node.name.value))  # pragma: no cover
+        self.field_selections.append(to_snake_case(field_node.name.value))
 
     def handle_to_one_field(
         self,

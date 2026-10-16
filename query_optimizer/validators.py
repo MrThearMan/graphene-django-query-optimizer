@@ -40,7 +40,7 @@ def validate_pagination_args(  # noqa: C901, PLR0912, PLR0917
     after_offset = cursor_to_offset(after) if after is not None else None
     before_offset = cursor_to_offset(before) if before is not None else None
 
-    if graphene_settings.RELAY_CONNECTION_ENFORCE_FIRST_OR_LAST and not (first or last):  # pragma: no cover
+    if graphene_settings.RELAY_CONNECTION_ENFORCE_FIRST_OR_LAST and not (first or last):
         msg = "You must provide a `first` or `last` for pagination."
         raise ValueError(msg)
 

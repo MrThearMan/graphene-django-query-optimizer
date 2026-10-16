@@ -80,7 +80,7 @@ class RelatedField(graphene.Field):
                            defined on is different from the field name on the model.
         :param kwargs: Extra arguments passed to `graphene.types.field.Field`.
         """
-        if kwargs.pop("reverse", None) is not None:  # pragma: no cover
+        if kwargs.pop("reverse", None) is not None:
             msg = (
                 "The `reverse` argument is no longer required, and should be removed. "
                 "This will become an error in the future."
@@ -100,7 +100,7 @@ class RelatedField(graphene.Field):
         field_name = self.field_name or to_snake_case(info.field_name)
         # Related object should be optimized to the root model.
         related_instance: models.Model | None = getattr(root, field_name, None)
-        if related_instance is None:  # pragma: no cover
+        if related_instance is None:
             return None
         self.underlying_type.run_instance_checks(related_instance, info)
         return related_instance
@@ -130,7 +130,7 @@ class FilteringMixin:
 
     @cached_property
     def filtering_args(self) -> dict[str, graphene.Argument] | None:
-        if not DJANGO_FILTER_INSTALLED or self.no_filters:  # pragma: no cover
+        if not DJANGO_FILTER_INSTALLED or self.no_filters:
             return None
 
         from graphene_django.filter.utils import get_filtering_args_from_filterset  # noqa: PLC0415
@@ -167,7 +167,7 @@ class DjangoListField(FilteringMixin, graphene.Field):
         """
         self.no_filters = no_filters
         self.field_name = field_name
-        if isinstance(type_, graphene.NonNull):  # pragma: no cover
+        if isinstance(type_, graphene.NonNull):
             type_ = type_.of_type
         super().__init__(graphene.List(graphene.NonNull(type_)), **kwargs)
 
@@ -353,7 +353,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         return maybe_queryset(iterable)
 
     @cached_property
-    def type(self) -> Union[Type[Connection], graphene.NonNull]:  # pragma: no cover
+    def type(self) -> Union[Type[Connection], graphene.NonNull]:
         type_ = super().type
         non_null = isinstance(type_, graphene.NonNull)
         if non_null:
@@ -369,7 +369,7 @@ class DjangoConnectionField(FilteringMixin, graphene.Field):
         return connection_type
 
     @cached_property
-    def connection_type(self) -> Type[Connection]:  # pragma: no cover
+    def connection_type(self) -> Type[Connection]:
         type_ = self.type
         if isinstance(type_, graphene.NonNull):
             return type_.of_type
@@ -417,7 +417,7 @@ class AnnotatedField(graphene.Field):
         compiler.optimizer.annotations[to_snake_case(self.name)] = self.expression
         if self.aliases is not None:
             compiler.optimizer.aliases.update(self.aliases)
-        if self.extra_annotations is not None:  # pragma: no cover
+        if self.extra_annotations is not None:
             compiler.optimizer.annotations.update(self.extra_annotations)
 
 
@@ -473,7 +473,7 @@ class ManuallyOptimizedField(graphene.Field):
         self.name = to_camel_case(name)
         resolver_name = f"optimize_{name}"
         self.optimizer = getattr(object_type, resolver_name, None)
-        if self.optimizer is None:  # pragma: no cover
+        if self.optimizer is None:
             msg = f"Optimizer method '{resolver_name}' missing from '{object_type}'."
             raise AttributeError(msg)
 

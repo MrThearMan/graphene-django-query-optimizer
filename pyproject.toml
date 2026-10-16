@@ -85,13 +85,14 @@ module-name = [
 [tool.coverage.run]
 relative_files = true
 branch = true
+include = [
+    "query_optimizer/*",
+]
 
 [tool.coverage.report]
-exclude_lines = [
-    "if TYPE_CHECKING:",
-    "except ImportError:",
-    "pragma: no cover",
-    "pass",
+fail_under = 100
+exclude_also = [
+    'if TYPE_CHECKING:',
 ]
 
 [tool.pytest.ini_options]

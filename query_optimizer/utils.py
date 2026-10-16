@@ -37,7 +37,7 @@ def mark_optimized(queryset: models.QuerySet) -> None:
     queryset._hints[optimizer_settings.OPTIMIZER_MARK] = True  # type: ignore[attr-defined]
 
 
-def remove_optimized_mark(queryset: models.QuerySet) -> None:  # pragma: no cover
+def remove_optimized_mark(queryset: models.QuerySet) -> None:
     """Mark queryset as unoptimized so that later optimizers will run optimization"""
     queryset._hints.pop(optimizer_settings.OPTIMIZER_MARK, None)  # type: ignore[attr-defined]
 
@@ -131,7 +131,7 @@ def calculate_slice_for_queryset(
     size_key = optimizer_settings.PREFETCH_COUNT_KEY
     # If the queryset has not been annotated with the total count, add an alias with the provided size.
     # (Since this is used in prefetch QuerySets, the provided size is likely wrong though.)
-    if size_key not in queryset.query.annotations:  # pragma: no cover
+    if size_key not in queryset.query.annotations:
         queryset = queryset.alias(**{size_key: models.Value(size)})
 
     start: Combinable = models.Value(0)

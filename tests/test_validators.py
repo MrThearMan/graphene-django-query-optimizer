@@ -1,4 +1,5 @@
 import pytest
+from graphene_django.settings import graphene_settings
 from graphql_relay import offset_to_cursor
 
 from query_optimizer.typing import Any, NamedTuple, Optional
@@ -149,3 +150,10 @@ def test_validate_pagination_args(pagination_input, output, errors):
         if errors is not None:
             pytest.fail(f"Expected error: {errors}")
         assert args == output
+
+
+def test_validate_pagination_args__enforce_first_or_last(monkeypatch):
+    monkeypatch.setattr(graphene_settings, "RELAY_CONNECTION_ENFORCE_FIRST_OR_LAST", True)
+
+    with pytest.raises(ValueError, match="You must provide a `first` or `last` for pagination."):
+        validate_pagination_args(first=None, last=None, offset=None, after=None, before=None)
