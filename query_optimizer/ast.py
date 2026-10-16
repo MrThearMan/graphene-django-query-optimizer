@@ -138,12 +138,12 @@ class GraphQLASTWalker:
                 return self.handle_normal_field(field_type, field_node, field)  # type: ignore[arg-type]
 
         if is_to_one(field):
-            related_model = get_related_model(field, model)
+            related_model = get_related_model(field)
             with self.use_model(field.model):
                 return self.handle_to_one_field(field_type, field_node, field, related_model)
 
         if is_to_many(field):
-            related_model = get_related_model(field, model)
+            related_model = get_related_model(field)
             with self.use_model(model):
                 return self.handle_to_many_field(field_type, field_node, field, related_model)
 
@@ -325,15 +325,12 @@ def get_fragment_type(
     return fragment_type
 
 
-def get_related_model(related_field: Union[ToOneField, ToManyField], model: type[Model]) -> type[Model] | None:
+def get_related_model(related_field: Union[ToOneField, ToManyField]) -> type[Model] | None:
     """
     Get the related model for a field.
     Note: For generic foreign keys, the related model is unknown (=None).
     """
-    related_model = related_field.related_model
-    if related_model == "self":  # pragma: no cover
-        return model
-    return related_model  # type: ignore[return-value]
+    return related_field.related_model  # type: ignore[return-value]
 
 
 def get_model_field(model: type[Model], field_name: str) -> ModelField | None:
