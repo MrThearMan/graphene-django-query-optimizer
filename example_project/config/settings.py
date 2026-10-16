@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "graphiql_debug_toolbar",
     "graphene_django",
     "example_project.app",
+    "example_project.undine_port",
 ]
 
 MIDDLEWARE = [
