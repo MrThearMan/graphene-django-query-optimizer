@@ -75,9 +75,10 @@ The optimizer will find this method and use it automatically when this
 object type is used in a query. No additional queries are performed when using
 this method as opposed to overriding the `get_queryset` method itself.
 
-`DjangoObjectType` is generic over the model and the user type. Without subscription,
-the model is `Model` and the user is `User | AnonymousUser`. Subscribe the class
-to type its methods for a specific model and user. `GQLInfo` is generic over
+`DjangoObjectType` is generic over the model, the user type and the queryset class.
+Without subscription, the model is `Model`, the user is `User | AnonymousUser`,
+and the queryset class is `QuerySet` of the model. Subscribe the class to type its methods
+for a specific model, user and queryset class. `GQLInfo` is generic over
 the user type in the same way:
 
 ```python
@@ -86,5 +87,27 @@ class ApartmentType(DjangoObjectType[Apartment, MyUser]):
     def filter_queryset(cls, queryset: QuerySet[Apartment], info: GQLInfo[MyUser]) -> QuerySet[Apartment]:
         return queryset.filter(owner=info.context.user)
 ```
+
+If the model's default manager uses a custom queryset class, give that class
+as the third type. Then the methods of the custom queryset are typed in the hooks:
+
+```python
+class ApartmentQuerySet(QuerySet["Apartment"]):
+    def with_rooms(self) -> Self:
+        return self.filter(rooms__isnull=False)
+
+
+class Apartment(models.Model):
+    objects = ApartmentQuerySet.as_manager()
+
+
+class ApartmentType(DjangoObjectType[Apartment, MyUser, ApartmentQuerySet]):
+    @classmethod
+    def filter_queryset(cls, queryset: ApartmentQuerySet, info: GQLInfo[MyUser]) -> ApartmentQuerySet:
+        return queryset.with_rooms()
+```
+
+The type checker does not check that the hooks receive this queryset class.
+Make sure that the model's default manager uses it.
 
 [filters]: https://github.com/carltongibson/django-filter
