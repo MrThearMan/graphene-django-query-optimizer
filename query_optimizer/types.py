@@ -9,10 +9,10 @@ from graphene_django.utils import is_valid_django_model
 
 from .compiler import optimize_single
 from .settings import optimizer_settings
-from .typing import OptimizedDjangoOptions, TModel, TUser
+from .typing import OptimizedDjangoOptions, TModel, TQuerySet, TUser
 
 if TYPE_CHECKING:
-    from django.db.models import Model, QuerySet
+    from django.db.models import Model
 
     from .optimizer import QueryOptimizer
     from .typing import PK, Any, GQLInfo, Literal, Union
@@ -25,12 +25,14 @@ __all__ = [
 
 # Type parameter defaults need Python 3.13 in the PEP 695 syntax.
 # 'Generic' must be first, since graphene's '__init_subclass__' does not call 'super().__init_subclass__()'.
-class DjangoObjectType(Generic[TModel, TUser], graphene_django.types.DjangoObjectType):  # noqa: PYI059, UP046
+class DjangoObjectType(Generic[TModel, TUser, TQuerySet], graphene_django.types.DjangoObjectType):  # noqa: PYI059, UP046
     """
     DjangoObjectType that automatically optimizes its queryset.
 
-    Subscribe with the model and the user type, e.g. `DjangoObjectType[Example, User]`,
-    to type the hooks for them. Without subscription, the defaults apply.
+    Subscribe with the model, the user type and the queryset class,
+    e.g. `DjangoObjectType[Example, User, ExampleQuerySet]`, to type the hooks for them.
+    The queryset class is `QuerySet[Example]` by default. Use a custom one only
+    if the model's default manager uses it. Without subscription, the defaults apply.
     """
 
     _meta: OptimizedDjangoOptions
@@ -75,22 +77,22 @@ class DjangoObjectType(Generic[TModel, TUser], graphene_django.types.DjangoObjec
         super().__init_subclass_with_meta__(_meta=_meta, model=model, fields=fields, **options)
 
     @classmethod
-    def pre_optimization_hook(cls, queryset: QuerySet[TModel], optimizer: QueryOptimizer) -> QuerySet[TModel]:
+    def pre_optimization_hook(cls, queryset: TQuerySet, optimizer: QueryOptimizer) -> TQuerySet:
         """A hook for modifying the optimizer results before optimization happens."""
         return queryset
 
     @classmethod
-    def filter_queryset(cls, queryset: QuerySet[TModel], info: GQLInfo[TUser]) -> QuerySet[TModel]:
+    def filter_queryset(cls, queryset: TQuerySet, info: GQLInfo[TUser]) -> TQuerySet:
         """Implement this method filter to the available rows from the model on this node."""
         return queryset
 
     @classmethod
-    def get_queryset(cls, queryset: QuerySet[TModel], info: GQLInfo[TUser]) -> QuerySet[TModel]:
+    def get_queryset(cls, queryset: TQuerySet, info: GQLInfo[TUser]) -> TQuerySet:
         return queryset
 
     @classmethod
     def get_node(cls, info: GQLInfo[TUser], pk: PK) -> TModel | None:
-        queryset = cast("QuerySet[TModel]", cls._meta.model._default_manager.all())
+        queryset = cast("TQuerySet", cls._meta.model._default_manager.all())
         maybe_instance = optimize_single(queryset, info, pk=pk, max_complexity=cls._meta.max_complexity)
         if maybe_instance is not None:
             cls.run_instance_checks(maybe_instance, info)

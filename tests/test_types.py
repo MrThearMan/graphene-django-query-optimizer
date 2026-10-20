@@ -37,3 +37,13 @@ def test_object_type__custom_options():
             registry = Registry()
 
     assert isinstance(ExampleType._meta, CustomOptions)
+
+
+def test_object_type__subscribed():
+    class ExampleType(DjangoObjectType[Example]):
+        class Meta:
+            model = Example
+            fields = "__all__"
+            registry = Registry()
+
+    assert ExampleType._meta.model is Example

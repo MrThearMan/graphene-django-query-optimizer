@@ -79,6 +79,7 @@ __all__ = [
     "ParamSpec",
     "QuerySetResolver",
     "TModel",
+    "TQuerySet",
     "TUser",
     "ToManyField",
     "ToOneField",
@@ -98,9 +99,11 @@ type ToManyField = Union["GenericRelation", ManyToManyField, ManyToOneRel, ManyT
 type ToOneField = Union["GenericRelation", ForeignObject, ForeignKey, OneToOneField]
 type AnyUser = Union["User", "AnonymousUser"]
 
-# Subscribe generic classes with these to type them for a specific model or user.
+# Subscribe generic classes with these to type them for a specific model, user or queryset.
 # Without subscription, the defaults apply.
 TModel = TypeVar("TModel", bound=Model, default=Model)
+# The bound cannot refer to 'TModel', so a queryset class for another model is not a type error.
+TQuerySet = TypeVar("TQuerySet", bound=QuerySet[Any], default=QuerySet[TModel])
 TUser = TypeVar("TUser", default=AnyUser)
 type QuerySetResolver = Callable[..., Union[QuerySet, Manager, None]]
 type ModelResolver = Callable[..., Union[Model, None]]
