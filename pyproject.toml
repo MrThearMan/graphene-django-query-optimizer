@@ -63,7 +63,7 @@ test = [
     "django-filter==26.2",
 ]
 docs = [
-    "zensical==0.0.70",
+    "zensical==0.0.71",
     "pymdown-extensions==12.3",
     "pygments==2.21.0",
 ]
