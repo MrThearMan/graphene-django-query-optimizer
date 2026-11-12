@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Self
+
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -8,6 +10,7 @@ from django.db.models import DecimalField
 __all__ = [
     "Apartment",
     "ApartmentProxy",
+    "ApartmentQuerySet",
     "Building",
     "BuildingProxy",
     "Developer",
@@ -210,6 +213,11 @@ class Building(models.Model):
         return self.name
 
 
+class ApartmentQuerySet(models.QuerySet["Apartment"]):
+    def with_rooms(self) -> Self:
+        return self.filter(rooms__isnull=False)
+
+
 class Apartment(models.Model):
     completion_date = models.DateField(null=True)
 
@@ -225,6 +233,8 @@ class Apartment(models.Model):
     rooms = models.PositiveIntegerField(null=True)
 
     building = models.ForeignKey(Building, on_delete=models.PROTECT, related_name="apartments")
+
+    objects = ApartmentQuerySet.as_manager()
 
     class Meta:
         ordering = ["pk"]
