@@ -53,23 +53,23 @@ dependencies = [
 [dependency-groups]
 test = [
     "pytest==9.2.0",
-    "coverage==7.17.2",
+    "coverage==7.17.3",
     "pytest-django==4.14.0",
     "nox==2026.10.20",
-    "faker==40.44.0",
+    "faker==40.54.0",
     "factory-boy==3.3.3",
     "sqlparse==0.6.1",
     "django-graphiql-debug-toolbar==0.2.0",
     "django-filter==26.2",
 ]
 docs = [
-    "zensical==0.1.0",
-    "pymdown-extensions==12.3",
+    "zensical==0.1.1",
+    "pymdown-extensions==13.1",
     "pygments==2.21.0",
 ]
 lint = [
     "prek==0.5.10",
-    "ruff==0.17.4",
+    "ruff==0.17.5",
     "mypy==2.4.1",
     "django-stubs==6.1.2",
     "py-spy==0.4.3",
